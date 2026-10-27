@@ -654,6 +654,19 @@ try {
               💳 Plataformas
             </a>
           </li>
+           <?php if (($_SESSION['rol'] ?? '') === 'superadmin'): ?>
+
+                    <li class="nav-item">
+
+                        <a class="nav-link text-dark" href="../agencia/ver_logs.php" style="text-decoration: none;">
+
+                            <i class="bi bi-shield-lock me-1"></i>Logs
+
+                        </a>
+
+                    </li>
+
+                    <?php endif; ?>
         </ul>
         <span class="navbar-text text-muted me-3">
           <?= htmlspecialchars($_SESSION['nombre']) ?>
