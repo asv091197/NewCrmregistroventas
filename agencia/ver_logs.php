@@ -184,7 +184,7 @@ $stats = $conn->query("
                         <div class="detalle-accion">
                             IP <code><?= htmlspecialchars($sesion['ip']) ?></code>
                             · <?= htmlspecialchars(trim(($sesion['pais'] ?? '') . ' ' . ($sesion['ciudad'] ?? '')) ?: '—') ?>
-                            · <?= htmlspecialchars($sesion['dispositivo'] ?? '') ?> / <?= htmlspecialchars($sesion['sistema_operativo'] ?? '') ?> / <?= htmlspecialchars($sesion['navegador'] ?? '') ?>
+                            · <?= htmlspecialchars($sesion['dispositivo'] ?? '') ?> / <?= htmlspecialchars($sesion['navegador'] ?? '') ?>
                         </div>
                     </div>
 
@@ -312,7 +312,6 @@ $stats = $conn->query("
                             <th>Correo</th>
                             <th>IP</th>
                             <th>Dispositivo</th>
-                            <th>SO</th>
                             <th>Navegador</th>
                             <th>Motivo Fallo</th>
                             <th>Actividad</th>
@@ -320,7 +319,7 @@ $stats = $conn->query("
                     </thead>
                     <tbody>
                         <?php if (empty($logs)): ?>
-                            <tr><td colspan="10" class="text-center text-muted py-4">No hay registros para los filtros seleccionados</td></tr>
+                            <tr><td colspan="9" class="text-center text-muted py-4">No hay registros para los filtros seleccionados</td></tr>
                         <?php else: ?>
                             <?php foreach ($logs as $log): ?>
                                 <tr>
@@ -356,7 +355,6 @@ $stats = $conn->query("
                                         ?>
                                         <i class="bi <?= $icono ?>"></i> <?= htmlspecialchars($log['dispositivo']) ?>
                                     </td>
-                                    <td class="small"><?= htmlspecialchars($log['sistema_operativo'] ?? '—') ?></td>
                                     <td class="small"><?= htmlspecialchars($log['navegador'] ?? '—') ?></td>
                                     <td class="small text-danger"><?= htmlspecialchars($log['motivo_fallo'] ?? '') ?></td>
                                     <td class="text-nowrap">
