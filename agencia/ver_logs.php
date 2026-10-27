@@ -128,7 +128,7 @@ $accionesPagina = array_slice($acciones, ($pagina - 1) * $porPagina, $porPagina)
         <div class="alert alert-warning">No se encontró el inicio de sesión #<?= $sesionId ?>.</div>
     <?php else: ?>
         <?php
-        $hexes  = ['success' => '#198754', 'primary' => '#0d6efd', 'danger' => '#dc3545', 'secondary' => '#6c757d'];
+        $hexes  = ['success' => '#198754', 'primary' => '#0d6efd', 'danger' => '#dc3545', 'secondary' => '#6c757d', 'info' => '#0dcaf0', 'warning' => '#ffc107'];
         $ultima  = end($acciones) ?: null;
         $cerro   = $ultima && $ultima['accion'] === 'LOGOUT';
         $fin     = $ultima ? strtotime($ultima['fecha']) : strtotime($sesion['fecha_intento']);

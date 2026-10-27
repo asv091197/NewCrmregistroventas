@@ -7,6 +7,11 @@ while (ob_get_level()) {
 ob_start();
 
 require __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../session_config.php';
+require_once __DIR__ . '/../includes/registro_acciones.php';
+session_start();
+// Liberar el bloqueo de la sesión: la generación puede tardar y $_SESSION sigue disponible para la bitácora
+session_write_close();
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -1216,6 +1221,12 @@ header('Cache-Control: max-age=0');
 header('Content-Transfer-Encoding: binary');
 header('Pragma: public');
 header('Expires: 0');
+
+registrarAccion($pdo, 'EXPORT_EXCEL', 'ventas_facturacion', null, [
+    'reporte' => 'Ganancia volumen diario',
+    'archivo' => $nombre_archivo,
+    'filtros' => $_GET,
+]);
 
 // Crear writer y salida
 $writer = new Xlsx($spreadsheet);

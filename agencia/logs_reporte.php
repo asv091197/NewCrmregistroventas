@@ -76,7 +76,7 @@ function generarPdfLogs(array $logs, array $accionesPorLogin, string $rango): st
     $pdf->AddPage();
 
     $h = fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
-    $coloresHex = ['INSERT' => '#198754', 'UPDATE' => '#0d6efd', 'DELETE' => '#dc3545', 'LOGOUT' => '#6c757d'];
+    $coloresHex = ['INSERT' => '#198754', 'UPDATE' => '#0d6efd', 'DELETE' => '#dc3545', 'LOGOUT' => '#6c757d', 'EXPORT_EXCEL' => '#0aa2c0', 'EXPORT_PDF' => '#cc9a06'];
 
     $resumen = resumenLogs($logs, $accionesPorLogin);
     $pdf->writeHTML('
