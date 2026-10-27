@@ -76,21 +76,6 @@ if ($sesionId > 0) {
         error_log("ver_logs acciones sesión: " . $e->getMessage());
     }
 }
-
-$stmt = $conn->prepare("
-    SELECT
-        SUM(exito = 1) as exitosos,
-        SUM(exito = 0) as fallidos,
-        SUM(origen = 'agencia' AND exito = 1) as agencia_ok,
-        SUM(origen = 'facturacion' AND exito = 1) as facturacion_ok,
-        COUNT(DISTINCT ip) as ips_unicas,
-        COUNT(DISTINCT usuario_id) as usuarios_unicos
-    FROM logs_login
-    WHERE fecha_intento >= ? AND fecha_intento < ?
-");
-$stmt->bind_param("ss", $fechaDesde, $fechaHasta);
-$stmt->execute();
-$stats = $stmt->get_result()->fetch_assoc();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -102,7 +87,6 @@ $stats = $stmt->get_result()->fetch_assoc();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body { background: #f5f7fa; padding: 20px; }
-        .stat-card { border-left: 4px solid #007bff; }
         .table-sm td, .table-sm th { font-size: 0.85rem; vertical-align: middle; }
         .ua-text { font-size: 0.7rem; color: #6c757d; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .badge-origen-agencia { background: #0d6efd; }
@@ -117,7 +101,6 @@ $stats = $stmt->get_result()->fetch_assoc();
         @media (max-width: 767.98px) {
             body { padding: 10px; }
             h3 { font-size: 1.2rem; }
-            .stat-card h4 { font-size: 1.2rem; }
             .tabla-logs { max-height: 70vh; }
             .table-sm td, .table-sm th { font-size: 0.78rem; }
             .timeline { margin-left: 4px; padding-left: 16px; }
@@ -257,57 +240,6 @@ $stats = $stmt->get_result()->fetch_assoc();
                     <a href="ver_logs.php" class="btn btn-outline-secondary btn-sm flex-fill"><i class="bi bi-x-circle"></i> Borrar<span class="d-lg-none d-xl-inline"> filtro</span></a>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <div class="row g-2 mb-3">
-        <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card" style="border-color:#28a745">
-                <div class="card-body py-2">
-                    <small class="text-muted">Exitosos</small>
-                    <h4 class="mb-0 text-success"><?= (int)$stats['exitosos'] ?></h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card" style="border-color:#dc3545">
-                <div class="card-body py-2">
-                    <small class="text-muted">Fallidos</small>
-                    <h4 class="mb-0 text-danger"><?= (int)$stats['fallidos'] ?></h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card" style="border-color:#0d6efd">
-                <div class="card-body py-2">
-                    <small class="text-muted">Agencia OK</small>
-                    <h4 class="mb-0 text-primary"><?= (int)$stats['agencia_ok'] ?></h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card" style="border-color:#fd7e14">
-                <div class="card-body py-2">
-                    <small class="text-muted">Facturación OK</small>
-                    <h4 class="mb-0" style="color:#fd7e14"><?= (int)$stats['facturacion_ok'] ?></h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card" style="border-color:#17a2b8">
-                <div class="card-body py-2">
-                    <small class="text-muted">IPs Únicas</small>
-                    <h4 class="mb-0 text-info"><?= (int)$stats['ips_unicas'] ?></h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2">
-            <div class="card stat-card" style="border-color:#ffc107">
-                <div class="card-body py-2">
-                    <small class="text-muted">Usuarios Únicos</small>
-                    <h4 class="mb-0 text-warning"><?= (int)$stats['usuarios_unicos'] ?></h4>
-                </div>
-            </div>
         </div>
     </div>
 
