@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Registro Ventas - Sistema de Gestión</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+        
+        .hero-section {
+            padding: 100px 0;
+            text-align: center;
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1551434678-e076c223a692?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+        
+        .card-module {
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            height: 100%;
+        }
+        
+        .card-module:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+        
+        .card-img-top {
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .card-body {
+            padding: 25px;
+        }
+        
+        .btn-module {
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-agencia {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border: none;
+        }
+        
+        .btn-ventas {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            border: none;
+        }
+        
+        .btn-module:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 30px 0;
+            margin-top: 50px;
+        }
+        
+        .module-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #3498db;
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            color: #2ecc71;
+            margin-bottom: 15px;
+        }
+        
+        .feature-box {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            height: 100%;
+            transition: transform 0.3s;
+        }
+        
+        .feature-box:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-graph-up"></i> CRM Registro Ventas
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#inicio">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#modulos">Módulos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#caracteristicas">Características</a>
+                    </li>
+                   
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="inicio" class="hero-section">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-4">CRM Registro Ventas</h1>
+            <p class="lead mb-4">Gestiona tus clientes y ventas de manera eficiente con nuestra plataforma</p>
+            <a href="#modulos" class="btn btn-primary btn-lg">Explorar Módulos</a>
+        </div>
+    </section>
+
+    <!-- Módulos Section -->
+    <section id="modulos" class="py-5">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="fw-bold mb-3">Módulos Principales</h2>
+                    <p class="lead">Accede a las diferentes áreas del sistema según tus necesidades</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <!-- Módulo Agencia -->
+                <div class="col-md-6">
+                    <div class="card card-module">
+                        <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80" class="card-img-top" alt="Gestión de Agentes">
+                        <div class="card-body text-center">
+                            <i class="bi bi-people-fill module-icon"></i>
+                            <h3 class="card-title fw-bold">Gestión de Agentes</h3>
+                            <p class="card-text">Administra y supervisa el trabajo de tus agentes, asigna clientes y realiza seguimiento de sus actividades.</p>
+                            <a href="agencia/login.php" class="btn btn-agencia btn-module text-white">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Acceder a Agencia
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Módulo Ventas -->
+                <div class="col-md-6">
+                    <div class="card card-module">
+                        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80" class="card-img-top" alt="Gestión de Ventas">
+                        <div class="card-body text-center">
+                            <i class="bi bi-graph-up-arrow module-icon"></i>
+                            <h3 class="card-title fw-bold">Gestión de Ventas</h3>
+                            <p class="card-text">Registra, monitorea y analiza todas tus ventas. Genera reportes y sigue el rendimiento de tu equipo.</p>
+                            <a href="facturacion/login.php" class="btn btn-ventas btn-module text-white">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Acceder a Ventas
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Características Section -->
+    <section id="caracteristicas" class="py-5 bg-light">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="fw-bold mb-3">Características del Sistema</h2>
+                    <p class="lead">Descubre todas las funcionalidades que ofrece nuestra plataforma</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-box">
+                        <i class="bi bi-person-check-fill feature-icon"></i>
+                        <h4>Gestión de Clientes</h4>
+                        <p>Registro completo de clientes con historial de interacciones y seguimiento personalizado.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-box">
+                        <i class="bi bi-bar-chart-fill feature-icon"></i>
+                        <h4>Reportes Avanzados</h4>
+                        <p>Genera reportes detallados de ventas, desempeño de agentes y métricas clave.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-box">
+                        <i class="bi bi-shield-check feature-icon"></i>
+                        <h4>Seguridad Integral</h4>
+                        <p>Protección de datos con roles de usuario y permisos personalizados por módulo.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-box">
+                        <i class="bi bi-clock-history feature-icon"></i>
+                        <h4>Seguimiento en Tiempo Real</h4>
+                        <p>Monitorea las actividades de tus agentes y el estado de las ventas en tiempo real.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-box">
+                        <i class="bi bi-phone feature-icon"></i>
+                        <h4>Diseño Responsivo</h4>
+                        <p>Accede al sistema desde cualquier dispositivo con una experiencia optimizada.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-box">
+                        <i class="bi bi-cloud-arrow-down feature-icon"></i>
+                        <h4>Exportación de Datos</h4>
+                        <p>Exporta información a Excel y PDF para análisis externos y presentaciones.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer text-center">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 mx-auto">
+                    <h4 class="mb-3">CRM Registro Ventas</h4>
+                    <p class="mb-4">Plataforma integral para la gestión de agentes y ventas</p>
+                    <div class="mb-4">
+                        <a href="agencia/login.php" class="btn btn-outline-light me-2">Agencia</a>
+                        <a href="facturacion/login.php" class="btn btn-outline-light me-2">Ventas</a>
+                        
+                    </div>
+                    <p>&copy; 2025 Grupo Ideas. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Smooth scrolling para los enlaces del navbar
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if(targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if(targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 70,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Efecto de aparición para las tarjetas al hacer scroll
+        const observerOptions = {
+            threshold: 0.1,
+            noreplyc_alexsanchez09Margin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    entry.target.style.opacity = 1;
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        // Aplicar a las tarjetas de módulos y características
+        document.querySelectorAll('.card-module, .feature-box').forEach(el => {
+            el.style.opacity = 0;
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.5s, transform 0.5s';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

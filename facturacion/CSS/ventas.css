@@ -1,0 +1,232 @@
+.search-clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    display: none;
+    z-index: 10;
+    color: #6c757d;
+}
+
+.search-clear:hover {
+    color: #495057;
+}
+
+.search-container {
+    position: relative;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.075);
+    cursor: pointer;
+}
+
+.filter-section {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.filter-header {
+    cursor: pointer;
+    padding: 10px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.filter-content {
+    display: none;
+}
+
+.filter-content.show {
+    display: block;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+}
+
+.badge-search {
+    transition: all 0.3s ease;
+    font-size: 0.8rem;
+    padding: 0.35em 0.65em;
+}
+
+.container-wider {
+    max-width: 95%;
+    padding-right: 20px;
+    padding-left: 20px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.table-responsive {
+    margin-left: -5px;
+    margin-right: -5px;
+}
+
+.table td, .table th {
+    padding: 0.6rem;
+    white-space: nowrap;
+}
+
+.table thead th {
+    border-bottom: 2px solid #dee2e6;
+    background-color: #343a40;
+    color: white;
+}
+
+.table {
+    font-size: 0.92rem;
+}
+
+.table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.card {
+    margin: 0 auto;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.highlight {
+    background-color: #ffc107;
+    padding: 0.1rem 0.2rem;
+    border-radius: 0.2rem;
+    font-weight: bold;
+}
+
+.modal-content {
+    border-radius: 10px;
+}
+
+.modal-header {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.btn-update {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.folio-badge {
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+}
+
+.alert-success {
+    border-radius: 8px;
+    margin-bottom: 20px;
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#exportar-pdf-btn {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+#exportar-pdf-btn:hover {
+    background-color: #bb2d3b;
+    border-color: #b02a37;
+}
+
+/* Estilos para la paginación del cliente */
+#paginacion-container {
+    margin-top: 20px;
+}
+
+.pagination .page-link {
+    cursor: pointer;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.pagination .page-item.disabled .page-link {
+    pointer-events: none;
+}
+
+/* Estilos para el navbar fijo */
+.fixed-top {
+    z-index: 1030;
+}
+
+/* Espacio para el navbar fijo */
+body {
+    padding-top: 70px;
+}
+
+/* Estilos para los botones */
+.btn {
+    border-radius: 0.375rem;
+}
+
+/* Estilos para las tarjetas */
+.rounded-4 {
+    border-radius: 0.75rem;
+}
+
+/* Estilos para las tablas */
+.align-middle td, .align-middle th {
+    vertical-align: middle;
+}
+
+/* Estilos para los inputs de búsqueda */
+.form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.platform-checkbox-container {
+    max-height: 100px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 12px;
+    font-size: 0.8rem;
+    background-color: #f8f9fa;
+}
+
+.platform-checkbox-container .form-check {
+    margin-bottom: 4px;
+    padding: 1px 4px;
+}
+
+.platform-checkbox-container .form-check-label {
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.platform-checkbox-container .form-check-input {
+    transform: scale(0.8);
+    margin-right: 3px;
+}
+
+.platform-checkbox-container .form-check:hover {
+    background-color: #e9ecef;
+    border-radius: 6px;
+}
+
+.form-text.text-muted {
+    font-size: 0.7rem;
+}

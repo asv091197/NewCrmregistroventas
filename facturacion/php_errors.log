@@ -1,0 +1,658 @@
+[26-Oct-2026 15:28:26 America/Mexico_City] === DEBUG GUARDAR FACTURA ===
+[26-Oct-2026 15:28:26 America/Mexico_City] POST recibido: Array
+(
+    [sala_id] => 1
+    [fecha] => 2026-10-26
+    [precio] => 3283
+    [cliente] => JERONIMO
+    [apepat] => MORENO
+    [apemat] => HERNANDEZ 
+    [celular] => 9981109105
+    [correo] => chivasjeronimo@hotmail.com
+    [producto] => HOTEL
+    [tipoCliente] => repack
+    [tipoVenta] => fullstack
+    [liner_manual] => 
+    [closer1] => 
+    [closer1_manual] => 
+    [closer2] => 
+    [closer2_manual] => 
+    [fullstack] => 81
+    [fullstack_manual] => 
+    [metodoPago] => SPEI
+    [plataforma] => 24
+    [metodo_pago] => SPEI
+    [tipo_venta] => fullstack
+)
+
+[26-Oct-2026 15:28:26 America/Mexico_City] SESSION usuario_id: 11
+[26-Oct-2026 15:28:26 America/Mexico_City] SESSION sala_id: 1
+[26-Oct-2026 15:28:26 America/Mexico_City] Usuario es admin: SI
+[26-Oct-2026 15:28:26 America/Mexico_City] ✅ ADMIN: Sala ID del formulario (selector): 1
+[26-Oct-2026 15:28:26 America/Mexico_City] ✅ ADMIN: Sesión actualizada con sala_id: 1
+[26-Oct-2026 15:28:26 America/Mexico_City] ✅ FINAL - Sala ID a usar: 1
+[26-Oct-2026 15:28:26 America/Mexico_City] === INICIO PROCESO GUARDAR FACTURA ===
+[26-Oct-2026 15:28:26 America/Mexico_City] Usuario ID: 11
+[26-Oct-2026 15:28:26 America/Mexico_City] Sala ID final: 1
+[26-Oct-2026 15:28:26 America/Mexico_City] === DEBUG USUARIOS ===
+[26-Oct-2026 15:28:26 America/Mexico_City] liner_id: NULL
+[26-Oct-2026 15:28:26 America/Mexico_City] liner_nombre_manual: NULL
+[26-Oct-2026 15:28:26 America/Mexico_City] closer1_id: NULL
+[26-Oct-2026 15:28:26 America/Mexico_City] closer1_nombre_manual: NULL
+[26-Oct-2026 15:28:26 America/Mexico_City] closer2_id: NULL
+[26-Oct-2026 15:28:26 America/Mexico_City] closer2_nombre_manual: NULL
+[26-Oct-2026 15:28:26 America/Mexico_City] full_stack_id: 81
+[26-Oct-2026 15:28:26 America/Mexico_City] full_stack_nombre_manual: NULL
+[26-Oct-2026 15:28:26 America/Mexico_City] Conectando a la base de datos...
+[26-Oct-2026 15:28:26 America/Mexico_City] Conexión a BD exitosa
+[26-Oct-2026 15:28:26 America/Mexico_City] Porcentajes plataforma - Front: 30%, Línea: 12%, Cierre: 18%
+[26-Oct-2026 15:28:26 America/Mexico_City] ✅ Fullstack - Ganancia: 807.618
+[26-Oct-2026 15:28:26 America/Mexico_City] SQL CON USUARIO Y SALA: INSERT INTO ventas_facturacion (
+            fecha, precio, cliente, apepat, apemat, celular, correo, producto,
+            liner_id, liner_nombre_manual, 
+            closer1_id, closer1_nombre_manual, 
+            closer2_id, closer2_nombre_manual, 
+            plataforma_id, precio_neto,
+            ganancia_liner, ganancia_closer1, ganancia_closer2,
+            full_stack_id, full_stack_nombre_manual, ganancia_fullstack,
+            usuario_creacion_id, tipo_venta, sala_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[26-Oct-2026 15:28:26 America/Mexico_City] === PARÁMETROS PARA INSERT ===
+[26-Oct-2026 15:28:26 America/Mexico_City] Tipos: sdssssssisisisisdddisdiss
+[26-Oct-2026 15:28:26 America/Mexico_City]   [0] = 2026-10-26 (string)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [1] = 3283 (double)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [2] = JERONIMO (string)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [3] = MORENO (string)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [4] = HERNANDEZ (string)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [5] = 9981109105 (string)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [6] = chivasjeronimo@hotmail.com (string)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [7] = HOTEL (string)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [8] = NULL
+[26-Oct-2026 15:28:26 America/Mexico_City]   [9] = NULL
+[26-Oct-2026 15:28:26 America/Mexico_City]   [10] = NULL
+[26-Oct-2026 15:28:26 America/Mexico_City]   [11] = NULL
+[26-Oct-2026 15:28:26 America/Mexico_City]   [12] = NULL
+[26-Oct-2026 15:28:26 America/Mexico_City]   [13] = NULL
+[26-Oct-2026 15:28:26 America/Mexico_City]   [14] = 24 (integer)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [15] = 2692.06 (double)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [16] = NULL
+[26-Oct-2026 15:28:26 America/Mexico_City]   [17] = NULL
+[26-Oct-2026 15:28:26 America/Mexico_City]   [18] = NULL
+[26-Oct-2026 15:28:26 America/Mexico_City]   [19] = 81 (integer)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [20] = NULL
+[26-Oct-2026 15:28:26 America/Mexico_City]   [21] = 807.618 (double)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [22] = 11 (integer)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [23] = repack (string)
+[26-Oct-2026 15:28:26 America/Mexico_City]   [24] = 1 (integer)
+[26-Oct-2026 15:28:26 America/Mexico_City] Ejecutando bind_param...
+[26-Oct-2026 15:28:26 America/Mexico_City] Ejecutando execute...
+[26-Oct-2026 15:28:26 America/Mexico_City] ✅ Venta registrada correctamente. ID: 10033 - Sala: 1 - Es admin: SI
+[26-Oct-2026 15:28:26 America/Mexico_City] ✅ Ganancia liner: NULL
+[26-Oct-2026 15:28:26 America/Mexico_City] ✅ Ganancia closer1: NULL
+[26-Oct-2026 15:28:26 America/Mexico_City] ✅ Ganancia closer2: NULL
+[26-Oct-2026 15:28:26 America/Mexico_City] ✅ Ganancia fullstack: 807.618
+[26-Oct-2026 15:37:07 America/Mexico_City] === DEBUG GUARDAR FACTURA ===
+[26-Oct-2026 15:37:07 America/Mexico_City] POST recibido: Array
+(
+    [sala_id] => 1
+    [fecha] => 2026-10-26
+    [precio] => 2054
+    [cliente] => ROBERTO
+    [apepat] => CANBEROS
+    [apemat] => AGUAS
+    [celular] => 3312206122
+    [correo] => camberosar@hotmail.com
+    [producto] => VOLARIS
+    [tipoCliente] => nuevo
+    [tipoVenta] => fullstack
+    [liner_manual] => 
+    [closer1] => 
+    [closer1_manual] => 
+    [closer2] => 
+    [closer2_manual] => 
+    [fullstack] => 87
+    [fullstack_manual] => 
+    [metodoPago] => SPEI
+    [plataforma] => 40
+    [metodo_pago] => SPEI
+    [tipo_venta] => fullstack
+)
+
+[26-Oct-2026 15:37:07 America/Mexico_City] SESSION usuario_id: 11
+[26-Oct-2026 15:37:07 America/Mexico_City] SESSION sala_id: 1
+[26-Oct-2026 15:37:07 America/Mexico_City] Usuario es admin: SI
+[26-Oct-2026 15:37:07 America/Mexico_City] ✅ ADMIN: Sala ID del formulario (selector): 1
+[26-Oct-2026 15:37:07 America/Mexico_City] ✅ ADMIN: Sesión actualizada con sala_id: 1
+[26-Oct-2026 15:37:07 America/Mexico_City] ✅ FINAL - Sala ID a usar: 1
+[26-Oct-2026 15:37:07 America/Mexico_City] === INICIO PROCESO GUARDAR FACTURA ===
+[26-Oct-2026 15:37:07 America/Mexico_City] Usuario ID: 11
+[26-Oct-2026 15:37:07 America/Mexico_City] Sala ID final: 1
+[26-Oct-2026 15:37:07 America/Mexico_City] === DEBUG USUARIOS ===
+[26-Oct-2026 15:37:07 America/Mexico_City] liner_id: NULL
+[26-Oct-2026 15:37:07 America/Mexico_City] liner_nombre_manual: NULL
+[26-Oct-2026 15:37:07 America/Mexico_City] closer1_id: NULL
+[26-Oct-2026 15:37:07 America/Mexico_City] closer1_nombre_manual: NULL
+[26-Oct-2026 15:37:07 America/Mexico_City] closer2_id: NULL
+[26-Oct-2026 15:37:07 America/Mexico_City] closer2_nombre_manual: NULL
+[26-Oct-2026 15:37:07 America/Mexico_City] full_stack_id: 87
+[26-Oct-2026 15:37:07 America/Mexico_City] full_stack_nombre_manual: NULL
+[26-Oct-2026 15:37:07 America/Mexico_City] Conectando a la base de datos...
+[26-Oct-2026 15:37:07 America/Mexico_City] Conexión a BD exitosa
+[26-Oct-2026 15:37:07 America/Mexico_City] Porcentajes plataforma - Front: 30%, Línea: 12%, Cierre: 18%
+[26-Oct-2026 15:37:07 America/Mexico_City] ✅ Fullstack - Ganancia: 505.284
+[26-Oct-2026 15:37:07 America/Mexico_City] SQL CON USUARIO Y SALA: INSERT INTO ventas_facturacion (
+            fecha, precio, cliente, apepat, apemat, celular, correo, producto,
+            liner_id, liner_nombre_manual, 
+            closer1_id, closer1_nombre_manual, 
+            closer2_id, closer2_nombre_manual, 
+            plataforma_id, precio_neto,
+            ganancia_liner, ganancia_closer1, ganancia_closer2,
+            full_stack_id, full_stack_nombre_manual, ganancia_fullstack,
+            usuario_creacion_id, tipo_venta, sala_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[26-Oct-2026 15:37:07 America/Mexico_City] === PARÁMETROS PARA INSERT ===
+[26-Oct-2026 15:37:07 America/Mexico_City] Tipos: sdssssssisisisisdddisdiss
+[26-Oct-2026 15:37:07 America/Mexico_City]   [0] = 2026-10-26 (string)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [1] = 2054 (double)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [2] = ROBERTO (string)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [3] = CANBEROS (string)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [4] = AGUAS (string)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [5] = 3312206122 (string)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [6] = camberosar@hotmail.com (string)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [7] = VOLARIS (string)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [8] = NULL
+[26-Oct-2026 15:37:07 America/Mexico_City]   [9] = NULL
+[26-Oct-2026 15:37:07 America/Mexico_City]   [10] = NULL
+[26-Oct-2026 15:37:07 America/Mexico_City]   [11] = NULL
+[26-Oct-2026 15:37:07 America/Mexico_City]   [12] = NULL
+[26-Oct-2026 15:37:07 America/Mexico_City]   [13] = NULL
+[26-Oct-2026 15:37:07 America/Mexico_City]   [14] = 40 (integer)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [15] = 1684.28 (double)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [16] = NULL
+[26-Oct-2026 15:37:07 America/Mexico_City]   [17] = NULL
+[26-Oct-2026 15:37:07 America/Mexico_City]   [18] = NULL
+[26-Oct-2026 15:37:07 America/Mexico_City]   [19] = 87 (integer)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [20] = NULL
+[26-Oct-2026 15:37:07 America/Mexico_City]   [21] = 505.284 (double)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [22] = 11 (integer)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [23] = nuevo (string)
+[26-Oct-2026 15:37:07 America/Mexico_City]   [24] = 1 (integer)
+[26-Oct-2026 15:37:07 America/Mexico_City] Ejecutando bind_param...
+[26-Oct-2026 15:37:07 America/Mexico_City] Ejecutando execute...
+[26-Oct-2026 15:37:07 America/Mexico_City] ✅ Venta registrada correctamente. ID: 10034 - Sala: 1 - Es admin: SI
+[26-Oct-2026 15:37:07 America/Mexico_City] ✅ Ganancia liner: NULL
+[26-Oct-2026 15:37:07 America/Mexico_City] ✅ Ganancia closer1: NULL
+[26-Oct-2026 15:37:07 America/Mexico_City] ✅ Ganancia closer2: NULL
+[26-Oct-2026 15:37:07 America/Mexico_City] ✅ Ganancia fullstack: 505.284
+[26-Oct-2026 15:37:55 America/Mexico_City] === DEBUG GUARDAR FACTURA ===
+[26-Oct-2026 15:37:55 America/Mexico_City] POST recibido: Array
+(
+    [sala_id] => 1
+    [fecha] => 2026-10-26
+    [precio] => 4866
+    [cliente] => CLARA
+    [apepat] => MARTINEZ 
+    [apemat] => ROMERO
+    [celular] => 6464583197
+    [correo] => claramartinez7040@gmail.com
+    [producto] => VUELO VOLARIS
+    [tipoCliente] => repack
+    [tipoVenta] => fullstack
+    [liner_manual] => 
+    [closer1] => 
+    [closer1_manual] => 
+    [closer2] => 
+    [closer2_manual] => 
+    [fullstack] => 91
+    [fullstack_manual] => 
+    [metodoPago] => SPEI
+    [plataforma] => 24
+    [metodo_pago] => SPEI
+    [tipo_venta] => fullstack
+)
+
+[26-Oct-2026 15:37:55 America/Mexico_City] SESSION usuario_id: 11
+[26-Oct-2026 15:37:55 America/Mexico_City] SESSION sala_id: 1
+[26-Oct-2026 15:37:55 America/Mexico_City] Usuario es admin: SI
+[26-Oct-2026 15:37:55 America/Mexico_City] ✅ ADMIN: Sala ID del formulario (selector): 1
+[26-Oct-2026 15:37:55 America/Mexico_City] ✅ ADMIN: Sesión actualizada con sala_id: 1
+[26-Oct-2026 15:37:55 America/Mexico_City] ✅ FINAL - Sala ID a usar: 1
+[26-Oct-2026 15:37:55 America/Mexico_City] === INICIO PROCESO GUARDAR FACTURA ===
+[26-Oct-2026 15:37:55 America/Mexico_City] Usuario ID: 11
+[26-Oct-2026 15:37:55 America/Mexico_City] Sala ID final: 1
+[26-Oct-2026 15:37:55 America/Mexico_City] === DEBUG USUARIOS ===
+[26-Oct-2026 15:37:55 America/Mexico_City] liner_id: NULL
+[26-Oct-2026 15:37:55 America/Mexico_City] liner_nombre_manual: NULL
+[26-Oct-2026 15:37:55 America/Mexico_City] closer1_id: NULL
+[26-Oct-2026 15:37:55 America/Mexico_City] closer1_nombre_manual: NULL
+[26-Oct-2026 15:37:55 America/Mexico_City] closer2_id: NULL
+[26-Oct-2026 15:37:55 America/Mexico_City] closer2_nombre_manual: NULL
+[26-Oct-2026 15:37:55 America/Mexico_City] full_stack_id: 91
+[26-Oct-2026 15:37:55 America/Mexico_City] full_stack_nombre_manual: NULL
+[26-Oct-2026 15:37:55 America/Mexico_City] Conectando a la base de datos...
+[26-Oct-2026 15:37:55 America/Mexico_City] Conexión a BD exitosa
+[26-Oct-2026 15:37:55 America/Mexico_City] Porcentajes plataforma - Front: 30%, Línea: 12%, Cierre: 18%
+[26-Oct-2026 15:37:55 America/Mexico_City] ✅ Fullstack - Ganancia: 1197.036
+[26-Oct-2026 15:37:55 America/Mexico_City] SQL CON USUARIO Y SALA: INSERT INTO ventas_facturacion (
+            fecha, precio, cliente, apepat, apemat, celular, correo, producto,
+            liner_id, liner_nombre_manual, 
+            closer1_id, closer1_nombre_manual, 
+            closer2_id, closer2_nombre_manual, 
+            plataforma_id, precio_neto,
+            ganancia_liner, ganancia_closer1, ganancia_closer2,
+            full_stack_id, full_stack_nombre_manual, ganancia_fullstack,
+            usuario_creacion_id, tipo_venta, sala_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[26-Oct-2026 15:37:55 America/Mexico_City] === PARÁMETROS PARA INSERT ===
+[26-Oct-2026 15:37:55 America/Mexico_City] Tipos: sdssssssisisisisdddisdiss
+[26-Oct-2026 15:37:55 America/Mexico_City]   [0] = 2026-10-26 (string)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [1] = 4866 (double)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [2] = CLARA (string)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [3] = MARTINEZ (string)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [4] = ROMERO (string)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [5] = 6464583197 (string)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [6] = claramartinez7040@gmail.com (string)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [7] = VUELO VOLARIS (string)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [8] = NULL
+[26-Oct-2026 15:37:55 America/Mexico_City]   [9] = NULL
+[26-Oct-2026 15:37:55 America/Mexico_City]   [10] = NULL
+[26-Oct-2026 15:37:55 America/Mexico_City]   [11] = NULL
+[26-Oct-2026 15:37:55 America/Mexico_City]   [12] = NULL
+[26-Oct-2026 15:37:55 America/Mexico_City]   [13] = NULL
+[26-Oct-2026 15:37:55 America/Mexico_City]   [14] = 24 (integer)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [15] = 3990.12 (double)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [16] = NULL
+[26-Oct-2026 15:37:55 America/Mexico_City]   [17] = NULL
+[26-Oct-2026 15:37:55 America/Mexico_City]   [18] = NULL
+[26-Oct-2026 15:37:55 America/Mexico_City]   [19] = 91 (integer)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [20] = NULL
+[26-Oct-2026 15:37:55 America/Mexico_City]   [21] = 1197.036 (double)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [22] = 11 (integer)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [23] = repack (string)
+[26-Oct-2026 15:37:55 America/Mexico_City]   [24] = 1 (integer)
+[26-Oct-2026 15:37:55 America/Mexico_City] Ejecutando bind_param...
+[26-Oct-2026 15:37:55 America/Mexico_City] Ejecutando execute...
+[26-Oct-2026 15:37:55 America/Mexico_City] ✅ Venta registrada correctamente. ID: 10035 - Sala: 1 - Es admin: SI
+[26-Oct-2026 15:37:55 America/Mexico_City] ✅ Ganancia liner: NULL
+[26-Oct-2026 15:37:55 America/Mexico_City] ✅ Ganancia closer1: NULL
+[26-Oct-2026 15:37:55 America/Mexico_City] ✅ Ganancia closer2: NULL
+[26-Oct-2026 15:37:55 America/Mexico_City] ✅ Ganancia fullstack: 1197.036
+[26-Oct-2026 16:01:46 America/Mexico_City] === DEBUG GUARDAR FACTURA ===
+[26-Oct-2026 16:01:46 America/Mexico_City] POST recibido: Array
+(
+    [sala_id] => 1
+    [fecha] => 2026-10-26
+    [precio] => 2054
+    [cliente] => ROBERTO
+    [apepat] => CAMBEROS
+    [apemat] => AGUAS
+    [celular] => 3312205122
+    [correo] => N/A@GMAIL.COM
+    [producto] => VOLARIS
+    [tipoCliente] => repack
+    [tipoVenta] => normal
+    [liner] => 87
+    [liner_manual] => 
+    [closer1] => 86
+    [closer1_manual] => 
+    [closer2] => 
+    [closer2_manual] => 
+    [fullstack_manual] => 
+    [metodoPago] => SPEI
+    [plataforma] => 43
+    [metodo_pago] => SPEI
+    [tipo_venta] => normal
+)
+
+[26-Oct-2026 16:01:46 America/Mexico_City] SESSION usuario_id: 11
+[26-Oct-2026 16:01:46 America/Mexico_City] SESSION sala_id: 1
+[26-Oct-2026 16:01:46 America/Mexico_City] Usuario es admin: SI
+[26-Oct-2026 16:01:46 America/Mexico_City] ✅ ADMIN: Sala ID del formulario (selector): 1
+[26-Oct-2026 16:01:46 America/Mexico_City] ✅ ADMIN: Sesión actualizada con sala_id: 1
+[26-Oct-2026 16:01:46 America/Mexico_City] ✅ FINAL - Sala ID a usar: 1
+[26-Oct-2026 16:01:46 America/Mexico_City] === INICIO PROCESO GUARDAR FACTURA ===
+[26-Oct-2026 16:01:46 America/Mexico_City] Usuario ID: 11
+[26-Oct-2026 16:01:46 America/Mexico_City] Sala ID final: 1
+[26-Oct-2026 16:01:46 America/Mexico_City] === DEBUG USUARIOS ===
+[26-Oct-2026 16:01:46 America/Mexico_City] liner_id: 87
+[26-Oct-2026 16:01:46 America/Mexico_City] liner_nombre_manual: NULL
+[26-Oct-2026 16:01:46 America/Mexico_City] closer1_id: 86
+[26-Oct-2026 16:01:46 America/Mexico_City] closer1_nombre_manual: NULL
+[26-Oct-2026 16:01:46 America/Mexico_City] closer2_id: NULL
+[26-Oct-2026 16:01:46 America/Mexico_City] closer2_nombre_manual: NULL
+[26-Oct-2026 16:01:46 America/Mexico_City] full_stack_id: NULL
+[26-Oct-2026 16:01:46 America/Mexico_City] full_stack_nombre_manual: NULL
+[26-Oct-2026 16:01:46 America/Mexico_City] Conectando a la base de datos...
+[26-Oct-2026 16:01:46 America/Mexico_City] Conexión a BD exitosa
+[26-Oct-2026 16:01:46 America/Mexico_City] Porcentajes plataforma - Front: 30%, Línea: 12%, Cierre: 18%
+[26-Oct-2026 16:01:46 America/Mexico_City] Cálculo ganancias - Línea total: 202.1136, Cierre total: 303.1704
+[26-Oct-2026 16:01:46 America/Mexico_City] ✅ Liner + 1 closer - Liner: 202.1136, Closer1: 303.1704
+[26-Oct-2026 16:01:46 America/Mexico_City] SQL CON USUARIO Y SALA: INSERT INTO ventas_facturacion (
+            fecha, precio, cliente, apepat, apemat, celular, correo, producto,
+            liner_id, liner_nombre_manual, 
+            closer1_id, closer1_nombre_manual, 
+            closer2_id, closer2_nombre_manual, 
+            plataforma_id, precio_neto,
+            ganancia_liner, ganancia_closer1, ganancia_closer2,
+            full_stack_id, full_stack_nombre_manual, ganancia_fullstack,
+            usuario_creacion_id, tipo_venta, sala_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[26-Oct-2026 16:01:46 America/Mexico_City] === PARÁMETROS PARA INSERT ===
+[26-Oct-2026 16:01:46 America/Mexico_City] Tipos: sdssssssisisisisdddisdiss
+[26-Oct-2026 16:01:46 America/Mexico_City]   [0] = 2026-10-26 (string)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [1] = 2054 (double)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [2] = ROBERTO (string)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [3] = CAMBEROS (string)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [4] = AGUAS (string)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [5] = 3312205122 (string)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [6] = N/A@GMAIL.COM (string)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [7] = VOLARIS (string)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [8] = 87 (integer)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [9] = NULL
+[26-Oct-2026 16:01:46 America/Mexico_City]   [10] = 86 (integer)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [11] = NULL
+[26-Oct-2026 16:01:46 America/Mexico_City]   [12] = NULL
+[26-Oct-2026 16:01:46 America/Mexico_City]   [13] = NULL
+[26-Oct-2026 16:01:46 America/Mexico_City]   [14] = 43 (integer)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [15] = 1684.28 (double)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [16] = 202.1136 (double)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [17] = 303.1704 (double)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [18] = NULL
+[26-Oct-2026 16:01:46 America/Mexico_City]   [19] = NULL
+[26-Oct-2026 16:01:46 America/Mexico_City]   [20] = NULL
+[26-Oct-2026 16:01:46 America/Mexico_City]   [21] = NULL
+[26-Oct-2026 16:01:46 America/Mexico_City]   [22] = 11 (integer)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [23] = repack (string)
+[26-Oct-2026 16:01:46 America/Mexico_City]   [24] = 1 (integer)
+[26-Oct-2026 16:01:46 America/Mexico_City] Ejecutando bind_param...
+[26-Oct-2026 16:01:46 America/Mexico_City] Ejecutando execute...
+[26-Oct-2026 16:01:46 America/Mexico_City] ✅ Venta registrada correctamente. ID: 10036 - Sala: 1 - Es admin: SI
+[26-Oct-2026 16:01:46 America/Mexico_City] ✅ Ganancia liner: 202.1136
+[26-Oct-2026 16:01:46 America/Mexico_City] ✅ Ganancia closer1: 303.1704
+[26-Oct-2026 16:01:46 America/Mexico_City] ✅ Ganancia closer2: NULL
+[26-Oct-2026 16:01:46 America/Mexico_City] ✅ Ganancia fullstack: NULL
+[26-Oct-2026 16:28:08 America/Mexico_City] === DEBUG GUARDAR FACTURA ===
+[26-Oct-2026 16:28:08 America/Mexico_City] POST recibido: Array
+(
+    [sala_id] => 1
+    [fecha] => 2026-10-26
+    [precio] => 16728
+    [cliente] => MIGUEL ANGEL
+    [apepat] => ZEPEDA
+    [apemat] => FARIAS
+    [celular] => 3411068044
+    [correo] => angel.zepeda96@gmail.com
+    [producto] => VUELO
+    [tipoCliente] => repack
+    [tipoVenta] => normal
+    [liner] => 81
+    [liner_manual] => 
+    [closer1] => 9
+    [closer1_manual] => 
+    [closer2] => 
+    [closer2_manual] => 
+    [fullstack_manual] => 
+    [metodoPago] => SPEI
+    [plataforma] => 24
+    [metodo_pago] => SPEI
+    [tipo_venta] => normal
+)
+
+[26-Oct-2026 16:28:08 America/Mexico_City] SESSION usuario_id: 11
+[26-Oct-2026 16:28:08 America/Mexico_City] SESSION sala_id: 1
+[26-Oct-2026 16:28:08 America/Mexico_City] Usuario es admin: SI
+[26-Oct-2026 16:28:08 America/Mexico_City] ✅ ADMIN: Sala ID del formulario (selector): 1
+[26-Oct-2026 16:28:08 America/Mexico_City] ✅ ADMIN: Sesión actualizada con sala_id: 1
+[26-Oct-2026 16:28:08 America/Mexico_City] ✅ FINAL - Sala ID a usar: 1
+[26-Oct-2026 16:28:08 America/Mexico_City] === INICIO PROCESO GUARDAR FACTURA ===
+[26-Oct-2026 16:28:08 America/Mexico_City] Usuario ID: 11
+[26-Oct-2026 16:28:08 America/Mexico_City] Sala ID final: 1
+[26-Oct-2026 16:28:08 America/Mexico_City] === DEBUG USUARIOS ===
+[26-Oct-2026 16:28:08 America/Mexico_City] liner_id: 81
+[26-Oct-2026 16:28:08 America/Mexico_City] liner_nombre_manual: NULL
+[26-Oct-2026 16:28:08 America/Mexico_City] closer1_id: 9
+[26-Oct-2026 16:28:08 America/Mexico_City] closer1_nombre_manual: NULL
+[26-Oct-2026 16:28:08 America/Mexico_City] closer2_id: NULL
+[26-Oct-2026 16:28:08 America/Mexico_City] closer2_nombre_manual: NULL
+[26-Oct-2026 16:28:08 America/Mexico_City] full_stack_id: NULL
+[26-Oct-2026 16:28:08 America/Mexico_City] full_stack_nombre_manual: NULL
+[26-Oct-2026 16:28:08 America/Mexico_City] Conectando a la base de datos...
+[26-Oct-2026 16:28:08 America/Mexico_City] Conexión a BD exitosa
+[26-Oct-2026 16:28:08 America/Mexico_City] Porcentajes plataforma - Front: 30%, Línea: 12%, Cierre: 18%
+[26-Oct-2026 16:28:08 America/Mexico_City] Cálculo ganancias - Línea total: 1646.0352, Cierre total: 2469.0528
+[26-Oct-2026 16:28:08 America/Mexico_City] ✅ Liner + 1 closer - Liner: 1646.0352, Closer1: 2469.0528
+[26-Oct-2026 16:28:08 America/Mexico_City] SQL CON USUARIO Y SALA: INSERT INTO ventas_facturacion (
+            fecha, precio, cliente, apepat, apemat, celular, correo, producto,
+            liner_id, liner_nombre_manual, 
+            closer1_id, closer1_nombre_manual, 
+            closer2_id, closer2_nombre_manual, 
+            plataforma_id, precio_neto,
+            ganancia_liner, ganancia_closer1, ganancia_closer2,
+            full_stack_id, full_stack_nombre_manual, ganancia_fullstack,
+            usuario_creacion_id, tipo_venta, sala_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[26-Oct-2026 16:28:08 America/Mexico_City] === PARÁMETROS PARA INSERT ===
+[26-Oct-2026 16:28:08 America/Mexico_City] Tipos: sdssssssisisisisdddisdiss
+[26-Oct-2026 16:28:08 America/Mexico_City]   [0] = 2026-10-26 (string)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [1] = 16728 (double)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [2] = MIGUEL ANGEL (string)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [3] = ZEPEDA (string)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [4] = FARIAS (string)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [5] = 3411068044 (string)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [6] = angel.zepeda96@gmail.com (string)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [7] = VUELO (string)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [8] = 81 (integer)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [9] = NULL
+[26-Oct-2026 16:28:08 America/Mexico_City]   [10] = 9 (integer)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [11] = NULL
+[26-Oct-2026 16:28:08 America/Mexico_City]   [12] = NULL
+[26-Oct-2026 16:28:08 America/Mexico_City]   [13] = NULL
+[26-Oct-2026 16:28:08 America/Mexico_City]   [14] = 24 (integer)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [15] = 13716.96 (double)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [16] = 1646.0352 (double)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [17] = 2469.0528 (double)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [18] = NULL
+[26-Oct-2026 16:28:08 America/Mexico_City]   [19] = NULL
+[26-Oct-2026 16:28:08 America/Mexico_City]   [20] = NULL
+[26-Oct-2026 16:28:08 America/Mexico_City]   [21] = NULL
+[26-Oct-2026 16:28:08 America/Mexico_City]   [22] = 11 (integer)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [23] = repack (string)
+[26-Oct-2026 16:28:08 America/Mexico_City]   [24] = 1 (integer)
+[26-Oct-2026 16:28:08 America/Mexico_City] Ejecutando bind_param...
+[26-Oct-2026 16:28:08 America/Mexico_City] Ejecutando execute...
+[26-Oct-2026 16:28:08 America/Mexico_City] ✅ Venta registrada correctamente. ID: 10037 - Sala: 1 - Es admin: SI
+[26-Oct-2026 16:28:08 America/Mexico_City] ✅ Ganancia liner: 1646.0352
+[26-Oct-2026 16:28:08 America/Mexico_City] ✅ Ganancia closer1: 2469.0528
+[26-Oct-2026 16:28:08 America/Mexico_City] ✅ Ganancia closer2: NULL
+[26-Oct-2026 16:28:08 America/Mexico_City] ✅ Ganancia fullstack: NULL
+[26-Oct-2026 17:50:41 America/Mexico_City] === DATOS POST RECIBIDOS ===
+[26-Oct-2026 17:50:41 America/Mexico_City] Array
+(
+    [id] => 8038
+    [sala_id] => 1
+    [fecha] => 1999-10-15
+    [precio] => 2000.00
+    [cliente] => Pruebas
+    [apepat] => pRUEBAS
+    [apemat] => 
+    [celular] => 444444444
+    [correo] => PRUEBAS@FF.COM
+    [producto] => pRUEBAS
+    [tipoCliente] => nuevo
+    [tipoVendedor] => normal
+    [liner_id] => 89
+    [closer1_id] => 10
+    [closer2_id] => 
+    [fullstack_id] => 9
+    [metodo_pago] => SPEI
+    [plataforma_id] => 46
+)
+
+[26-Oct-2026 17:50:41 America/Mexico_City] === DATOS PROCESADOS ===
+[26-Oct-2026 17:50:41 America/Mexico_City] ID: 8038
+[26-Oct-2026 17:50:41 America/Mexico_City] Tipo Venta: nuevo
+[26-Oct-2026 17:50:41 America/Mexico_City] Tipo Vendedor: normal
+[26-Oct-2026 17:50:41 America/Mexico_City] Sala ID: 1
+[26-Oct-2026 17:50:41 America/Mexico_City] Plataforma ID: 46
+[26-Oct-2026 17:50:41 America/Mexico_City] Liner ID: 89
+[26-Oct-2026 17:50:41 America/Mexico_City] Liner Manual: NULL
+[26-Oct-2026 17:50:41 America/Mexico_City] Closer1 ID: 10
+[26-Oct-2026 17:50:41 America/Mexico_City] Closer1 Manual: NULL
+[26-Oct-2026 17:50:41 America/Mexico_City] Closer2 ID: NULL
+[26-Oct-2026 17:50:41 America/Mexico_City] Closer2 Manual: NULL
+[26-Oct-2026 17:50:41 America/Mexico_City] FullStack ID: 9
+[26-Oct-2026 17:50:41 America/Mexico_City] FullStack Manual: NULL
+[26-Oct-2026 17:50:41 America/Mexico_City] Precio actual en BD: 2000.0000000000
+[26-Oct-2026 17:50:41 America/Mexico_City] Precio nuevo input: 2000.00
+[26-Oct-2026 17:50:41 America/Mexico_City] Comparando precios - BD: 2000.0000000000 (2000) vs Nuevo: 2000.00 (2000)
+[26-Oct-2026 17:50:41 America/Mexico_City] ¿Precio cambió? NO
+[26-Oct-2026 17:50:41 America/Mexico_City] ¿Plataforma cambió? NO
+[26-Oct-2026 17:50:41 America/Mexico_City] ¿Usuarios cambiaron? NO
+[26-Oct-2026 17:50:41 America/Mexico_City] ¿Tipo vendedor cambió? NO
+[26-Oct-2026 17:50:41 America/Mexico_City] ¿Sala cambió? NO
+[26-Oct-2026 17:50:41 America/Mexico_City] ¿Recalcular ganancias? NO
+[26-Oct-2026 17:50:41 America/Mexico_City] Precio NO cambió - Manteniendo precio actual de BD: 2000.0000000000
+[26-Oct-2026 17:50:42 America/Mexico_City] Porcentajes de plataforma ID 46: Front=30%, Linea=12%, Cierre=18%
+[26-Oct-2026 17:50:42 America/Mexico_City] No se requirió recalcular - Manteniendo valores actuales de la BD
+[26-Oct-2026 17:50:42 America/Mexico_City] - Precio Neto: 1640.0000000000
+[26-Oct-2026 17:50:42 America/Mexico_City] - Ganancia Liner: 196.8000000000
+[26-Oct-2026 17:50:42 America/Mexico_City] - Ganancia Closer1: 295.2000000000
+[26-Oct-2026 17:50:42 America/Mexico_City] - Ganancia Closer2: 
+[26-Oct-2026 17:50:42 America/Mexico_City] - Ganancia Fullstack: 
+[26-Oct-2026 17:50:42 America/Mexico_City] Tipos generados: ssssssssiissssssssssssssii
+[26-Oct-2026 17:50:42 America/Mexico_City] Número de parámetros: 26
+[26-Oct-2026 17:50:42 America/Mexico_City] === DEBUG PARÁMETROS ===
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 0: Tipo=string, Valor=1999-10-15
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 1: Tipo=string, Valor=2000.0000000000
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 2: Tipo=string, Valor=Pruebas
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 3: Tipo=string, Valor=pRUEBAS
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 4: Tipo=string, Valor=
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 5: Tipo=string, Valor=444444444
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 6: Tipo=string, Valor=PRUEBAS@FF.COM
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 7: Tipo=string, Valor=pRUEBAS
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 8: Tipo=integer, Valor=89
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 9: Tipo=integer, Valor=10
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 10: Tipo=string, Valor=NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 11: Tipo=string, Valor=NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 12: Tipo=string, Valor=46
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 13: Tipo=string, Valor=1640.0000000000
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 14: Tipo=string, Valor=196.8000000000
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 15: Tipo=string, Valor=295.2000000000
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 16: Tipo=string, Valor=NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 17: Tipo=string, Valor=NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 18: Tipo=string, Valor=nuevo
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 19: Tipo=string, Valor=1
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 20: Tipo=string, Valor=NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 21: Tipo=string, Valor=NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 22: Tipo=string, Valor=NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 23: Tipo=string, Valor=NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 24: Tipo=integer, Valor=1
+[26-Oct-2026 17:50:42 America/Mexico_City] Param 25: Tipo=integer, Valor=8038
+[26-Oct-2026 17:50:42 America/Mexico_City] === FIN DEBUG ===
+[26-Oct-2026 17:50:42 America/Mexico_City] Venta actualizada correctamente. Filas afectadas: 1
+[26-Oct-2026 17:50:42 America/Mexico_City] Campos modificados: producto
+[26-Oct-2026 17:50:42 America/Mexico_City] === DATOS GUARDADOS ===
+[26-Oct-2026 17:50:42 America/Mexico_City] Tipo Venta: nuevo
+[26-Oct-2026 17:50:42 America/Mexico_City] Sala ID: 1
+[26-Oct-2026 17:50:42 America/Mexico_City] Liner ID: 89
+[26-Oct-2026 17:50:42 America/Mexico_City] Liner Manual: NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] Closer1 ID: 10
+[26-Oct-2026 17:50:42 America/Mexico_City] Closer1 Manual: NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] Closer2 ID: NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] Closer2 Manual: NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] FullStack ID: NULL
+[26-Oct-2026 17:50:42 America/Mexico_City] FullStack Manual: NULL
+[26-Oct-2026 17:54:43 America/Mexico_City] === DEBUG GUARDAR FACTURA ===
+[26-Oct-2026 17:54:43 America/Mexico_City] POST recibido: Array
+(
+    [sala_id] => 1
+    [fecha] => 1999-10-15
+    [precio] => 1000
+    [cliente] => pruebas
+    [apepat] => pruebas
+    [apemat] => pruebas2
+    [celular] => 564654444
+    [correo] => ddd@gg.com
+    [producto] => tsdfdfd
+    [tipoCliente] => nuevo
+    [tipoVenta] => normal
+    [liner] => 83
+    [liner_manual] => 
+    [closer1] => 
+    [closer1_manual] => 
+    [closer2] => 
+    [closer2_manual] => 
+    [fullstack_manual] => 
+    [metodoPago] => SPEI
+    [plataforma] => 3
+    [metodo_pago] => SPEI
+    [tipo_venta] => normal
+)
+
+[26-Oct-2026 17:54:43 America/Mexico_City] SESSION usuario_id: 1
+[26-Oct-2026 17:54:43 America/Mexico_City] SESSION sala_id: 1
+[26-Oct-2026 17:54:43 America/Mexico_City] Usuario es admin: SI
+[26-Oct-2026 17:54:43 America/Mexico_City] ✅ ADMIN: Sala ID del formulario (selector): 1
+[26-Oct-2026 17:54:43 America/Mexico_City] ✅ ADMIN: Sesión actualizada con sala_id: 1
+[26-Oct-2026 17:54:43 America/Mexico_City] ✅ FINAL - Sala ID a usar: 1
+[26-Oct-2026 17:54:43 America/Mexico_City] === INICIO PROCESO GUARDAR FACTURA ===
+[26-Oct-2026 17:54:43 America/Mexico_City] Usuario ID: 1
+[26-Oct-2026 17:54:43 America/Mexico_City] Sala ID final: 1
+[26-Oct-2026 17:54:43 America/Mexico_City] === DEBUG USUARIOS ===
+[26-Oct-2026 17:54:43 America/Mexico_City] liner_id: 83
+[26-Oct-2026 17:54:43 America/Mexico_City] liner_nombre_manual: NULL
+[26-Oct-2026 17:54:43 America/Mexico_City] closer1_id: NULL
+[26-Oct-2026 17:54:43 America/Mexico_City] closer1_nombre_manual: NULL
+[26-Oct-2026 17:54:43 America/Mexico_City] closer2_id: NULL
+[26-Oct-2026 17:54:43 America/Mexico_City] closer2_nombre_manual: NULL
+[26-Oct-2026 17:54:43 America/Mexico_City] full_stack_id: NULL
+[26-Oct-2026 17:54:43 America/Mexico_City] full_stack_nombre_manual: NULL
+[26-Oct-2026 17:54:43 America/Mexico_City] Conectando a la base de datos...
+[26-Oct-2026 17:54:43 America/Mexico_City] Conexión a BD exitosa
+[26-Oct-2026 17:54:43 America/Mexico_City] Porcentajes plataforma - Front: 30%, Línea: 12%, Cierre: 18%
+[26-Oct-2026 17:54:43 America/Mexico_City] Cálculo ganancias - Línea total: 98.4, Cierre total: 147.6
+[26-Oct-2026 17:54:43 America/Mexico_City] ✅ Solo liner - Ganancia liner: 246
+[26-Oct-2026 17:54:43 America/Mexico_City] SQL CON USUARIO Y SALA: INSERT INTO ventas_facturacion (
+            fecha, precio, cliente, apepat, apemat, celular, correo, producto,
+            liner_id, liner_nombre_manual, 
+            closer1_id, closer1_nombre_manual, 
+            closer2_id, closer2_nombre_manual, 
+            plataforma_id, precio_neto,
+            ganancia_liner, ganancia_closer1, ganancia_closer2,
+            full_stack_id, full_stack_nombre_manual, ganancia_fullstack,
+            usuario_creacion_id, tipo_venta, sala_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[26-Oct-2026 17:54:43 America/Mexico_City] === PARÁMETROS PARA INSERT ===
+[26-Oct-2026 17:54:43 America/Mexico_City] Tipos: sdssssssisisisisdddisdiss
+[26-Oct-2026 17:54:43 America/Mexico_City]   [0] = 1999-10-15 (string)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [1] = 1000 (double)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [2] = pruebas (string)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [3] = pruebas (string)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [4] = pruebas2 (string)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [5] = 564654444 (string)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [6] = ddd@gg.com (string)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [7] = tsdfdfd (string)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [8] = 83 (integer)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [9] = NULL
+[26-Oct-2026 17:54:43 America/Mexico_City]   [10] = NULL
+[26-Oct-2026 17:54:43 America/Mexico_City]   [11] = NULL
+[26-Oct-2026 17:54:43 America/Mexico_City]   [12] = NULL
+[26-Oct-2026 17:54:43 America/Mexico_City]   [13] = NULL
+[26-Oct-2026 17:54:43 America/Mexico_City]   [14] = 3 (integer)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [15] = 820 (double)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [16] = 246 (double)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [17] = NULL
+[26-Oct-2026 17:54:43 America/Mexico_City]   [18] = NULL
+[26-Oct-2026 17:54:43 America/Mexico_City]   [19] = NULL
+[26-Oct-2026 17:54:43 America/Mexico_City]   [20] = NULL
+[26-Oct-2026 17:54:43 America/Mexico_City]   [21] = NULL
+[26-Oct-2026 17:54:43 America/Mexico_City]   [22] = 1 (integer)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [23] = nuevo (string)
+[26-Oct-2026 17:54:43 America/Mexico_City]   [24] = 1 (integer)
+[26-Oct-2026 17:54:43 America/Mexico_City] Ejecutando bind_param...
+[26-Oct-2026 17:54:43 America/Mexico_City] Ejecutando execute...
+[26-Oct-2026 17:54:43 America/Mexico_City] ✅ Venta registrada correctamente. ID: 10039 - Sala: 1 - Es admin: SI
+[26-Oct-2026 17:54:43 America/Mexico_City] ✅ Ganancia liner: 246
+[26-Oct-2026 17:54:43 America/Mexico_City] ✅ Ganancia closer1: NULL
+[26-Oct-2026 17:54:43 America/Mexico_City] ✅ Ganancia closer2: NULL
+[26-Oct-2026 17:54:43 America/Mexico_City] ✅ Ganancia fullstack: NULL

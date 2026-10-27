@@ -1,0 +1,947 @@
+[2026-10-26 15:38:45] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:38:45] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:38:45] Sesión ID: 6l3fpmkqq04adlapr0l70lklvv
+[2026-10-26 15:38:45] Método no POST - GET
+[2026-10-26 15:38:45] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:38:48] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:38:48] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:38:48] Sesión ID: 6l3fpmkqq04adlapr0l70lklvv
+[2026-10-26 15:38:48] Método POST recibido - Array
+(
+    [correo] => nohemi@crmregistroventas.online
+    [contraseña] => c;k3F0,4X(hk
+)
+
+[2026-10-26 15:38:48] Usuario encontrado - Array
+(
+    [id] => 91
+    [nombre] => Asesor
+    [apemat] => Nohemi
+    [rol] => usuario
+)
+
+[2026-10-26 15:38:48] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 15:38:48] Login exitoso - Array
+(
+    [usuario] => nohemi@crmregistroventas.online
+    [rol] => usuario
+    [apemat] => Nohemi
+    [session_id] => 6l3fpmkqq04adlapr0l70lklvv
+)
+
+[2026-10-26 15:38:48] Redirigiendo a - Agencia/agencia.php
+[2026-10-26 15:44:25] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:44:25] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:44:25] Sesión ID: h6r3e2q0cgu1n37uct9d5vf9rp
+[2026-10-26 15:44:25] Método no POST - GET
+[2026-10-26 15:44:25] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:44:25] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:44:25] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:44:25] Sesión ID: h6r3e2q0cgu1n37uct9d5vf9rp
+[2026-10-26 15:44:25] Método no POST - GET
+[2026-10-26 15:44:25] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:44:26] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:44:26] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:44:26] Sesión ID: h6r3e2q0cgu1n37uct9d5vf9rp
+[2026-10-26 15:44:26] Método no POST - GET
+[2026-10-26 15:44:26] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:44:27] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:44:27] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:44:27] Sesión ID: h6r3e2q0cgu1n37uct9d5vf9rp
+[2026-10-26 15:44:27] Método no POST - GET
+[2026-10-26 15:44:27] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:44:27] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:44:27] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:44:27] Sesión ID: h6r3e2q0cgu1n37uct9d5vf9rp
+[2026-10-26 15:44:27] Método no POST - GET
+[2026-10-26 15:44:27] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:44:29] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:44:29] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:44:29] Sesión ID: h6r3e2q0cgu1n37uct9d5vf9rp
+[2026-10-26 15:44:29] Método POST recibido - Array
+(
+    [correo] => agente1@crmregistroventas.online
+    [contraseña] => SoyAgente1$2025*
+)
+
+[2026-10-26 15:44:29] Usuario no encontrado o inactivo - agente1@crmregistroventas.online
+[2026-10-26 15:44:32] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:44:32] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:44:32] Sesión ID: h6r3e2q0cgu1n37uct9d5vf9rp
+[2026-10-26 15:44:32] Método POST recibido - Array
+(
+    [correo] => agente1@crmregistroventas.online
+    [contraseña] => SoyAgente1$2025*
+)
+
+[2026-10-26 15:44:32] Usuario no encontrado o inactivo - agente1@crmregistroventas.online
+[2026-10-26 15:44:35] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:44:35] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:44:35] Sesión ID: h6r3e2q0cgu1n37uct9d5vf9rp
+[2026-10-26 15:44:35] Método no POST - GET
+[2026-10-26 15:44:35] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:44:38] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:44:38] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:44:38] Sesión ID: h6r3e2q0cgu1n37uct9d5vf9rp
+[2026-10-26 15:44:38] Método POST recibido - Array
+(
+    [correo] => agente1@crmregistroventas.online
+    [contraseña] => SoyAgente1$2025*
+)
+
+[2026-10-26 15:44:38] Usuario no encontrado o inactivo - agente1@crmregistroventas.online
+[2026-10-26 15:44:43] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:44:43] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:44:43] Sesión ID: h6r3e2q0cgu1n37uct9d5vf9rp
+[2026-10-26 15:44:43] Método no POST - GET
+[2026-10-26 15:44:43] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:45:12] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:45:12] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:45:12] Sesión ID: h6r3e2q0cgu1n37uct9d5vf9rp
+[2026-10-26 15:45:12] Método POST recibido - Array
+(
+    [correo] => viviana@crmregistroventas.online
+    [contraseña] => y&5.BPo2Z21<
+)
+
+[2026-10-26 15:45:12] Usuario encontrado - Array
+(
+    [id] => 24
+    [nombre] => FERNANDA CASTILLO
+    [apemat] => / VIVIANA
+    [rol] => usuario
+)
+
+[2026-10-26 15:45:12] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 15:45:12] Login exitoso - Array
+(
+    [usuario] => viviana@crmregistroventas.online
+    [rol] => usuario
+    [apemat] => / VIVIANA
+    [session_id] => h6r3e2q0cgu1n37uct9d5vf9rp
+)
+
+[2026-10-26 15:45:12] Redirigiendo a - Agencia/agencia.php
+[2026-10-26 15:46:05] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:46:05] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:46:05] Sesión ID: d431tk3e2ao6jq021sk1dcekcg
+[2026-10-26 15:46:05] Método no POST - GET
+[2026-10-26 15:46:05] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:46:07] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:46:07] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:46:07] Sesión ID: d431tk3e2ao6jq021sk1dcekcg
+[2026-10-26 15:46:07] Método no POST - GET
+[2026-10-26 15:46:07] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:46:07] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:46:07] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:46:07] Sesión ID: d431tk3e2ao6jq021sk1dcekcg
+[2026-10-26 15:46:07] Método no POST - GET
+[2026-10-26 15:46:07] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:46:08] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:46:08] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:46:08] Sesión ID: d431tk3e2ao6jq021sk1dcekcg
+[2026-10-26 15:46:08] Método no POST - GET
+[2026-10-26 15:46:08] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:46:09] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:46:09] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:46:09] Sesión ID: d431tk3e2ao6jq021sk1dcekcg
+[2026-10-26 15:46:09] Método no POST - GET
+[2026-10-26 15:46:09] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:46:16] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:46:16] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:46:16] Sesión ID: d431tk3e2ao6jq021sk1dcekcg
+[2026-10-26 15:46:16] Método no POST - GET
+[2026-10-26 15:46:16] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:46:23] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:46:23] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:46:23] Sesión ID: 5f1jg3j3beq2t4jhhduab5nl13
+[2026-10-26 15:46:23] Método no POST - GET
+[2026-10-26 15:46:23] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:46:28] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:46:28] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:46:28] Sesión ID: 5f1jg3j3beq2t4jhhduab5nl13
+[2026-10-26 15:46:28] Método POST recibido - Array
+(
+    [correo] => marisol@crmregistroventas.online
+    [contraseña] => i,vG34FHzW7;
+)
+
+[2026-10-26 15:46:28] Usuario encontrado - Array
+(
+    [id] => 21
+    [nombre] => KARLA CEDEÑO
+    [apemat] => / MARISOL
+    [rol] => usuario
+)
+
+[2026-10-26 15:46:28] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 15:46:28] Login exitoso - Array
+(
+    [usuario] => marisol@crmregistroventas.online
+    [rol] => usuario
+    [apemat] => / MARISOL
+    [session_id] => 5f1jg3j3beq2t4jhhduab5nl13
+)
+
+[2026-10-26 15:46:28] Redirigiendo a - Agencia/agencia.php
+[2026-10-26 15:46:44] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:46:44] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:46:44] Sesión ID: d431tk3e2ao6jq021sk1dcekcg
+[2026-10-26 15:46:44] Método POST recibido - Array
+(
+    [correo] => julio@crmregistroventas.online
+    [contraseña] => .3oJ@.9HrL31
+)
+
+[2026-10-26 15:46:44] Usuario encontrado - Array
+(
+    [id] => 63
+    [nombre] => Agente
+    [apemat] => JULIO
+    [rol] => usuario
+)
+
+[2026-10-26 15:46:44] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 15:46:44] Login exitoso - Array
+(
+    [usuario] => julio@crmregistroventas.online
+    [rol] => usuario
+    [apemat] => JULIO
+    [session_id] => d431tk3e2ao6jq021sk1dcekcg
+)
+
+[2026-10-26 15:46:44] Redirigiendo a - Agencia/agencia.php
+[2026-10-26 15:50:15] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:50:15] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:50:15] Sesión ID: g6rlhhurah69amsa32repem5cg
+[2026-10-26 15:50:15] Método no POST - GET
+[2026-10-26 15:50:15] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:50:16] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:50:16] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:50:16] Sesión ID: g6rlhhurah69amsa32repem5cg
+[2026-10-26 15:50:16] Método POST recibido - Array
+(
+    [correo] => gerentezax09@crmregistroventas.online
+    [contraseña] => q3-604YXU)
+)
+
+[2026-10-26 15:50:16] Usuario encontrado - Array
+(
+    [id] => 1
+    [nombre] => Ximena ZARATE ORTIZ
+    [apemat] => Ximena
+    [rol] => admin
+)
+
+[2026-10-26 15:50:16] Usuario con acceso a todas las salas
+[2026-10-26 15:50:16] Login exitoso - Array
+(
+    [usuario] => gerentezax09@crmregistroventas.online
+    [rol] => admin
+    [apemat] => Ximena
+    [session_id] => g6rlhhurah69amsa32repem5cg
+)
+
+[2026-10-26 15:50:16] Redirigiendo a - opcionesAdmin.php
+[2026-10-26 15:50:23] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:50:23] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:50:23] Sesión ID: g6rlhhurah69amsa32repem5cg
+[2026-10-26 15:50:23] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 1
+    [rol] => admin
+)
+
+[2026-10-26 15:50:32] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:50:32] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:50:32] Sesión ID: g6rlhhurah69amsa32repem5cg
+[2026-10-26 15:50:32] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 1
+    [rol] => admin
+)
+
+[2026-10-26 15:50:33] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:50:33] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 15:50:33] Sesión ID: q9dbi25ib6l4fsm54shb8593i4
+[2026-10-26 15:50:33] Método no POST - GET
+[2026-10-26 15:50:33] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:50:35] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:50:35] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:50:35] Sesión ID: g6rlhhurah69amsa32repem5cg
+[2026-10-26 15:50:35] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 1
+    [rol] => admin
+)
+
+[2026-10-26 15:50:36] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:50:36] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 15:50:36] Sesión ID: q9dbi25ib6l4fsm54shb8593i4
+[2026-10-26 15:50:36] Método POST recibido - Array
+(
+    [correo] => tania@crmregistroventas.online
+    [contraseña] => 6@zwlu52/0_N
+)
+
+[2026-10-26 15:50:36] Usuario encontrado - Array
+(
+    [id] => 25
+    [nombre] => REGINA SUAREZ
+    [apemat] => Tania
+    [rol] => usuario
+)
+
+[2026-10-26 15:50:36] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 15:50:36] Login exitoso - Array
+(
+    [usuario] => tania@crmregistroventas.online
+    [rol] => usuario
+    [apemat] => Tania
+    [session_id] => q9dbi25ib6l4fsm54shb8593i4
+)
+
+[2026-10-26 15:50:36] Redirigiendo a - Agencia/agencia.php
+[2026-10-26 15:50:44] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:50:44] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:50:44] Sesión ID: g6rlhhurah69amsa32repem5cg
+[2026-10-26 15:50:44] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 1
+    [rol] => admin
+)
+
+[2026-10-26 15:51:47] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:51:47] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:51:47] Sesión ID: g6rlhhurah69amsa32repem5cg
+[2026-10-26 15:51:47] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 1
+    [rol] => admin
+)
+
+[2026-10-26 15:51:59] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:51:59] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:51:59] Sesión ID: g6rlhhurah69amsa32repem5cg
+[2026-10-26 15:51:59] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 1
+    [rol] => admin
+)
+
+[2026-10-26 15:54:00] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:54:00] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 15:54:00] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 15:54:00] Método no POST - GET
+[2026-10-26 15:54:00] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:54:10] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:54:10] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 15:54:10] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 15:54:10] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => ,T3r@saL0P3Z#
+)
+
+[2026-10-26 15:54:10] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => admin
+)
+
+[2026-10-26 15:54:10] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 15:54:10] Login exitoso - Array
+(
+    [usuario] => asanchez@crmregistroventas.online
+    [rol] => admin
+    [apemat] => Alexis
+    [session_id] => 222squ7mqtvcclfv1hi2idg0h9
+)
+
+[2026-10-26 15:54:10] Redirigiendo a - opcionesAdmin.php
+[2026-10-26 15:54:58] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:54:58] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:54:58] Sesión ID: g6rlhhurah69amsa32repem5cg
+[2026-10-26 15:54:58] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 1
+    [rol] => admin
+)
+
+[2026-10-26 15:55:41] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:55:41] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 15:55:41] Sesión ID: g6rlhhurah69amsa32repem5cg
+[2026-10-26 15:55:41] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 1
+    [rol] => admin
+)
+
+[2026-10-26 15:57:39] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:57:39] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 15:57:39] Sesión ID: 1ckrl3cqs60pjmqirl937na72a
+[2026-10-26 15:57:39] Método no POST - GET
+[2026-10-26 15:57:39] === FIN DE PROCESO LOGIN ===
+[2026-10-26 15:57:41] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:57:41] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 15:57:41] Sesión ID: 1ckrl3cqs60pjmqirl937na72a
+[2026-10-26 15:57:41] Método POST recibido - Array
+(
+    [correo] => cesar@crmregistroventas.online
+    [contraseña] => F0=OBx5gsw2o
+)
+
+[2026-10-26 15:57:41] Usuario encontrado - Array
+(
+    [id] => 88
+    [nombre] => Agente
+    [apemat] => Cesar
+    [rol] => usuario
+)
+
+[2026-10-26 15:57:41] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 15:57:41] Login exitoso - Array
+(
+    [usuario] => cesar@crmregistroventas.online
+    [rol] => usuario
+    [apemat] => Cesar
+    [session_id] => 1ckrl3cqs60pjmqirl937na72a
+)
+
+[2026-10-26 15:57:41] Redirigiendo a - Agencia/agencia.php
+[2026-10-26 15:57:50] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 15:57:50] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 15:57:50] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 15:57:50] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 2
+    [rol] => admin
+)
+
+[2026-10-26 16:02:31] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:02:31] Navegador: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36
+[2026-10-26 16:02:31] Sesión ID: 4jf518n0c41gmgqpusfr24gjv2
+[2026-10-26 16:02:31] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 2
+    [rol] => admin
+)
+
+[2026-10-26 16:03:29] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:03:29] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 16:03:29] Sesión ID: 97sdghfkacjm8itacmonns6u5b
+[2026-10-26 16:03:29] Método no POST - GET
+[2026-10-26 16:03:29] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:03:31] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:03:31] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 16:03:31] Sesión ID: 97sdghfkacjm8itacmonns6u5b
+[2026-10-26 16:03:31] Método POST recibido - Array
+(
+    [correo] => damaris@crmregistroventas.online
+    [contraseña] => 7OMa:D45,aY5
+)
+
+[2026-10-26 16:03:31] Usuario encontrado - Array
+(
+    [id] => 86
+    [nombre] => Asesor
+    [apemat] => DAMARIS
+    [rol] => usuario
+)
+
+[2026-10-26 16:03:31] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 16:03:31] Login exitoso - Array
+(
+    [usuario] => damaris@crmregistroventas.online
+    [rol] => usuario
+    [apemat] => DAMARIS
+    [session_id] => 97sdghfkacjm8itacmonns6u5b
+)
+
+[2026-10-26 16:03:31] Redirigiendo a - Agencia/agencia.php
+[2026-10-26 16:05:45] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:05:45] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 16:05:45] Sesión ID: qlpj9nec20675f9ph5k3iqco7s
+[2026-10-26 16:05:45] Método no POST - GET
+[2026-10-26 16:05:45] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:07:47] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:07:47] Navegador: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36
+[2026-10-26 16:07:47] Sesión ID: 4jf518n0c41gmgqpusfr24gjv2
+[2026-10-26 16:07:47] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 2
+    [rol] => admin
+)
+
+[2026-10-26 16:08:49] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:08:49] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:08:49] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:08:49] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 2
+    [rol] => admin
+)
+
+[2026-10-26 16:09:00] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:09:00] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:09:00] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:09:00] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 2
+    [rol] => admin
+)
+
+[2026-10-26 16:09:14] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:09:14] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:09:14] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:09:14] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 2
+    [rol] => admin
+)
+
+[2026-10-26 16:09:18] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:09:18] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:09:18] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:09:18] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 2
+    [rol] => admin
+)
+
+[2026-10-26 16:14:59] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:14:59] Navegador: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36
+[2026-10-26 16:14:59] Sesión ID: 4jf518n0c41gmgqpusfr24gjv2
+[2026-10-26 16:14:59] Método no POST - GET
+[2026-10-26 16:14:59] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:15:03] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:15:03] Navegador: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36
+[2026-10-26 16:15:03] Sesión ID: 4jf518n0c41gmgqpusfr24gjv2
+[2026-10-26 16:15:03] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => 123456
+)
+
+[2026-10-26 16:15:03] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => admin
+)
+
+[2026-10-26 16:15:03] Contraseña incorrecta para usuario - asanchez@crmregistroventas.online
+[2026-10-26 16:20:55] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:20:55] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:20:55] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:20:55] Método no POST - GET
+[2026-10-26 16:20:55] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:21:09] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:21:09] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:21:09] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:21:09] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => ,T3r@saL0P3Z#
+)
+
+[2026-10-26 16:21:09] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => admin
+)
+
+[2026-10-26 16:21:09] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 16:21:09] Login exitoso - Array
+(
+    [usuario] => asanchez@crmregistroventas.online
+    [rol] => admin
+    [apemat] => Alexis
+    [session_id] => 222squ7mqtvcclfv1hi2idg0h9
+)
+
+[2026-10-26 16:21:09] Redirigiendo a - opcionesAdmin.php
+[2026-10-26 16:21:16] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:21:16] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:21:16] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:21:16] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 2
+    [rol] => admin
+)
+
+[2026-10-26 16:21:21] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:21:21] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:21:21] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:21:21] Método no POST - GET
+[2026-10-26 16:21:21] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:21:24] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:21:24] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:21:24] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:21:24] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => ,T3r@saL0P3Z#
+)
+
+[2026-10-26 16:21:24] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => admin
+)
+
+[2026-10-26 16:21:24] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 16:21:24] Login exitoso - Array
+(
+    [usuario] => asanchez@crmregistroventas.online
+    [rol] => admin
+    [apemat] => Alexis
+    [session_id] => 222squ7mqtvcclfv1hi2idg0h9
+)
+
+[2026-10-26 16:21:24] Redirigiendo a - opcionesAdmin.php
+[2026-10-26 16:22:00] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:22:00] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:22:00] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:22:00] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 2
+    [rol] => admin
+)
+
+[2026-10-26 16:22:04] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:22:04] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:22:04] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:22:04] Método no POST - GET
+[2026-10-26 16:22:04] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:22:05] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:22:05] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:22:05] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:22:05] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => 123456
+)
+
+[2026-10-26 16:22:05] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => admin
+)
+
+[2026-10-26 16:22:05] Contraseña incorrecta para usuario - asanchez@crmregistroventas.online
+[2026-10-26 16:22:11] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:22:11] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:22:11] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:22:11] Método no POST - GET
+[2026-10-26 16:22:11] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:22:18] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:22:18] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:22:18] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:22:18] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => ,T3r@saL0P3Z#
+)
+
+[2026-10-26 16:22:18] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => admin
+)
+
+[2026-10-26 16:22:18] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 16:22:18] Login exitoso - Array
+(
+    [usuario] => asanchez@crmregistroventas.online
+    [rol] => admin
+    [apemat] => Alexis
+    [session_id] => 222squ7mqtvcclfv1hi2idg0h9
+)
+
+[2026-10-26 16:22:18] Redirigiendo a - opcionesAdmin.php
+[2026-10-26 16:22:45] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:22:45] Navegador: WhatsApp/2.2640.100 W
+[2026-10-26 16:22:45] Sesión ID: 2ufauomjeb6fd8h29kboqlur5l
+[2026-10-26 16:22:45] Método no POST - GET
+[2026-10-26 16:22:45] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:22:59] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:22:59] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:22:59] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:22:59] Método no POST - GET
+[2026-10-26 16:22:59] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:24:06] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:24:06] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:24:06] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:24:06] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => ,T3r@saL0P3Z#
+)
+
+[2026-10-26 16:24:06] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => admin
+)
+
+[2026-10-26 16:24:06] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 16:24:06] Login exitoso - Array
+(
+    [usuario] => asanchez@crmregistroventas.online
+    [rol] => admin
+    [apemat] => Alexis
+    [session_id] => 222squ7mqtvcclfv1hi2idg0h9
+)
+
+[2026-10-26 16:24:06] Redirigiendo a - opcionesAdmin.php
+[2026-10-26 16:26:01] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:26:01] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:26:01] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:26:01] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 2
+    [rol] => admin
+)
+
+[2026-10-26 16:26:24] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:26:24] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:26:24] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:26:24] Método no POST - GET
+[2026-10-26 16:26:24] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:26:42] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:26:42] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:26:42] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:26:42] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => ,T3r@saL0P3Z#
+)
+
+[2026-10-26 16:26:42] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => admin
+)
+
+[2026-10-26 16:26:42] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 16:26:42] Login exitoso - Array
+(
+    [usuario] => asanchez@crmregistroventas.online
+    [rol] => admin
+    [apemat] => Alexis
+    [session_id] => 222squ7mqtvcclfv1hi2idg0h9
+)
+
+[2026-10-26 16:26:42] Redirigiendo a - opAdmin.php
+[2026-10-26 16:28:08] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:28:08] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:28:08] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:28:08] Método no POST - GET
+[2026-10-26 16:28:08] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:31:31] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:31:31] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-26 16:31:31] Sesión ID: 222squ7mqtvcclfv1hi2idg0h9
+[2026-10-26 16:31:31] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => ,T3r@saL0P3Z#
+)
+
+[2026-10-26 16:31:31] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => admin
+)
+
+[2026-10-26 16:31:31] Salas permitidas asignadas - Array
+(
+    [0] => 1
+)
+
+[2026-10-26 16:31:31] Login exitoso - Array
+(
+    [usuario] => asanchez@crmregistroventas.online
+    [rol] => admin
+    [apemat] => Alexis
+    [session_id] => 222squ7mqtvcclfv1hi2idg0h9
+)
+
+[2026-10-26 16:31:31] Redirigiendo a - opAdmin.php
+[2026-10-26 16:35:52] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:35:52] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 16:35:52] Sesión ID: ofc6k1l8j1n4isa0lc1laacg0a
+[2026-10-26 16:35:52] Método no POST - GET
+[2026-10-26 16:35:52] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:35:53] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:35:53] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+[2026-10-26 16:35:53] Sesión ID: ofc6k1l8j1n4isa0lc1laacg0a
+[2026-10-26 16:35:53] Método POST recibido - Array
+(
+    [correo] => gerentezax09@crmregistroventas.online
+    [contraseña] => q3-604YXU)
+)
+
+[2026-10-26 16:35:53] Usuario encontrado - Array
+(
+    [id] => 1
+    [nombre] => Ximena ZARATE ORTIZ
+    [apemat] => Ximena
+    [rol] => admin
+)
+
+[2026-10-26 16:35:53] Usuario con acceso a todas las salas
+[2026-10-26 16:35:53] Login exitoso - Array
+(
+    [usuario] => gerentezax09@crmregistroventas.online
+    [rol] => admin
+    [apemat] => Ximena
+    [session_id] => ofc6k1l8j1n4isa0lc1laacg0a
+)
+
+[2026-10-26 16:35:53] Redirigiendo a - opAdmin.php
+[2026-10-26 16:53:06] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:53:06] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0
+[2026-10-26 16:53:06] Sesión ID: i0vht45k5a343iju6tn7ve8qia
+[2026-10-26 16:53:06] Método no POST - GET
+[2026-10-26 16:53:06] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:56:06] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:56:06] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0
+[2026-10-26 16:56:06] Sesión ID: i0vht45k5a343iju6tn7ve8qia
+[2026-10-26 16:56:06] Método no POST - GET
+[2026-10-26 16:56:06] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:56:59] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:56:59] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0
+[2026-10-26 16:56:59] Sesión ID: i0vht45k5a343iju6tn7ve8qia
+[2026-10-26 16:56:59] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => ,T3r@saL0P3Z#
+)
+
+[2026-10-26 16:56:59] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => admin
+)
+
+[2026-10-26 16:57:00] Log de login registrado (agencia) - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [exito] => 1
+    [ip] => ::1
+    [dispositivo] => PC
+    [so] => Windows 10/11
+    [navegador] => Edge 156
+    [pais] => 
+    [ciudad] => 
+)
+
+[2026-10-26 16:57:00] Login exitoso - Array
+(
+    [usuario] => asanchez@crmregistroventas.online
+    [rol] => admin
+    [apemat] => Alexis
+    [session_id] => i0vht45k5a343iju6tn7ve8qia
+)
+
+[2026-10-26 16:57:00] Redirigiendo a - opcionesAdmin.php
+[2026-10-26 16:57:34] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:57:34] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0
+[2026-10-26 16:57:34] Sesión ID: i0vht45k5a343iju6tn7ve8qia
+[2026-10-26 16:57:34] Método no POST - GET
+[2026-10-26 16:57:34] === FIN DE PROCESO LOGIN ===
+[2026-10-26 16:58:28] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 16:58:28] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0
+[2026-10-26 16:58:28] Sesión ID: i0vht45k5a343iju6tn7ve8qia
+[2026-10-26 16:58:28] Método no POST - GET
+[2026-10-26 16:58:28] === FIN DE PROCESO LOGIN ===
+[2026-10-26 17:48:51] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 17:48:51] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0
+[2026-10-26 17:48:51] Sesión ID: 644jsff3vunjk38vn5na6ffomd
+[2026-10-26 17:48:51] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 1
+    [rol] => admin
+)
+
+[2026-10-26 17:51:10] === INICIO DE PROCESO LOGIN ===
+[2026-10-26 17:51:10] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0
+[2026-10-26 17:51:10] Sesión ID: 322n8aik6ugc07v3casepg18b1
+[2026-10-26 17:51:10] Usuario ya tiene sesión activa - Array
+(
+    [usuario_id] => 1
+    [rol] => admin
+)
+
