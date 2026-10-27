@@ -21,6 +21,7 @@ $filtroExito  = $_GET['exito'] ?? '';
 $filtroOrigen = $_GET['origen'] ?? '';
 $filtroCorreo = trim($_GET['correo'] ?? '');
 $filtroFecha  = $_GET['fecha'] ?? date('Y-m-d');
+$filtroActividad = $_GET['actividad'] ?? '';
 
 $where  = ["DATE(fecha_intento) = ?"];
 $params = [$filtroFecha];
@@ -40,6 +41,12 @@ if ($filtroCorreo !== '') {
     $where[]  = "correo LIKE ?";
     $params[] = "%$filtroCorreo%";
     $types   .= "s";
+}
+// Actividad: logins exitosos con / sin acciones registradas (sin contar LOGOUT)
+if ($filtroActividad === 'con' || $filtroActividad === 'sin') {
+    $where[] = "exito = 1 AND " . ($filtroActividad === 'sin' ? "NOT " : "") . "EXISTS (
+        SELECT 1 FROM logs_acciones la WHERE la.login_id = logs_login.id AND la.accion <> 'LOGOUT'
+    )";
 }
 
 $sql  = "SELECT * FROM logs_login WHERE " . implode(' AND ', $where) . " ORDER BY fecha_intento DESC LIMIT 500";
@@ -238,11 +245,19 @@ $stats = $conn->query("
                         <option value="0" <?= $filtroExito === '0' ? 'selected' : '' ?>>Fallidos</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <label class="form-label small">Actividad</label>
+                    <select name="actividad" class="form-select form-select-sm">
+                        <option value="">Todos</option>
+                        <option value="con" <?= $filtroActividad === 'con' ? 'selected' : '' ?>>Con actividad</option>
+                        <option value="sin" <?= $filtroActividad === 'sin' ? 'selected' : '' ?>>Sin actividad</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label small">Correo</label>
                     <input type="text" name="correo" class="form-control form-control-sm" value="<?= htmlspecialchars($filtroCorreo) ?>" placeholder="usuario@...">
                 </div>
-                <div class="col-md-3 d-flex gap-2">
+                <div class="col-md-2 d-flex gap-2">
                     <button class="btn btn-primary btn-sm flex-fill"><i class="bi bi-search"></i> Filtrar</button>
                     <a href="ver_logs.php" class="btn btn-outline-secondary btn-sm flex-fill"><i class="bi bi-x-circle"></i> Borrar filtro</a>
                 </div>
