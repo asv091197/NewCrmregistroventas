@@ -83,11 +83,11 @@ if ($formato === 'excel') {
     // Hoja 1: un renglón por inicio de sesión
     $hoja = $spreadsheet->getActiveSheet();
     $hoja->setTitle('Logins');
-    $hoja->setCellValue('A1', "Logs de inicio de sesión - $rango");
+    $hoja->setCellValue('A1', "Logs de actividades - $rango");
     $hoja->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-    $encabezados = ['Sesión #', 'Fecha', 'Origen', 'Estado', 'Correo', 'IP', 'Ubicación', 'Dispositivo', 'Navegador', 'Motivo fallo', 'Acciones', 'Cerró sesión', 'Última acción', 'Fecha última acción'];
+    $encabezados = ['Fecha','Origen', 'Estado', 'Correo', 'IP', 'Ubicación', 'Dispositivo', 'Navegador', 'Motivo fallo', 'Acciones', 'Cerró sesión', 'Última acción', 'Fecha última acción'];
     $hoja->fromArray($encabezados, null, 'A3');
-    $hoja->getStyle('A3:N3')->applyFromArray($estiloEncabezado);
+    $hoja->getStyle('A3:M3')->applyFromArray($estiloEncabezado);
 
     $fila = 4;
     foreach ($logs as $log) {
@@ -96,7 +96,6 @@ if ($formato === 'excel') {
         $ultima  = end($propias) ?: null;
         $cerro   = (bool)array_filter($lista, fn($a) => $a['accion'] === 'LOGOUT');
         $hoja->fromArray([
-            (int)$log['id'],
             $fmt($log['fecha_intento']),
             ucfirst($log['origen']),
             $log['exito'] ? 'OK' : 'Fallo',
@@ -112,32 +111,31 @@ if ($formato === 'excel') {
             $ultima ? $fmt($ultima['fecha']) : '',
         ], null, "A$fila");
         if (!$log['exito']) {
-            $hoja->getStyle("D$fila")->getFont()->getColor()->setRGB('DC3545');
+            $hoja->getStyle("C$fila")->getFont()->getColor()->setRGB('DC3545');
         }
         $fila++;
     }
     if (!$logs) {
         $hoja->setCellValue('A4', 'No hay registros para los filtros seleccionados');
     }
-    foreach (range('A', 'N') as $col) {
+    foreach (range('A', 'M') as $col) {
         $hoja->getColumnDimension($col)->setAutoSize(true);
     }
     $hoja->freezePane('A4');
-    $hoja->setAutoFilter('A3:N' . max(3, $fila - 1));
+    $hoja->setAutoFilter('A3:M' . max(3, $fila - 1));
 
     // Hoja 2: un renglón por acción realizada en cada sesión
     $hoja2 = $spreadsheet->createSheet();
     $hoja2->setTitle('Acciones');
     $hoja2->setCellValue('A1', "Acciones por inicio de sesión - $rango");
     $hoja2->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-    $hoja2->fromArray(['Sesión #', 'Correo', 'Origen', 'Fecha login', 'Fecha acción', 'Acción', 'Tabla', 'Registro', 'Detalle'], null, 'A3');
-    $hoja2->getStyle('A3:I3')->applyFromArray($estiloEncabezado);
+    $hoja2->fromArray(['Correo', 'Origen', 'Fecha login', 'Fecha acción', 'Acción', 'Tabla', 'Registro', 'Detalle'], null, 'A3');
+    $hoja2->getStyle('A3:H3')->applyFromArray($estiloEncabezado);
 
     $fila = 4;
     foreach ($logs as $log) {
         foreach ($accionesPorLogin[$log['id']] ?? [] as $a) {
             $hoja2->fromArray([
-                (int)$log['id'],
                 $log['correo'],
                 ucfirst($log['origen']),
                 $fmt($log['fecha_intento']),
@@ -153,14 +151,14 @@ if ($formato === 'excel') {
     if ($fila === 4) {
         $hoja2->setCellValue('A4', 'No hay acciones para los filtros seleccionados');
     }
-    foreach (range('A', 'H') as $col) {
+    foreach (range('A', 'G') as $col) {
         $hoja2->getColumnDimension($col)->setAutoSize(true);
     }
-    $hoja2->getColumnDimension('I')->setWidth(80);
-    $hoja2->getStyle('I4:I' . max(4, $fila - 1))->getAlignment()->setWrapText(true);
-    $hoja2->getStyle('A4:H' . max(4, $fila - 1))->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+    $hoja2->getColumnDimension('H')->setWidth(80);
+    $hoja2->getStyle('H4:H' . max(4, $fila - 1))->getAlignment()->setWrapText(true);
+    $hoja2->getStyle('A4:G' . max(4, $fila - 1))->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
     $hoja2->freezePane('A4');
-    $hoja2->setAutoFilter('A3:I' . max(3, $fila - 1));
+    $hoja2->setAutoFilter('A3:H' . max(3, $fila - 1));
 
     $spreadsheet->setActiveSheetIndex(0);
 
@@ -176,7 +174,7 @@ if ($formato === 'excel') {
 // ============================================================
 $pdf = new TCPDF('L', PDF_UNIT, 'LETTER', true, 'UTF-8', false);
 $pdf->SetCreator('CRM Registro Ventas');
-$pdf->SetTitle("Logs de inicio de sesión - $rango");
+$pdf->SetTitle("Logs de actividades - $rango");
 $pdf->setPrintHeader(false);
 $pdf->setFooterData([0, 0, 0], [255, 255, 255]);
 $pdf->SetMargins(10, 10, 10);
@@ -190,7 +188,7 @@ $coloresHex = ['INSERT' => '#198754', 'UPDATE' => '#0d6efd', 'DELETE' => '#dc354
 $totalExitosos = count(array_filter($logs, fn($l) => $l['exito']));
 $totalAcciones = array_sum(array_map(fn($l) => count($soloAcciones($l)), $accionesPorLogin));
 $pdf->writeHTML('
-    <h2>Logs de inicio de sesión</h2>
+    <h2>Logs de actividades</h2>
     <div>Periodo: <b>' . $h($rango) . '</b> &nbsp;·&nbsp; Registros: <b>' . count($logs) . '</b>
     &nbsp;·&nbsp; Exitosos: <b>' . $totalExitosos . '</b> &nbsp;·&nbsp; Fallidos: <b>' . (count($logs) - $totalExitosos) . '</b>
     &nbsp;·&nbsp; Acciones: <b>' . $totalAcciones . '</b>
@@ -211,11 +209,10 @@ foreach ($logs as $log) {
         <tr>
             <td width="13%"><b>' . $fmt($log['fecha_intento']) . '</b></td>
             <td width="9%">' . $h(ucfirst($log['origen'])) . '</td>
-            <td width="24%">' . $h($log['correo']) . '</td>
-            <td width="20%">' . $estado . '</td>
-            <td width="12%">IP ' . $h($log['ip']) . '</td>
-            <td width="14%">' . $h($log['dispositivo']) . ' / ' . $h($log['navegador']) . '</td>
-            <td width="8%" align="right">#' . (int)$log['id'] . '</td>
+            <td width="26%">' . $h($log['correo']) . '</td>
+            <td width="22%">' . $estado . '</td>
+            <td width="13%">IP ' . $h($log['ip']) . '</td>
+            <td width="17%">' . $h($log['dispositivo']) . ' / ' . $h($log['navegador']) . '</td>
         </tr>
     </table>';
 
