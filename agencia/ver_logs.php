@@ -76,6 +76,12 @@ if ($sesionId > 0) {
         error_log("ver_logs acciones sesión: " . $e->getMessage());
     }
 }
+
+// Paginación de la línea de tiempo (10 acciones por página)
+$porPagina     = 10;
+$totalPaginas  = max(1, (int)ceil(count($acciones) / $porPagina));
+$pagina        = min(max(1, (int)($_GET['pagina'] ?? 1)), $totalPaginas);
+$accionesPagina = array_slice($acciones, ($pagina - 1) * $porPagina, $porPagina);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -149,6 +155,7 @@ if ($sesionId > 0) {
         <div class="card">
             <div class="card-body">
                 <div class="timeline">
+                    <?php if ($pagina === 1): ?>
                     <div class="timeline-item" style="--punto:<?= $sesion['exito'] ? '#198754' : '#dc3545' ?>">
                         <div class="small text-muted"><?= date('d/m/Y H:i:s', strtotime($sesion['fecha_intento'])) ?></div>
                         <div><span class="badge bg-dark"><i class="bi bi-box-arrow-in-right"></i> LOGIN</span>
@@ -160,6 +167,7 @@ if ($sesionId > 0) {
                             · <?= htmlspecialchars($sesion['dispositivo'] ?? '') ?> / <?= htmlspecialchars($sesion['navegador'] ?? '') ?>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <?php if ($numAcciones === 0): ?>
                         <div class="timeline-item">
@@ -167,7 +175,7 @@ if ($sesionId > 0) {
                         </div>
                     <?php endif; ?>
 
-                    <?php foreach ($acciones as $a): $c = $colores[$a['accion']] ?? 'secondary'; ?>
+                    <?php foreach ($accionesPagina as $a): $c = $colores[$a['accion']] ?? 'secondary'; ?>
                         <div class="timeline-item" style="--punto:<?= $hexes[$c] ?>">
                             <div class="small text-muted"><?= date('d/m/Y H:i:s', strtotime($a['fecha'])) ?></div>
                             <?php if ($a['accion'] === 'LOGOUT'): ?>
@@ -183,12 +191,46 @@ if ($sesionId > 0) {
                         </div>
                     <?php endforeach; ?>
 
-                    <?php if ($sesion['exito'] && !$cerro): ?>
+                    <?php if ($sesion['exito'] && !$cerro && $pagina === $totalPaginas): ?>
                         <div class="timeline-item">
                             <div class="text-muted small fst-italic">Sin cierre de sesión registrado (expiró o se cerró el navegador)</div>
                         </div>
                     <?php endif; ?>
                 </div>
+
+                <?php if ($totalPaginas > 1): ?>
+                    <?php
+                    $urlPagina = fn($p) => '?sesion=' . (int)$sesion['id'] . '&pagina=' . $p;
+                    $desde = max(1, $pagina - 2);
+                    $hasta = min($totalPaginas, $pagina + 2);
+                    ?>
+                    <nav class="mt-3 d-flex flex-wrap justify-content-between align-items-center gap-2" aria-label="Paginación de acciones">
+                        <small class="text-muted">
+                            Mostrando <?= ($pagina - 1) * $porPagina + 1 ?>–<?= ($pagina - 1) * $porPagina + count($accionesPagina) ?> de <?= count($acciones) ?>
+                        </small>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item <?= $pagina === 1 ? 'disabled' : '' ?>">
+                                <a class="page-link" href="<?= $urlPagina($pagina - 1) ?>" aria-label="Anterior">&laquo;</a>
+                            </li>
+                            <?php if ($desde > 1): ?>
+                                <li class="page-item"><a class="page-link" href="<?= $urlPagina(1) ?>">1</a></li>
+                                <?php if ($desde > 2): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+                            <?php endif; ?>
+                            <?php for ($p = $desde; $p <= $hasta; $p++): ?>
+                                <li class="page-item <?= $p === $pagina ? 'active' : '' ?>">
+                                    <a class="page-link" href="<?= $urlPagina($p) ?>"><?= $p ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            <?php if ($hasta < $totalPaginas): ?>
+                                <?php if ($hasta < $totalPaginas - 1): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+                                <li class="page-item"><a class="page-link" href="<?= $urlPagina($totalPaginas) ?>"><?= $totalPaginas ?></a></li>
+                            <?php endif; ?>
+                            <li class="page-item <?= $pagina === $totalPaginas ? 'disabled' : '' ?>">
+                                <a class="page-link" href="<?= $urlPagina($pagina + 1) ?>" aria-label="Siguiente">&raquo;</a>
+                            </li>
+                        </ul>
+                    </nav>
+                <?php endif; ?>
             </div>
         </div>
     <?php endif; ?>
