@@ -658,7 +658,7 @@ try {
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-dark" href="../agencia/ver_logs.php" style="text-decoration: none;">
+                        <a class="nav-link text-dark" href="../agencia/Logs" style="text-decoration: none;">
 
                             <i class="bi bi-shield-lock me-1"></i>Logs
 

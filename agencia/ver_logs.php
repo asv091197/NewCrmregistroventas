@@ -578,7 +578,7 @@ $accionesPagina = array_slice($acciones, ($pagina - 1) * $porPagina, $porPagina)
                 </div>
                 <div class="col-12 col-lg-8 d-flex flex-wrap gap-2 justify-content-end">
                     <button class="btn-primary-soft"><i class="bi bi-search"></i> Filtrar</button>
-                    <a href="ver_logs.php" class="btn-outline-soft"><i class="bi bi-x-circle"></i> Limpiar</a>
+                    <a href="Logs" class="btn-outline-soft"><i class="bi bi-x-circle"></i> Limpiar</a>
                 </div>
             </form>
         </div>
@@ -738,7 +738,7 @@ if (fechaInicio && fechaFin) {
 document.querySelectorAll('.fila-log').forEach(fila => {
     fila.addEventListener('click', e => {
         if (e.target.closest('a, button')) return;
-        window.location.href = 'ver_logs.php?sesion=' + fila.dataset.id;
+        window.location.href = 'Logs?sesion=' + fila.dataset.id;
     });
 });
 </script>
