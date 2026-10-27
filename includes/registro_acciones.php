@@ -15,7 +15,7 @@ function registrarAccion($db, $accion, $tabla = null, $registroId = null, $detal
 
         $params = [
             $s['log_login_id'] ?? null,
-            session_id() ?: null,
+            null,
             $s['usuario_id'] ?? null,
             $s['correo'] ?? null,
             $origen,
