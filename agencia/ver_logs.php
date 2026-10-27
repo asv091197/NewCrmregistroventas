@@ -549,7 +549,7 @@ $accionesPagina = array_slice($acciones, ($pagina - 1) * $porPagina, $porPagina)
                            value="<?= htmlspecialchars($filtroFechaFin) ?>" min="<?= htmlspecialchars($filtroFechaInicio) ?>">
                 </div>
                 <div class="col-6 col-md-4 col-lg-2">
-                    <label class="form-label">Origen</label>
+                    <label class="form-label">Origen Login</label>
                     <select name="origen" class="form-select">
                         <option value="">Todos</option>
                         <option value="agencia" <?= $filtroOrigen === 'agencia' ? 'selected' : '' ?>>Agencia</option>
@@ -557,7 +557,7 @@ $accionesPagina = array_slice($acciones, ($pagina - 1) * $porPagina, $porPagina)
                     </select>
                 </div>
                 <div class="col-6 col-md-4 col-lg-2">
-                    <label class="form-label">Estado</label>
+                    <label class="form-label">Estado Login</label>
                     <select name="exito" class="form-select">
                         <option value="">Todos</option>
                         <option value="1" <?= $filtroExito === '1' ? 'selected' : '' ?>>Exitosos</option>
