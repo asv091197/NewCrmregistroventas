@@ -126,6 +126,7 @@ $stats = $conn->query("
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Logs de Inicio de Sesión</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
@@ -139,15 +140,26 @@ $stats = $conn->query("
         .timeline { border-left: 3px solid #dee2e6; margin-left: 10px; padding-left: 20px; }
         .timeline-item { position: relative; margin-bottom: 14px; }
         .timeline-item::before { content: ''; position: absolute; left: -28px; top: 6px; width: 13px; height: 13px; border-radius: 50%; background: var(--punto, #6c757d); border: 2px solid #fff; }
-        .detalle-accion { font-size: 0.8rem; color: #495057; }
+        .detalle-accion { font-size: 0.8rem; color: #495057; overflow-wrap: anywhere; }
+        .tabla-logs { max-height: 600px; overflow: auto; }
+        .correo-cell { overflow-wrap: anywhere; min-width: 140px; }
+        @media (max-width: 767.98px) {
+            body { padding: 10px; }
+            h3 { font-size: 1.2rem; }
+            .stat-card h4 { font-size: 1.2rem; }
+            .tabla-logs { max-height: 70vh; }
+            .table-sm td, .table-sm th { font-size: 0.78rem; }
+            .timeline { margin-left: 4px; padding-left: 16px; }
+            .timeline-item::before { left: -24px; }
+        }
     </style>
 </head>
 <body>
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3><i class="bi bi-shield-lock"></i> Logs de Inicio de Sesión</h3>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h3 class="mb-0"><i class="bi bi-shield-lock"></i> Logs de Inicio de Sesión</h3>
         <a href="opAdmin.php" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            <i class="bi bi-arrow-left"></i> Volver<span class="d-none d-sm-inline"> al Dashboard</span>
         </a>
     </div>
 
@@ -169,7 +181,7 @@ $stats = $conn->query("
         </a>
         <div class="card mb-3">
             <div class="card-body">
-                <h5 class="mb-1"><i class="bi bi-person-badge"></i> <?= htmlspecialchars($sesion['correo']) ?>
+                <h5 class="mb-1" style="overflow-wrap:anywhere"><i class="bi bi-person-badge"></i> <?= htmlspecialchars($sesion['correo']) ?>
                     <span class="badge badge-origen-<?= $sesion['origen'] === 'facturacion' ? 'facturacion' : 'agencia' ?>"><?= htmlspecialchars(ucfirst($sesion['origen'])) ?></span>
                 </h5>
                 <small class="text-muted">
@@ -225,11 +237,11 @@ $stats = $conn->query("
     <div class="card mb-3">
         <div class="card-body">
             <form method="GET" class="row g-2 align-items-end">
-                <div class="col-md-2">
+                <div class="col-6 col-md-4 col-lg-2">
                     <label class="form-label small">Fecha</label>
                     <input type="date" name="fecha" class="form-control form-control-sm" value="<?= htmlspecialchars($filtroFecha) ?>">
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-4 col-lg-2">
                     <label class="form-label small">Origen</label>
                     <select name="origen" class="form-select form-select-sm">
                         <option value="">Todos</option>
@@ -237,7 +249,7 @@ $stats = $conn->query("
                         <option value="facturacion" <?= $filtroOrigen === 'facturacion' ? 'selected' : '' ?>>Facturación</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-4 col-lg-2">
                     <label class="form-label small">Estado</label>
                     <select name="exito" class="form-select form-select-sm">
                         <option value="">Todos</option>
@@ -245,7 +257,7 @@ $stats = $conn->query("
                         <option value="0" <?= $filtroExito === '0' ? 'selected' : '' ?>>Fallidos</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-4 col-lg-2">
                     <label class="form-label small">Actividad</label>
                     <select name="actividad" class="form-select form-select-sm">
                         <option value="">Todos</option>
@@ -253,20 +265,20 @@ $stats = $conn->query("
                         <option value="sin" <?= $filtroActividad === 'sin' ? 'selected' : '' ?>>Sin actividad</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-12 col-md-4 col-lg-2">
                     <label class="form-label small">Correo</label>
                     <input type="text" name="correo" class="form-control form-control-sm" value="<?= htmlspecialchars($filtroCorreo) ?>" placeholder="usuario@...">
                 </div>
-                <div class="col-md-2 d-flex gap-2">
+                <div class="col-12 col-md-4 col-lg-2 d-flex gap-2">
                     <button class="btn btn-primary btn-sm flex-fill"><i class="bi bi-search"></i> Filtrar</button>
-                    <a href="ver_logs.php" class="btn btn-outline-secondary btn-sm flex-fill"><i class="bi bi-x-circle"></i> Borrar filtro</a>
+                    <a href="ver_logs.php" class="btn btn-outline-secondary btn-sm flex-fill"><i class="bi bi-x-circle"></i> Borrar<span class="d-lg-none d-xl-inline"> filtro</span></a>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="row mb-3">
-        <div class="col-md-2">
+    <div class="row g-2 mb-3">
+        <div class="col-6 col-md-4 col-xl-2">
             <div class="card stat-card" style="border-color:#28a745">
                 <div class="card-body py-2">
                     <small class="text-muted">Exitosos</small>
@@ -274,7 +286,7 @@ $stats = $conn->query("
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-md-4 col-xl-2">
             <div class="card stat-card" style="border-color:#dc3545">
                 <div class="card-body py-2">
                     <small class="text-muted">Fallidos</small>
@@ -282,7 +294,7 @@ $stats = $conn->query("
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-md-4 col-xl-2">
             <div class="card stat-card" style="border-color:#0d6efd">
                 <div class="card-body py-2">
                     <small class="text-muted">Agencia OK</small>
@@ -290,7 +302,7 @@ $stats = $conn->query("
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-md-4 col-xl-2">
             <div class="card stat-card" style="border-color:#fd7e14">
                 <div class="card-body py-2">
                     <small class="text-muted">Facturación OK</small>
@@ -298,7 +310,7 @@ $stats = $conn->query("
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-md-4 col-xl-2">
             <div class="card stat-card" style="border-color:#17a2b8">
                 <div class="card-body py-2">
                     <small class="text-muted">IPs Únicas</small>
@@ -306,7 +318,7 @@ $stats = $conn->query("
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-md-4 col-xl-2">
             <div class="card stat-card" style="border-color:#ffc107">
                 <div class="card-body py-2">
                     <small class="text-muted">Usuarios Únicos</small>
@@ -318,18 +330,18 @@ $stats = $conn->query("
 
     <div class="card">
         <div class="card-body p-0">
-            <div class="table-responsive" style="max-height: 600px; overflow:auto;">
+            <div class="table-responsive tabla-logs">
                 <table class="table table-sm table-hover mb-0">
                     <thead class="table-dark sticky-top">
                         <tr>
                             <th>Fecha</th>
-                            <th>Origen</th>
+                            <th class="d-none d-sm-table-cell">Origen</th>
                             <th>Estado</th>
                             <th>Correo</th>
-                            <th>IP</th>
-                            <th>Dispositivo</th>
-                            <th>Navegador</th>
-                            <th>Motivo Fallo</th>
+                            <th class="d-none d-lg-table-cell">IP</th>
+                            <th class="d-none d-md-table-cell">Dispositivo</th>
+                            <th class="d-none d-lg-table-cell">Navegador</th>
+                            <th class="d-none d-md-table-cell">Motivo Fallo</th>
                             <th>Actividad</th>
                         </tr>
                     </thead>
@@ -340,7 +352,7 @@ $stats = $conn->query("
                             <?php foreach ($logs as $log): ?>
                                 <tr>
                                     <td class="text-nowrap small"><?= date('d/m/Y H:i:s', strtotime($log['fecha_intento'])) ?></td>
-                                    <td>
+                                    <td class="d-none d-sm-table-cell">
                                         <?php if ($log['origen'] === 'facturacion'): ?>
                                             <span class="badge badge-origen-facturacion">
                                                 <i class="bi bi-cash-coin"></i> Facturación
@@ -356,11 +368,14 @@ $stats = $conn->query("
                                             <span class="badge bg-success"><i class="bi bi-check-circle"></i> OK</span>
                                         <?php else: ?>
                                             <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Fallo</span>
+                                            <?php if (!empty($log['motivo_fallo'])): ?>
+                                                <div class="small text-danger d-md-none"><?= htmlspecialchars($log['motivo_fallo']) ?></div>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="small"><?= htmlspecialchars($log['correo']) ?></td>
-                                    <td class="small"><code><?= htmlspecialchars($log['ip']) ?></code></td>
-                                    <td>
+                                    <td class="small correo-cell"><?= htmlspecialchars($log['correo']) ?></td>
+                                    <td class="small d-none d-lg-table-cell"><code><?= htmlspecialchars($log['ip']) ?></code></td>
+                                    <td class="d-none d-md-table-cell text-nowrap">
                                         <?php
                                         $icono = match($log['dispositivo']) {
                                             'PC' => 'bi-pc-display',
@@ -371,12 +386,12 @@ $stats = $conn->query("
                                         ?>
                                         <i class="bi <?= $icono ?>"></i> <?= htmlspecialchars($log['dispositivo']) ?>
                                     </td>
-                                    <td class="small"><?= htmlspecialchars($log['navegador'] ?? '—') ?></td>
-                                    <td class="small text-danger"><?= htmlspecialchars($log['motivo_fallo'] ?? '') ?></td>
+                                    <td class="small d-none d-lg-table-cell"><?= htmlspecialchars($log['navegador'] ?? '—') ?></td>
+                                    <td class="small text-danger d-none d-md-table-cell"><?= htmlspecialchars($log['motivo_fallo'] ?? '') ?></td>
                                     <td class="text-nowrap">
                                         <?php if ($log['exito']): $act = $conteoAcciones[$log['id']] ?? null; ?>
                                             <a href="?sesion=<?= (int)$log['id'] ?>" class="btn btn-outline-dark btn-sm py-0">
-                                                <i class="bi bi-clock-history"></i> <?= (int)($act['acciones'] ?? 0) ?> acciones
+                                                <i class="bi bi-clock-history"></i> <?= (int)($act['acciones'] ?? 0) ?><span class="d-none d-sm-inline"> acciones</span>
                                             </a>
                                             <?php if (!empty($act['cerro'])): ?>
                                                 <i class="bi bi-box-arrow-right text-secondary" title="Cerró sesión"></i>
