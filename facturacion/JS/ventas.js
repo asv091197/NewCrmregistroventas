@@ -944,7 +944,7 @@ function configurarEventListeners() {
         salaSelect.addEventListener('change', function () {
             hiddenSalaField.value = this.value;
 
-            if (rolUsuarioGlobal !== 'admin') {
+            if (!['admin', 'superadmin'].includes(rolUsuarioGlobal)) {
                 actualizarNombreSalaVisible();
             }
         });
@@ -1409,7 +1409,7 @@ function inicializarBusquedaSelects() {
 
 // Función para actualizar el nombre de la sala visible para usuarios no admin
 function actualizarNombreSalaVisible() {
-    if (rolUsuarioGlobal !== 'admin') {
+    if (!['admin', 'superadmin'].includes(rolUsuarioGlobal)) {
         const salaSelect = document.getElementById('modal-sala');
         const salaNombreSpan = document.getElementById('sala-actual-nombre');
 
@@ -1515,7 +1515,7 @@ function mostrarModalVenta(venta) {
         console.log('Sala ID establecida en campo oculto:', venta.sala_id);
     }
     
-    if (rolUsuarioGlobal === 'admin') {
+    if (['admin', 'superadmin'].includes(rolUsuarioGlobal)) {
         const salaSelect = document.getElementById('modal-sala');
         if (salaSelect && venta.sala_id) {
             salaSelect.value = venta.sala_id;
@@ -1568,7 +1568,7 @@ function mostrarModalVenta(venta) {
         tipoClienteSelect.value = venta.tipo_venta || '';
     }
     
-    if (rolUsuarioGlobal !== 'admin' && venta.sala_id !== salaUsuarioIdGlobal) {
+    if (!['admin', 'superadmin'].includes(rolUsuarioGlobal) && venta.sala_id !== salaUsuarioIdGlobal) {
         alert('Esta venta pertenece a otra sala. Solo puedes ver información.');
         const form = document.getElementById('formActualizarVenta');
         const inputs = form.querySelectorAll('input, select, textarea');

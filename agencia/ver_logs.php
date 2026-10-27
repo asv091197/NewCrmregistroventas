@@ -72,6 +72,20 @@ if ($idsExitosos) {
         while ($r = $res->fetch_assoc()) {
             $conteoAcciones[$r['login_id']] = $r;
         }
+        // Última acción (sin contar LOGOUT) de cada login
+        $res = $conn->query("
+            SELECT la.login_id, la.accion, la.tabla, la.fecha
+            FROM logs_acciones la
+            JOIN (
+                SELECT login_id, MAX(id) AS id
+                FROM logs_acciones
+                WHERE login_id IN (" . implode(',', $idsExitosos) . ") AND accion <> 'LOGOUT'
+                GROUP BY login_id
+            ) u ON u.id = la.id
+        ");
+        while ($r = $res->fetch_assoc()) {
+            $conteoAcciones[$r['login_id']]['ultima'] = $r;
+        }
     } catch (Throwable $e) {
         error_log("ver_logs conteo acciones: " . $e->getMessage());
     }
@@ -352,11 +366,12 @@ $stats = $conn->query("
                             <th class="d-none d-lg-table-cell">Navegador</th>
                             <th class="d-none d-md-table-cell">Motivo Fallo</th>
                             <th class="d-none d-md-table-cell">Actividad</th>
+                            <th>Última acción</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($logs)): ?>
-                            <tr><td colspan="9" class="text-center text-muted py-4">No hay registros para los filtros seleccionados</td></tr>
+                            <tr><td colspan="10"class="text-center text-muted py-4">No hay registros para los filtros seleccionados</td></tr>
                         <?php else: ?>
                             <?php foreach ($logs as $log): ?>
                                 <tr class="fila-log" data-id="<?= (int)$log['id'] ?>">
@@ -405,6 +420,17 @@ $stats = $conn->query("
                                             <?php if (!empty($act['cerro'])): ?>
                                                 <i class="bi bi-box-arrow-right text-secondary" title="Cerró sesión"></i>
                                             <?php endif; ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-nowrap small">
+                                        <?php if ($ultima = $conteoAcciones[$log['id']]['ultima'] ?? null): ?>
+                                            <span class="badge bg-<?= $colores[$ultima['accion']] ?? 'secondary' ?>"><?= htmlspecialchars($etiquetas[$ultima['accion']] ?? $ultima['accion']) ?></span>
+                                            <?= htmlspecialchars($ultima['tabla'] ?? '') ?>
+                                            <div class="text-muted"><?= date('H:i:s', strtotime($ultima['fecha'])) ?></div>
+                                        <?php elseif ($log['exito']): ?>
+                                            <span class="text-muted fst-italic">No hay acciones</span>
+                                        <?php else: ?>
+                                            <span class="text-muted">—</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>

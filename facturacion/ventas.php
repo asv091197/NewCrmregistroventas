@@ -10,8 +10,8 @@ ini_set('session.use_strict_mode', 1);
 
 require_once __DIR__ . '/../session_config.php'; session_start();
 
-// VERIFICACIÓN DE SESIÓN MANTENIDA - SOLO ADMIN
-if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
+// VERIFICACIÓN DE SESIÓN MANTENIDA - SOLO ADMIN Y SUPERADMIN
+if (!isset($_SESSION['usuario_id']) || !in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin'], true)) {
   session_unset();
   session_destroy();
   header("Location: ./login.php");
@@ -1006,7 +1006,7 @@ try {
             <div class="mb-3">
               <label for="modal-sala" class="form-label required-field">Sala</label>
 
-              <?php if ($_SESSION['rol'] === 'admin'): ?>
+              <?php if (in_array($_SESSION['rol'], ['admin', 'superadmin'], true)): ?>
                 <select class="form-select" id="modal-sala" name="sala_id">
                   <option value="" disabled>Selecciona una sala</option>
                   <?php foreach ($salas as $sala): ?>
