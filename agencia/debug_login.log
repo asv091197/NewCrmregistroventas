@@ -945,3 +945,137 @@
     [rol] => admin
 )
 
+[2026-10-27 07:04:39] === INICIO DE PROCESO LOGIN ===
+[2026-10-27 07:04:39] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-27 07:04:39] Sesión ID: 47hhbuji2hfschlhun57rh3hdv
+[2026-10-27 07:04:39] Método no POST - GET
+[2026-10-27 07:04:39] === FIN DE PROCESO LOGIN ===
+[2026-10-27 07:05:03] === INICIO DE PROCESO LOGIN ===
+[2026-10-27 07:05:03] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-27 07:05:03] Sesión ID: 47hhbuji2hfschlhun57rh3hdv
+[2026-10-27 07:05:03] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => ,T3r@saL0P3Z#
+)
+
+[2026-10-27 07:05:03] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => superadmin
+)
+
+[2026-10-27 07:05:04] Log de login registrado (agencia) - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [exito] => 1
+    [ip] => ::1
+    [dispositivo] => PC
+    [so] => Windows 10/11
+    [navegador] => Chrome 156
+    [pais] => 
+    [ciudad] => 
+)
+
+[2026-10-27 07:05:04] Login exitoso - Array
+(
+    [usuario] => asanchez@crmregistroventas.online
+    [rol] => superadmin
+    [apemat] => Alexis
+    [session_id] => 47hhbuji2hfschlhun57rh3hdv
+)
+
+[2026-10-27 07:05:04] Redirigiendo a - opcionesAdmin.php
+[2026-10-27 07:06:44] === INICIO DE PROCESO LOGIN ===
+[2026-10-27 07:06:44] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-27 07:06:44] Sesión ID: 47hhbuji2hfschlhun57rh3hdv
+[2026-10-27 07:06:44] Método no POST - GET
+[2026-10-27 07:06:44] === FIN DE PROCESO LOGIN ===
+[2026-10-27 07:06:58] === INICIO DE PROCESO LOGIN ===
+[2026-10-27 07:06:58] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-27 07:06:58] Sesión ID: 47hhbuji2hfschlhun57rh3hdv
+[2026-10-27 07:06:58] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => ,T3r@saL0P3Z#
+)
+
+[2026-10-27 07:06:58] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => superadmin
+)
+
+[2026-10-27 07:06:58] Log de login registrado (agencia) - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [exito] => 1
+    [ip] => ::1
+    [dispositivo] => PC
+    [so] => Windows 10/11
+    [navegador] => Chrome 156
+    [pais] => 
+    [ciudad] => 
+)
+
+[2026-10-27 07:06:58] Login exitoso - Array
+(
+    [usuario] => asanchez@crmregistroventas.online
+    [rol] => superadmin
+    [apemat] => Alexis
+    [session_id] => 47hhbuji2hfschlhun57rh3hdv
+)
+
+[2026-10-27 07:06:58] Redirigiendo a - opcionesAdmin.php
+[2026-10-27 07:09:21] === INICIO DE PROCESO LOGIN ===
+[2026-10-27 07:09:21] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-27 07:09:21] Sesión ID: 47hhbuji2hfschlhun57rh3hdv
+[2026-10-27 07:09:21] Método no POST - GET
+[2026-10-27 07:09:21] === FIN DE PROCESO LOGIN ===
+[2026-10-27 07:09:25] === INICIO DE PROCESO LOGIN ===
+[2026-10-27 07:09:25] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-27 07:09:25] Sesión ID: 47hhbuji2hfschlhun57rh3hdv
+[2026-10-27 07:09:25] Método no POST - GET
+[2026-10-27 07:09:25] === FIN DE PROCESO LOGIN ===
+[2026-10-27 07:09:42] === INICIO DE PROCESO LOGIN ===
+[2026-10-27 07:09:42] Navegador: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36
+[2026-10-27 07:09:42] Sesión ID: 47hhbuji2hfschlhun57rh3hdv
+[2026-10-27 07:09:42] Método POST recibido - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [contraseña] => ,T3r@saL0P3Z#
+)
+
+[2026-10-27 07:09:42] Usuario encontrado - Array
+(
+    [id] => 2
+    [nombre] => ALEXIS
+    [apemat] => Alexis
+    [rol] => superadmin
+)
+
+[2026-10-27 07:09:43] Log de login registrado (agencia) - Array
+(
+    [correo] => asanchez@crmregistroventas.online
+    [exito] => 1
+    [ip] => ::1
+    [dispositivo] => PC
+    [so] => Windows 10/11
+    [navegador] => Chrome 156
+    [pais] => 
+    [ciudad] => 
+)
+
+[2026-10-27 07:09:43] Login exitoso - Array
+(
+    [usuario] => asanchez@crmregistroventas.online
+    [rol] => superadmin
+    [apemat] => Alexis
+    [session_id] => 47hhbuji2hfschlhun57rh3hdv
+)
+
+[2026-10-27 07:09:43] Redirigiendo a - opcionesAdmin.php

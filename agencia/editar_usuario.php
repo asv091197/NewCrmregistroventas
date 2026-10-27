@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/../session_config.php'; session_start();
 if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: login.php");
     exit;

@@ -1,6 +1,6 @@
 <?php
 header('Access-Control-Allow-Origin: *');
-session_start();
+require_once __DIR__ . '/../../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
 require_once __DIR__ . '/../../includes/registro_acciones.php';
 

@@ -28,7 +28,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 date_default_timezone_set('America/Mexico_City');
 
 // Iniciar sesión para verificar el rol del usuario
-session_start();
+require_once __DIR__ . '/../session_config.php'; session_start();
 
 // Conexión a base de datos
 $host = '65.99.205.112';

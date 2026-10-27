@@ -248,7 +248,7 @@ try {
     $tipo_vendedor = $_POST['tipoVendedor'] ?? 'normal';
     
     // Capturar sala_id desde el formulario (si existe) o desde la sesión
-    session_start();
+    require_once __DIR__ . '/../session_config.php'; session_start();
     $sala_id = $_POST['sala_id'] ?? ($_SESSION['sala_id'] ?? null);
     $usuario_id = $_SESSION['usuario_id'] ?? 1;
     

@@ -231,7 +231,7 @@ function registrarLogLogin($conexion, array $datos) {
 debugLog('=== INICIO DE PROCESO LOGIN ===');
 debugLog('Navegador: ' . ($_SERVER['HTTP_USER_AGENT'] ?? 'No disponible'));
 
-session_start();
+require_once __DIR__ . '/../session_config.php'; session_start();
 debugLog('Sesión ID: ' . session_id());
 
 if (isset($_SESSION['usuario_id']) && isset($_SESSION['rol'])) {

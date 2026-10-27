@@ -1,6 +1,6 @@
 <?php
 // exportar_excel.php
-session_start();
+require_once __DIR__ . '/../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
 
 // Verificar autenticación y permisos

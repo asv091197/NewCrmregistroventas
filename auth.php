@@ -14,7 +14,7 @@
 // Ajusta los nombres de rol a los valores reales de la columna usuarios.rol.
 
 const AUTH_MODULOS = ['agencia', 'ventas'];
-const AUTH_INACTIVIDAD_MAX = 36000; // segundos (igual que .htaccess)
+const AUTH_INACTIVIDAD_MAX = 28800; // 8 horas en segundos (igual que .htaccess)
 
 $GLOBALS['AUTH_MODULO_ACTUAL'] = null;
 
@@ -26,6 +26,7 @@ function iniciarSesionModulo($modulo) {
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close(); // por si algo inició la sesión por defecto
     }
+    require_once __DIR__ . '/session_config.php';
     session_name('CRM_' . strtoupper($modulo));
     session_set_cookie_params([
         'lifetime' => 0,

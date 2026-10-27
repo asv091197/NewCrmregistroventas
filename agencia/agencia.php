@@ -8,7 +8,7 @@ ini_set('session.cookie_httponly', 1);
 ini_set('session.use_strict_mode', 1);
 header('Access-Control-Allow-Origin: *');
 
-session_start();
+require_once __DIR__ . '/../session_config.php'; session_start();
 
 // Verificación de sesión mejorada
 if (!isset($_SESSION['usuario_id']) || empty($_SESSION['rol']) || 

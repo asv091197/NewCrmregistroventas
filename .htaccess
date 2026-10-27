@@ -1,4 +1,4 @@
 DirectoryIndex index.html index.php
 
-php_value session.gc_maxlifetime 36000
-php_value session.cookie_lifetime 36000
+php_value session.gc_maxlifetime 28800
+php_value session.cookie_lifetime 28800

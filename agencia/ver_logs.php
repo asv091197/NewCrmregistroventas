@@ -1,10 +1,15 @@
 <?php
 // agencia/ver_logs.php
-session_start();
+require_once __DIR__ . '/../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
 
-if (!isset($_SESSION['usuario_id']) || !in_array($_SESSION['rol'], ['admin', 'superadmin'])) {
+if (!isset($_SESSION['usuario_id'])) {
     header("Location: ../login.php");
+    exit;
+}
+// Solo el superadmin puede ver los logs
+if (($_SESSION['rol'] ?? '') !== 'superadmin') {
+    header("Location: opAdmin.php");
     exit;
 }
 
@@ -134,7 +139,7 @@ $stats = $conn->query("
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3><i class="bi bi-shield-lock"></i> Logs de Inicio de Sesión</h3>
-        <a href="../opAdmin.php" class="btn btn-outline-secondary btn-sm">
+        <a href="opAdmin.php" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i> Volver al Dashboard
         </a>
     </div>

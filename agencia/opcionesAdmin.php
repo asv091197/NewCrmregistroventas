@@ -7,7 +7,7 @@ ini_set('session.cookie_secure', 0);
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_strict_mode', 1);
 header('Access-Control-Allow-Origin: *');
-session_start();
+require_once __DIR__ . '/../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
 
 // Validación de roles
@@ -611,6 +611,13 @@ function formatoDinero($cantidad)
                             💳 Plataformas
                         </a>
                     </li>
+                    <?php if (($_SESSION['rol'] ?? '') === 'superadmin'): ?>
+                    <li class="nav-item">
+                        <a class="nav-link text-dark" href="ver_logs.php" style="text-decoration: none;">
+                            <i class="bi bi-shield-lock me-1"></i>Logs
+                        </a>
+                    </li>
+                    <?php endif; ?>
                 </ul>
                 <span class="navbar-text text-muted me-3 d-none d-md-block">
                     <?php

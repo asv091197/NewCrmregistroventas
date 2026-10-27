@@ -8,7 +8,7 @@ ini_set('session.cookie_secure', 0);
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_strict_mode', 1);
 
-session_start();
+require_once __DIR__ . '/../session_config.php'; session_start();
 
 // VERIFICACIÓN DE SESIÓN MANTENIDA - SOLO ADMIN
 if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {

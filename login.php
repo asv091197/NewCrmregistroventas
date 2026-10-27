@@ -15,7 +15,7 @@ ini_set('error_log', __DIR__ . '/php_errors.log');
 
 // Iniciar sesión
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/session_config.php'; session_start();
 }
 
 // Función de depuración

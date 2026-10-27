@@ -8,7 +8,7 @@ ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/php_errors.log');
 
 // Iniciar sesión
-session_start();
+require_once __DIR__ . '/../session_config.php'; session_start();
 
 // Verificar que el usuario esté logueado
 if (!isset($_SESSION['usuario_id'])) {

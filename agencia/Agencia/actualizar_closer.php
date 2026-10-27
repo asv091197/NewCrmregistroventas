@@ -12,7 +12,7 @@ set_exception_handler(function($exception) {
     die("Error interno del servidor. Por favor, intente más tarde.");
 });
 
-session_start();
+require_once __DIR__ . '/../../session_config.php'; session_start();
 require_once __DIR__ . '/../../includes/registro_acciones.php';
 
 // Verificación de sesión
