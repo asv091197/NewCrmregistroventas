@@ -24,7 +24,7 @@ function registrarAccion($db, $accion, $tabla = null, $registroId = null, $detal
             $registroId !== null ? (string)$registroId : null,
             is_array($detalle) ? json_encode($detalle, JSON_UNESCAPED_UNICODE) : $detalle,
             ipAccion(),
-            substr($_SERVER['REQUEST_URI'] ?? '', 0, 255),
+            null,
         ];
 
         $sql = "INSERT INTO logs_acciones
