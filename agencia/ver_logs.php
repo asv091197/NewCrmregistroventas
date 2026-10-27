@@ -242,8 +242,9 @@ $stats = $conn->query("
                     <label class="form-label small">Correo</label>
                     <input type="text" name="correo" class="form-control form-control-sm" value="<?= htmlspecialchars($filtroCorreo) ?>" placeholder="usuario@...">
                 </div>
-                <div class="col-md-3">
-                    <button class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> Filtrar</button>
+                <div class="col-md-3 d-flex gap-2">
+                    <button class="btn btn-primary btn-sm flex-fill"><i class="bi bi-search"></i> Filtrar</button>
+                    <a href="ver_logs.php" class="btn btn-outline-secondary btn-sm flex-fill"><i class="bi bi-x-circle"></i> Borrar filtro</a>
                 </div>
             </form>
         </div>
