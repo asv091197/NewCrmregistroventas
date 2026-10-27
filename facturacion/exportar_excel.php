@@ -27,6 +27,11 @@ if (headers_sent()) {
 }
 
 require __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../session_config.php';
+require_once __DIR__ . '/../includes/registro_acciones.php';
+session_start();
+// Liberar el bloqueo de la sesión: la generación puede tardar y $_SESSION sigue disponible para la bitácora
+session_write_close();
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -2381,6 +2386,11 @@ try {
 
     // Verificar que el archivo se creó correctamente
     if (file_exists($tempFile) && filesize($tempFile) > 0) {
+        registrarAccion($pdo, 'EXPORTAR EXCEL', 'ventas_facturacion', null, [
+            'archivo' => $fileName,
+            'filtros' => $_GET,
+            'ventas_count' => count($ventas ?? []),
+        ]);
         readfile($tempFile);
         unlink($tempFile);
         exit;

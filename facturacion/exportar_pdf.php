@@ -6,6 +6,11 @@ while (ob_get_level()) {
 ob_start();
 
 require __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../session_config.php';
+require_once __DIR__ . '/../includes/registro_acciones.php';
+session_start();
+// Liberar el bloqueo de la sesión: la generación puede tardar y $_SESSION sigue disponible para la bitácora
+session_write_close();
 
 use TCPDF;
 
@@ -1543,6 +1548,11 @@ header('Cache-Control: max-age=0');
 header('Content-Transfer-Encoding: binary');
 header('Pragma: public');
 header('Expires: 0');
+
+registrarAccion($pdo, 'Exportar PDF', 'ventas_facturacion', null, [
+    'filtros' => $_GET,
+    'ventas_count' => count($ventas ?? []),
+]);
 
 // Salida del PDF
 $pdf->Output('reporte_ventas.pdf', 'D');
