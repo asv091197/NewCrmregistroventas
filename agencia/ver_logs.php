@@ -17,6 +17,9 @@ $conn = new mysqli("65.99.205.112", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS"
 if ($conn->connect_error) die("Error de conexión");
 $conn->set_charset("utf8mb4");
 
+$colores   = ['INSERT' => 'success', 'UPDATE' => 'primary', 'DELETE' => 'danger', 'LOGOUT' => 'secondary'];
+$etiquetas = ['INSERT' => 'NUEVO', 'UPDATE' => 'ACTUALIZAR', 'DELETE' => 'ELIMINAR'];
+
 $filtroExito  = $_GET['exito'] ?? '';
 $filtroOrigen = $_GET['origen'] ?? '';
 $filtroCorreo = trim($_GET['correo'] ?? '');
@@ -143,6 +146,7 @@ $stats = $conn->query("
         .detalle-accion { font-size: 0.8rem; color: #495057; overflow-wrap: anywhere; }
         .tabla-logs { max-height: 600px; overflow: auto; }
         .correo-cell { overflow-wrap: anywhere; min-width: 140px; }
+        .fila-log { cursor: pointer; }
         @media (max-width: 767.98px) {
             body { padding: 10px; }
             h3 { font-size: 1.2rem; }
@@ -168,13 +172,12 @@ $stats = $conn->query("
         <div class="alert alert-warning">No se encontró el inicio de sesión #<?= $sesionId ?>.</div>
     <?php else: ?>
         <?php
-        $colores = ['INSERT' => 'success', 'UPDATE' => 'primary', 'DELETE' => 'danger', 'LOGOUT' => 'secondary'];
-        $etiquetas = ['INSERT' => 'NUEVO', 'UPDATE' => 'ACTUALIZAR', 'DELETE' => 'ELIMINAR'];
-        $hexes   = ['success' => '#198754', 'primary' => '#0d6efd', 'danger' => '#dc3545', 'secondary' => '#6c757d'];
+        $hexes  = ['success' => '#198754', 'primary' => '#0d6efd', 'danger' => '#dc3545', 'secondary' => '#6c757d'];
         $ultima  = end($acciones) ?: null;
         $cerro   = $ultima && $ultima['accion'] === 'LOGOUT';
         $fin     = $ultima ? strtotime($ultima['fecha']) : strtotime($sesion['fecha_intento']);
         $duracion = $fin - strtotime($sesion['fecha_intento']);
+        $numAcciones = count(array_filter($acciones, fn($a) => $a['accion'] !== 'LOGOUT'));
         ?>
         <a href="?fecha=<?= date('Y-m-d', strtotime($sesion['fecha_intento'])) ?>" class="btn btn-sm btn-outline-primary mb-3">
             <i class="bi bi-arrow-left"></i> Volver a la lista
@@ -186,7 +189,7 @@ $stats = $conn->query("
                 </h5>
                 <small class="text-muted">
                     Sesión #<?= (int)$sesion['id'] ?> ·
-                    <?= count(array_filter($acciones, fn($a) => $a['accion'] !== 'LOGOUT')) ?> acciones ·
+                    <?= $numAcciones ?> acciones ·
                     duración <?= gmdate('H:i:s', max(0, $duracion)) ?>
                 </small>
             </div>
@@ -206,6 +209,12 @@ $stats = $conn->query("
                             · <?= htmlspecialchars($sesion['dispositivo'] ?? '') ?> / <?= htmlspecialchars($sesion['navegador'] ?? '') ?>
                         </div>
                     </div>
+
+                    <?php if ($numAcciones === 0): ?>
+                        <div class="timeline-item">
+                            <div class="text-muted fst-italic"><i class="bi bi-info-circle"></i> No hay acciones</div>
+                        </div>
+                    <?php endif; ?>
 
                     <?php foreach ($acciones as $a): $c = $colores[$a['accion']] ?? 'secondary'; ?>
                         <div class="timeline-item" style="--punto:<?= $hexes[$c] ?>">
@@ -342,7 +351,7 @@ $stats = $conn->query("
                             <th class="d-none d-md-table-cell">Dispositivo</th>
                             <th class="d-none d-lg-table-cell">Navegador</th>
                             <th class="d-none d-md-table-cell">Motivo Fallo</th>
-                            <th>Actividad</th>
+                            <th class="d-none d-md-table-cell">Actividad</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -350,7 +359,7 @@ $stats = $conn->query("
                             <tr><td colspan="9" class="text-center text-muted py-4">No hay registros para los filtros seleccionados</td></tr>
                         <?php else: ?>
                             <?php foreach ($logs as $log): ?>
-                                <tr>
+                                <tr class="fila-log" data-id="<?= (int)$log['id'] ?>">
                                     <td class="text-nowrap small"><?= date('d/m/Y H:i:s', strtotime($log['fecha_intento'])) ?></td>
                                     <td class="d-none d-sm-table-cell">
                                         <?php if ($log['origen'] === 'facturacion'): ?>
@@ -388,10 +397,10 @@ $stats = $conn->query("
                                     </td>
                                     <td class="small d-none d-lg-table-cell"><?= htmlspecialchars($log['navegador'] ?? '—') ?></td>
                                     <td class="small text-danger d-none d-md-table-cell"><?= htmlspecialchars($log['motivo_fallo'] ?? '') ?></td>
-                                    <td class="text-nowrap">
+                                    <td class="text-nowrap d-none d-md-table-cell">
                                         <?php if ($log['exito']): $act = $conteoAcciones[$log['id']] ?? null; ?>
                                             <a href="?sesion=<?= (int)$log['id'] ?>" class="btn btn-outline-dark btn-sm py-0">
-                                                <i class="bi bi-clock-history"></i> <?= (int)($act['acciones'] ?? 0) ?><span class="d-none d-sm-inline"> acciones</span>
+                                                <i class="bi bi-clock-history"></i> <?= (int)($act['acciones'] ?? 0) ?> acciones
                                             </a>
                                             <?php if (!empty($act['cerro'])): ?>
                                                 <i class="bi bi-box-arrow-right text-secondary" title="Cerró sesión"></i>
@@ -408,5 +417,14 @@ $stats = $conn->query("
     </div>
 <?php endif; ?>
 </div>
+<script>
+// Al tocar una fila se abre el detalle de ese login
+document.querySelectorAll('.fila-log').forEach(fila => {
+    fila.addEventListener('click', e => {
+        if (e.target.closest('a, button')) return;
+        window.location.href = 'ver_logs.php?sesion=' + fila.dataset.id;
+    });
+});
+</script>
 </body>
 </html>
