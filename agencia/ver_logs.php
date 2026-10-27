@@ -208,7 +208,7 @@ if ($sesionId > 0) {
                            value="<?= htmlspecialchars($filtroFechaFin) ?>" min="<?= htmlspecialchars($filtroFechaInicio) ?>">
                 </div>
                 <div class="col-6 col-md-4 col-lg-2">
-                    <label class="form-label small">Origen</label>
+                    <label class="form-label small">Origen Login</label>
                     <select name="origen" class="form-select form-select-sm">
                         <option value="">Todos</option>
                         <option value="agencia" <?= $filtroOrigen === 'agencia' ? 'selected' : '' ?>>Agencia</option>
@@ -216,7 +216,7 @@ if ($sesionId > 0) {
                     </select>
                 </div>
                 <div class="col-6 col-md-4 col-lg-2">
-                    <label class="form-label small">Estado</label>
+                    <label class="form-label small">Estado Login</label>
                     <select name="exito" class="form-select form-select-sm">
                         <option value="">Todos</option>
                         <option value="1" <?= $filtroExito === '1' ? 'selected' : '' ?>>Exitosos</option>
