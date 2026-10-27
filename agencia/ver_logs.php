@@ -17,40 +17,7 @@ $conn = new mysqli("65.99.205.112", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS"
 if ($conn->connect_error) die("Error de conexión");
 $conn->set_charset("utf8mb4");
 
-$colores   = ['INSERT' => 'success', 'UPDATE' => 'primary', 'DELETE' => 'danger', 'LOGOUT' => 'secondary'];
-$etiquetas = ['INSERT' => 'NUEVO', 'UPDATE' => 'ACTUALIZAR', 'DELETE' => 'ELIMINAR'];
-
-$filtroExito  = $_GET['exito'] ?? '';
-$filtroOrigen = $_GET['origen'] ?? '';
-$filtroCorreo = trim($_GET['correo'] ?? '');
-$filtroFecha  = $_GET['fecha'] ?? date('Y-m-d');
-$filtroActividad = $_GET['actividad'] ?? '';
-
-$where  = ["DATE(fecha_intento) = ?"];
-$params = [$filtroFecha];
-$types  = "s";
-
-if ($filtroExito !== '') {
-    $where[]  = "exito = ?";
-    $params[] = (int)$filtroExito;
-    $types   .= "i";
-}
-if ($filtroOrigen !== '') {
-    $where[]  = "origen = ?";
-    $params[] = $filtroOrigen;
-    $types   .= "s";
-}
-if ($filtroCorreo !== '') {
-    $where[]  = "correo LIKE ?";
-    $params[] = "%$filtroCorreo%";
-    $types   .= "s";
-}
-// Actividad: logins exitosos con / sin acciones registradas (sin contar LOGOUT)
-if ($filtroActividad === 'con' || $filtroActividad === 'sin') {
-    $where[] = "exito = 1 AND " . ($filtroActividad === 'sin' ? "NOT " : "") . "EXISTS (
-        SELECT 1 FROM logs_acciones la WHERE la.login_id = logs_login.id AND la.accion <> 'LOGOUT'
-    )";
-}
+require_once __DIR__ . '/logs_filtros.php';
 
 $sql  = "SELECT * FROM logs_login WHERE " . implode(' AND ', $where) . " ORDER BY fecha_intento DESC LIMIT 500";
 $stmt = $conn->prepare($sql);
@@ -110,24 +77,7 @@ if ($sesionId > 0) {
     }
 }
 
-function formatearDetalle($json) {
-    $datos = json_decode($json ?? '', true);
-    if (!is_array($datos)) return htmlspecialchars($json ?? '');
-    $partes = [];
-    foreach ($datos as $campo => $valor) {
-        if (is_array($valor) && array_key_exists('antes', $valor)) {
-            $partes[] = "<strong>" . htmlspecialchars($campo) . "</strong>: "
-                . htmlspecialchars(var_export($valor['antes'], true)) . " &rarr; "
-                . htmlspecialchars(var_export($valor['despues'], true));
-        } else {
-            $texto = is_scalar($valor) || $valor === null ? var_export($valor, true) : json_encode($valor, JSON_UNESCAPED_UNICODE);
-            $partes[] = "<strong>" . htmlspecialchars($campo) . "</strong>: " . htmlspecialchars($texto);
-        }
-    }
-    return implode('<br>', $partes);
-}
-
-$stats = $conn->query("
+$stmt = $conn->prepare("
     SELECT
         SUM(exito = 1) as exitosos,
         SUM(exito = 0) as fallidos,
@@ -136,8 +86,11 @@ $stats = $conn->query("
         COUNT(DISTINCT ip) as ips_unicas,
         COUNT(DISTINCT usuario_id) as usuarios_unicos
     FROM logs_login
-    WHERE DATE(fecha_intento) = '$filtroFecha'
-")->fetch_assoc();
+    WHERE fecha_intento >= ? AND fecha_intento < ?
+");
+$stmt->bind_param("ss", $fechaDesde, $fechaHasta);
+$stmt->execute();
+$stats = $stmt->get_result()->fetch_assoc();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -193,7 +146,8 @@ $stats = $conn->query("
         $duracion = $fin - strtotime($sesion['fecha_intento']);
         $numAcciones = count(array_filter($acciones, fn($a) => $a['accion'] !== 'LOGOUT'));
         ?>
-        <a href="?fecha=<?= date('Y-m-d', strtotime($sesion['fecha_intento'])) ?>" class="btn btn-sm btn-outline-primary mb-3">
+        <?php $diaSesion = date('Y-m-d', strtotime($sesion['fecha_intento'])); ?>
+        <a href="?fecha_inicio=<?= $diaSesion ?>&fecha_fin=<?= $diaSesion ?>" class="btn btn-sm btn-outline-primary mb-3">
             <i class="bi bi-arrow-left"></i> Volver a la lista
         </a>
         <div class="card mb-3">
@@ -261,8 +215,14 @@ $stats = $conn->query("
         <div class="card-body">
             <form method="GET" class="row g-2 align-items-end">
                 <div class="col-6 col-md-4 col-lg-2">
-                    <label class="form-label small">Fecha</label>
-                    <input type="date" name="fecha" class="form-control form-control-sm" value="<?= htmlspecialchars($filtroFecha) ?>">
+                    <label class="form-label small">Fecha inicio</label>
+                    <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-control form-control-sm" required
+                           value="<?= htmlspecialchars($filtroFechaInicio) ?>" max="<?= htmlspecialchars($filtroFechaFin) ?>">
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small">Fecha fin</label>
+                    <input type="date" name="fecha_fin" id="fecha_fin" class="form-control form-control-sm" required
+                           value="<?= htmlspecialchars($filtroFechaFin) ?>" min="<?= htmlspecialchars($filtroFechaInicio) ?>">
                 </div>
                 <div class="col-6 col-md-4 col-lg-2">
                     <label class="form-label small">Origen</label>
@@ -292,7 +252,7 @@ $stats = $conn->query("
                     <label class="form-label small">Correo</label>
                     <input type="text" name="correo" class="form-control form-control-sm" value="<?= htmlspecialchars($filtroCorreo) ?>" placeholder="usuario@...">
                 </div>
-                <div class="col-12 col-md-4 col-lg-2 d-flex gap-2">
+                <div class="col-12 col-md-4 col-lg-3 ms-auto d-flex gap-2">
                     <button class="btn btn-primary btn-sm flex-fill"><i class="bi bi-search"></i> Filtrar</button>
                     <a href="ver_logs.php" class="btn btn-outline-secondary btn-sm flex-fill"><i class="bi bi-x-circle"></i> Borrar<span class="d-lg-none d-xl-inline"> filtro</span></a>
                 </div>
@@ -349,6 +309,15 @@ $stats = $conn->query("
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-end gap-2 mb-2">
+        <a href="exportar_logs.php?<?= htmlspecialchars(http_build_query($filtrosQuery + ['formato' => 'excel'])) ?>" class="btn btn-success btn-sm">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </a>
+        <a href="exportar_logs.php?<?= htmlspecialchars(http_build_query($filtrosQuery + ['formato' => 'pdf'])) ?>" class="btn btn-danger btn-sm">
+            <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+        </a>
     </div>
 
     <div class="card">
@@ -426,7 +395,7 @@ $stats = $conn->query("
                                         <?php if ($ultima = $conteoAcciones[$log['id']]['ultima'] ?? null): ?>
                                             <span class="badge bg-<?= $colores[$ultima['accion']] ?? 'secondary' ?>"><?= htmlspecialchars($etiquetas[$ultima['accion']] ?? $ultima['accion']) ?></span>
                                             <?= htmlspecialchars($ultima['tabla'] ?? '') ?>
-                                            <div class="text-muted"><?= date('H:i:s', strtotime($ultima['fecha'])) ?></div>
+                                            <div class="text-muted"><?= date('d/m H:i:s', strtotime($ultima['fecha'])) ?></div>
                                         <?php elseif ($log['exito']): ?>
                                             <span class="text-muted fst-italic">No hay acciones</span>
                                         <?php else: ?>
@@ -444,6 +413,20 @@ $stats = $conn->query("
 <?php endif; ?>
 </div>
 <script>
+// Validación del rango: la fecha inicio no puede ser mayor que la fecha fin
+const fechaInicio = document.getElementById('fecha_inicio');
+const fechaFin    = document.getElementById('fecha_fin');
+if (fechaInicio && fechaFin) {
+    fechaInicio.addEventListener('change', () => {
+        fechaFin.min = fechaInicio.value;
+        if (fechaFin.value && fechaInicio.value > fechaFin.value) fechaFin.value = fechaInicio.value;
+    });
+    fechaFin.addEventListener('change', () => {
+        fechaInicio.max = fechaFin.value;
+        if (fechaInicio.value && fechaInicio.value > fechaFin.value) fechaInicio.value = fechaFin.value;
+    });
+}
+
 // Al tocar una fila se abre el detalle de ese login
 document.querySelectorAll('.fila-log').forEach(fila => {
     fila.addEventListener('click', e => {
