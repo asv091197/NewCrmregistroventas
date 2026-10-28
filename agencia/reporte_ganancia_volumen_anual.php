@@ -18,6 +18,14 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 date_default_timezone_set('America/Mexico_City');
 
+// Solo se descarga con sesión iniciada (admin o superadmin)
+require_once __DIR__ . '/../session_config.php'; session_start();
+if (!isset($_SESSION['usuario_id']) || !in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin'], true)) {
+    header("Location: ./login.php");
+    exit;
+}
+session_write_close();
+
 // Función para limpiar símbolos de los campos de texto
 function limpiarTexto($texto) {
     if ($texto === null || $texto === '') {

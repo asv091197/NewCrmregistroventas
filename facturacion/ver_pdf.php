@@ -25,6 +25,12 @@ date_default_timezone_set('America/Mexico_City');
 // Iniciar sesión para verificar el rol del usuario
 require_once __DIR__ . '/../session_config.php'; session_start();
 
+// Solo se descarga con sesión iniciada (admin o superadmin)
+if (!isset($_SESSION['usuario_id']) || !in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin'], true)) {
+    header("Location: ./login.php");
+    exit;
+}
+
 // Conexión a base de datos
 $host = '65.99.205.112';
 $dbname = 'noreplyc_crmregistroventas';

@@ -10,6 +10,13 @@ require __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../session_config.php';
 require_once __DIR__ . '/../includes/registro_acciones.php';
 session_start();
+
+// Solo se descarga con sesión iniciada (admin o superadmin)
+if (!isset($_SESSION['usuario_id']) || !in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin'], true)) {
+    header("Location: ./login.php");
+    exit;
+}
+
 // Liberar el bloqueo de la sesión: la generación puede tardar y $_SESSION sigue disponible para la bitácora
 session_write_close();
 
