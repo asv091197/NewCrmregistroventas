@@ -16,7 +16,7 @@ if (isset($_SESSION['form_data'])) {
 }
 
 // Validación de sesión y rol
-if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'usuario')) {
+if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin' && $_SESSION['rol'] !== 'usuario')) {
   header("Location: ../login.php");
   exit;
 }
@@ -35,14 +35,20 @@ try {
     $sql_usuario_actual = "SELECT id, acceso_todas_salas, salas_permitidas FROM usuarios WHERE id = :id";
     $stmt_usuario_actual = $pdo->prepare($sql_usuario_actual);
     $stmt_usuario_actual->execute([':id' => $_SESSION['usuario_id']]);
-    $usuario_actual = $stmt_usuario_actual->fetch(PDO::FETCH_ASSOC);
+    $usuario_actual = $stmt_usuario_actual->fetch(PDO::FETCH_ASSOC) ?: [];
 } catch (PDOException $e) {
     error_log("Error al obtener datos del usuario actual: " . $e->getMessage());
 }
 
+// Superadmin tiene los mismos permisos que admin y siempre acceso a todas las salas
+$esAdmin = $_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin';
+if ($_SESSION['rol'] === 'superadmin') {
+    $usuario_actual['acceso_todas_salas'] = 1;
+}
+
 // Obtener lista de salas solo para administradores con acceso_todas_salas = 1
 $salas = [];
-if ($_SESSION['rol'] === 'admin' && isset($usuario_actual['acceso_todas_salas']) && $usuario_actual['acceso_todas_salas'] == 1) {
+if ($esAdmin && isset($usuario_actual['acceso_todas_salas']) && $usuario_actual['acceso_todas_salas'] == 1) {
     try {
         $sql_salas = "SELECT id, nombre FROM salas WHERE activo = 1 ORDER BY nombre";
         $stmt_salas = $pdo->query($sql_salas);
@@ -57,7 +63,7 @@ $usuarios = [];
 $sala_id_filtro = null;
 
 // Determinar la sala para filtro de usuarios (closers)
-if ($_SESSION['rol'] === 'admin') {
+if ($esAdmin) {
     if (isset($usuario_actual['acceso_todas_salas']) && $usuario_actual['acceso_todas_salas'] == 1) {
         // Administradores con acceso a todas las salas pueden seleccionar sala
         if (isset($_POST['sala_id_admin']) && !empty($_POST['sala_id_admin'])) {
@@ -172,7 +178,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $usuario_closer = !empty($_POST['usuario_closer']) ? intval($_POST['usuario_closer']) : null;
     
     // Determinar sala_id basado en rol y permisos
-    if ($_SESSION['rol'] === 'admin') {
+    if ($esAdmin) {
         // Si es admin con acceso a todas las salas, usa el selector
         if (isset($usuario_actual['acceso_todas_salas']) && $usuario_actual['acceso_todas_salas'] == 1) {
             $sala_id = !empty($_POST['sala_id_admin']) ? intval($_POST['sala_id_admin']) : 
@@ -265,14 +271,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="container-fluid">
       <div class="d-flex align-items-center ms-auto">
         <ul class="navbar-nav me-3">
-          <?php if ($_SESSION['rol'] === 'admin'): ?>
+          <?php if ($esAdmin): ?>
           <li class="nav-item">
             <a class="nav-link text-dark" href="../opcionesAdmin.php" style="text-decoration: none;">
                Dashboard
             </a>
           </li>
           <?php endif; ?> 
-          <?php if ($_SESSION['rol'] === 'admin'): ?>
+          <?php if ($esAdmin): ?>
           <li class="nav-item">
             <a class="nav-link text-dark" href="../Usuarios/usuarios.php" style="text-decoration: none;">
               👤 Usuarios
@@ -350,7 +356,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
                 
                 <!-- Sección para administradores con acceso a todas las salas: seleccionar sala -->
-                <?php if ($_SESSION['rol'] === 'admin' && isset($usuario_actual['acceso_todas_salas']) && $usuario_actual['acceso_todas_salas'] == 1): ?>
+                <?php if ($esAdmin && isset($usuario_actual['acceso_todas_salas']) && $usuario_actual['acceso_todas_salas'] == 1): ?>
                 <div class="col-12 mt-2">
                   <button type="button" id="btnSeleccionarSala" class="btn btn-sm btn-outline-info">
                     <i class="bi bi-building"></i> Asignar Sala
