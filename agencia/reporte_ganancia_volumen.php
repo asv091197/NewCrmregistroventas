@@ -26,8 +26,6 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Color;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 date_default_timezone_set('America/Mexico_City');
@@ -45,10 +43,24 @@ function normalizarNombre($nombre) {
     return trim(strtolower($nombre));
 }
 
-// Función para formatear moneda
-function formatoMoneda($valor) {
-    return '$' . number_format($valor, 2);
+// Nombre del participante de un rol: primero el nombre manual, si no el calculado (null si no hay)
+function nombreParticipante($venta, $campoManual, $campoNombre) {
+    if (!empty($venta[$campoManual]) && trim($venta[$campoManual]) !== '') {
+        return trim($venta[$campoManual]);
+    }
+    if (!empty($venta[$campoNombre]) && $venta[$campoNombre] !== 'No asignado') {
+        return trim($venta[$campoNombre]);
+    }
+    return null;
 }
+
+// Roles de cada venta: [etiqueta, campo nombre manual, campo nombre, campo ganancia, divisor ganancia volumen]
+$rolesVenta = [
+    ['Liner', 'liner_nombre_manual', 'liner_nombre', 'ganancia_liner', 2],
+    ['Closer 1', 'closer1_nombre_manual', 'closer1_nombre', 'ganancia_closer1', 2],
+    ['Closer 2', 'closer2_nombre_manual', 'closer2_nombre', 'ganancia_closer2', 3],
+    ['Front', 'full_stack_nombre_manual', 'front_nombre', 'ganancia_fullstack', 1],
+];
 
 // Conexión a base de datos
 
@@ -361,21 +373,22 @@ $configOver = [
 ];
 
 // Función para calcular OVER
+// (las metas que no existen en la configuración cuentan como 0%)
 function calcularOver($ventaNetoTotal, $config) {
-    $porcentaje = 0;
-    $totalOver = 0;
-    
+    $p0 = $config['metas'][0]['porcentaje'] ?? 0;
+    $p1 = $config['metas'][1]['porcentaje'] ?? 0;
+
     if ($ventaNetoTotal <= 300000) {
-        $porcentaje = $config['metas'][0]['porcentaje'];
+        $porcentaje = $p0;
         $totalOver = $ventaNetoTotal * $porcentaje / 100;
     } elseif ($ventaNetoTotal <= 350000) {
-        $porcentaje = $config['metas'][1]['porcentaje'];
-        $totalOver = (300000 * $config['metas'][0]['porcentaje'] / 100) + 
+        $porcentaje = $p1;
+        $totalOver = (300000 * $p0 / 100) +
                     (($ventaNetoTotal - 300000) * $porcentaje / 100);
     } else {
-        $porcentaje = $config['metas'][2]['porcentaje'];
-        $totalOver = (300000 * $config['metas'][0]['porcentaje'] / 100) + 
-                    (50000 * $config['metas'][1]['porcentaje'] / 100) + 
+        $porcentaje = $config['metas'][2]['porcentaje'] ?? 0;
+        $totalOver = (300000 * $p0 / 100) +
+                    (50000 * $p1 / 100) +
                     (($ventaNetoTotal - 350000) * $porcentaje / 100);
     }
     
@@ -576,10 +589,9 @@ $dataTotales = [
 $row = 7;
 foreach ($dataTotales as $index => $data) {
     $sheet->setCellValue('A' . $row, $data[0]);
-    if ($index === 0) {
-        $sheet->setCellValue('B' . $row, $data[1]);
-    } else {
-        $sheet->setCellValue('B' . $row, $data[1]);
+    $sheet->setCellValue('B' . $row, $data[1]);
+    // La primera fila es un conteo, el resto son montos
+    if ($index > 0) {
         $sheet->getStyle('B' . $row)->applyFromArray($moneyStyle);
     }
     $sheet->getStyle('A' . $row . ':B' . $row)->applyFromArray($borderStyle);
@@ -796,7 +808,9 @@ if ($salaSeleccionada > 0) {
 }
 
 // Aplicar bordes a los datos
-$sheet2->getStyle('A' . $startOverRow . ':D' . ($row-1))->applyFromArray($borderStyle);
+if ($row > $startOverRow) {
+    $sheet2->getStyle('A' . $startOverRow . ':D' . ($row-1))->applyFromArray($borderStyle);
+}
 
 // Total OVER
 $sheet2->setCellValue('C' . $row, 'TOTAL OVER:');
@@ -816,106 +830,28 @@ foreach (range('A', 'D') as $column) {
 $sheet3 = $spreadsheet->createSheet();
 $sheet3->setTitle('Comisiones Usuarios');
 
-// Procesar usuarios con ganancias
+// Procesar usuarios con ganancias (por rol, solo si la ganancia del rol es mayor a 0)
 $usuariosConGanancias = [];
 foreach ($ventas as $venta) {
-    // Procesar Liner
-    $nombreLiner = !empty($venta['liner_nombre_manual']) && trim($venta['liner_nombre_manual']) !== '' 
-        ? trim($venta['liner_nombre_manual'])
-        : (!empty($venta['liner_nombre']) && $venta['liner_nombre'] !== 'No asignado' 
-            ? trim($venta['liner_nombre']) 
-            : null);
-    
-    if ($nombreLiner && (float)($venta['ganancia_liner'] ?? 0) > 0) {
-        $claveUsuario = normalizarNombre($nombreLiner);
+    foreach ($rolesVenta as [$rol, $campoManual, $campoNombre, $campoGanancia]) {
+        $nombreRol = nombreParticipante($venta, $campoManual, $campoNombre);
+        $ganancia = (float)($venta[$campoGanancia] ?? 0);
+        if (!$nombreRol || $ganancia <= 0) {
+            continue;
+        }
+        $claveUsuario = normalizarNombre($nombreRol);
         if (!isset($usuariosConGanancias[$claveUsuario])) {
             $usuariosConGanancias[$claveUsuario] = [
-                'nombre' => $nombreLiner,
+                'nombre' => $nombreRol,
                 'ganancia_total' => 0,
                 'ventas_count' => 0,
                 'roles' => []
             ];
         }
-        $ganancia = (float)($venta['ganancia_liner'] ?? 0);
         $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $ganancia;
         $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-        if (!in_array('Liner', $usuariosConGanancias[$claveUsuario]['roles'])) {
-            $usuariosConGanancias[$claveUsuario]['roles'][] = 'Liner';
-        }
-    }
-    
-    // Procesar Closer 1
-    $nombreCloser1 = !empty($venta['closer1_nombre_manual']) && trim($venta['closer1_nombre_manual']) !== '' 
-        ? trim($venta['closer1_nombre_manual'])
-        : (!empty($venta['closer1_nombre']) && $venta['closer1_nombre'] !== 'No asignado' 
-            ? trim($venta['closer1_nombre']) 
-            : null);
-    
-    if ($nombreCloser1 && (float)($venta['ganancia_closer1'] ?? 0) > 0) {
-        $claveUsuario = normalizarNombre($nombreCloser1);
-        if (!isset($usuariosConGanancias[$claveUsuario])) {
-            $usuariosConGanancias[$claveUsuario] = [
-                'nombre' => $nombreCloser1,
-                'ganancia_total' => 0,
-                'ventas_count' => 0,
-                'roles' => []
-            ];
-        }
-        $ganancia = (float)($venta['ganancia_closer1'] ?? 0);
-        $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $ganancia;
-        $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-        if (!in_array('Closer 1', $usuariosConGanancias[$claveUsuario]['roles'])) {
-            $usuariosConGanancias[$claveUsuario]['roles'][] = 'Closer 1';
-        }
-    }
-    
-    // Procesar Closer 2
-    $nombreCloser2 = !empty($venta['closer2_nombre_manual']) && trim($venta['closer2_nombre_manual']) !== '' 
-        ? trim($venta['closer2_nombre_manual'])
-        : (!empty($venta['closer2_nombre']) && $venta['closer2_nombre'] !== 'No asignado' 
-            ? trim($venta['closer2_nombre']) 
-            : null);
-    
-    if ($nombreCloser2 && (float)($venta['ganancia_closer2'] ?? 0) > 0) {
-        $claveUsuario = normalizarNombre($nombreCloser2);
-        if (!isset($usuariosConGanancias[$claveUsuario])) {
-            $usuariosConGanancias[$claveUsuario] = [
-                'nombre' => $nombreCloser2,
-                'ganancia_total' => 0,
-                'ventas_count' => 0,
-                'roles' => []
-            ];
-        }
-        $ganancia = (float)($venta['ganancia_closer2'] ?? 0);
-        $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $ganancia;
-        $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-        if (!in_array('Closer 2', $usuariosConGanancias[$claveUsuario]['roles'])) {
-            $usuariosConGanancias[$claveUsuario]['roles'][] = 'Closer 2';
-        }
-    }
-    
-    // Procesar Front
-    $nombreFront = !empty($venta['full_stack_nombre_manual']) && trim($venta['full_stack_nombre_manual']) !== '' 
-        ? trim($venta['full_stack_nombre_manual'])
-        : (!empty($venta['front_nombre']) && $venta['front_nombre'] !== 'No asignado' 
-            ? trim($venta['front_nombre']) 
-            : null);
-    
-    if ($nombreFront && (float)($venta['ganancia_fullstack'] ?? 0) > 0) {
-        $claveUsuario = normalizarNombre($nombreFront);
-        if (!isset($usuariosConGanancias[$claveUsuario])) {
-            $usuariosConGanancias[$claveUsuario] = [
-                'nombre' => $nombreFront,
-                'ganancia_total' => 0,
-                'ventas_count' => 0,
-                'roles' => []
-            ];
-        }
-        $ganancia = (float)($venta['ganancia_fullstack'] ?? 0);
-        $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $ganancia;
-        $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-        if (!in_array('Front', $usuariosConGanancias[$claveUsuario]['roles'])) {
-            $usuariosConGanancias[$claveUsuario]['roles'][] = 'Front';
+        if (!in_array($rol, $usuariosConGanancias[$claveUsuario]['roles'])) {
+            $usuariosConGanancias[$claveUsuario]['roles'][] = $rol;
         }
     }
 }
@@ -967,12 +903,13 @@ foreach ($usuariosConGanancias as $usuario) {
                     $overUsuarioTotal = $calculos['totalOver'];
                 }
             } else {
-                // Para todas las salas, sumar OVER de todas las salas aplicables
+                // Para todas las salas, sumar el OVER de cada sala aplicable con la venta neta de esa sala
+                // (igual que en la hoja "Sistema OVER" y en el PDF)
                 foreach ($config['salas'] as $salaIdConfig) {
-                    // En este caso simplificado, usamos el total general
-                    // En una versión más completa, deberíamos calcular por sala
-                    $calculos = calcularOver($totalesGenerales['venta_neto'], $config);
-                    $overUsuarioTotal += $calculos['totalOver'];
+                    if (isset($ventasPorSalaDetalle[$salaIdConfig])) {
+                        $calculos = calcularOver($ventasPorSalaDetalle[$salaIdConfig]['venta_neto'], $config);
+                        $overUsuarioTotal += $calculos['totalOver'];
+                    }
                 }
             }
             break;
@@ -1007,7 +944,9 @@ foreach ($usuariosConGanancias as $usuario) {
 }
 
 // Aplicar bordes
-$sheet3->getStyle('A' . $startUserRow . ':F' . ($row-1))->applyFromArray($borderStyle);
+if ($row > $startUserRow) {
+    $sheet3->getStyle('A' . $startUserRow . ':F' . ($row-1))->applyFromArray($borderStyle);
+}
 
 // Total usuarios
 $sheet3->setCellValue('C' . $row, 'TOTAL GENERAL:');
@@ -1061,71 +1000,19 @@ foreach ($usuariosConGanancias as $clave => $usuario) {
     ];
 }
 
-// Procesar ganancia volumen
+// Procesar ganancia volumen (solo usuarios con ganancias)
 foreach ($ventas as $venta) {
     $ventaBruta = (float)$venta['precio'];
-    
-    // Liner
-    $nombreLiner = !empty($venta['liner_nombre_manual']) && trim($venta['liner_nombre_manual']) !== '' 
-        ? trim($venta['liner_nombre_manual'])
-        : (!empty($venta['liner_nombre']) && $venta['liner_nombre'] !== 'No asignado' 
-            ? trim($venta['liner_nombre']) 
-            : null);
-    
-    if ($nombreLiner) {
-        $claveUsuario = normalizarNombre($nombreLiner);
-        if (isset($gananciaVolumenUsuarios[$claveUsuario])) {
-            $gananciaVolumen = $ventaBruta / 2;
-            $gananciaVolumenUsuarios[$claveUsuario]['ganancia_volumen'] += $gananciaVolumen;
-            $gananciaVolumenUsuarios[$claveUsuario]['ganancia_por_rol']['Liner'] += $gananciaVolumen;
+    foreach ($rolesVenta as [$rol, $campoManual, $campoNombre, , $divisor]) {
+        $nombreRol = nombreParticipante($venta, $campoManual, $campoNombre);
+        if (!$nombreRol) {
+            continue;
         }
-    }
-    
-    // Closer 1
-    $nombreCloser1 = !empty($venta['closer1_nombre_manual']) && trim($venta['closer1_nombre_manual']) !== '' 
-        ? trim($venta['closer1_nombre_manual'])
-        : (!empty($venta['closer1_nombre']) && $venta['closer1_nombre'] !== 'No asignado' 
-            ? trim($venta['closer1_nombre']) 
-            : null);
-    
-    if ($nombreCloser1) {
-        $claveUsuario = normalizarNombre($nombreCloser1);
+        $claveUsuario = normalizarNombre($nombreRol);
         if (isset($gananciaVolumenUsuarios[$claveUsuario])) {
-            $gananciaVolumen = $ventaBruta / 2;
+            $gananciaVolumen = $ventaBruta / $divisor;
             $gananciaVolumenUsuarios[$claveUsuario]['ganancia_volumen'] += $gananciaVolumen;
-            $gananciaVolumenUsuarios[$claveUsuario]['ganancia_por_rol']['Closer 1'] += $gananciaVolumen;
-        }
-    }
-    
-    // Closer 2
-    $nombreCloser2 = !empty($venta['closer2_nombre_manual']) && trim($venta['closer2_nombre_manual']) !== '' 
-        ? trim($venta['closer2_nombre_manual'])
-        : (!empty($venta['closer2_nombre']) && $venta['closer2_nombre'] !== 'No asignado' 
-            ? trim($venta['closer2_nombre']) 
-            : null);
-    
-    if ($nombreCloser2) {
-        $claveUsuario = normalizarNombre($nombreCloser2);
-        if (isset($gananciaVolumenUsuarios[$claveUsuario])) {
-            $gananciaVolumen = $ventaBruta / 3;
-            $gananciaVolumenUsuarios[$claveUsuario]['ganancia_volumen'] += $gananciaVolumen;
-            $gananciaVolumenUsuarios[$claveUsuario]['ganancia_por_rol']['Closer 2'] += $gananciaVolumen;
-        }
-    }
-    
-    // Front
-    $nombreFront = !empty($venta['full_stack_nombre_manual']) && trim($venta['full_stack_nombre_manual']) !== '' 
-        ? trim($venta['full_stack_nombre_manual'])
-        : (!empty($venta['front_nombre']) && $venta['front_nombre'] !== 'No asignado' 
-            ? trim($venta['front_nombre']) 
-            : null);
-    
-    if ($nombreFront) {
-        $claveUsuario = normalizarNombre($nombreFront);
-        if (isset($gananciaVolumenUsuarios[$claveUsuario])) {
-            $gananciaVolumen = $ventaBruta;
-            $gananciaVolumenUsuarios[$claveUsuario]['ganancia_volumen'] += $gananciaVolumen;
-            $gananciaVolumenUsuarios[$claveUsuario]['ganancia_por_rol']['Front'] += $gananciaVolumen;
+            $gananciaVolumenUsuarios[$claveUsuario]['ganancia_por_rol'][$rol] += $gananciaVolumen;
         }
     }
 }
@@ -1185,7 +1072,9 @@ foreach ($gananciaVolumenUsuarios as $usuario) {
 }
 
 // Aplicar bordes
-$sheet4->getStyle('A' . $startVolumenRow . ':F' . ($row-1))->applyFromArray($borderStyle);
+if ($row > $startVolumenRow) {
+    $sheet4->getStyle('A' . $startVolumenRow . ':F' . ($row-1))->applyFromArray($borderStyle);
+}
 
 // Total ganancia volumen
 $sheet4->setCellValue('E' . $row, 'TOTAL GENERAL:');

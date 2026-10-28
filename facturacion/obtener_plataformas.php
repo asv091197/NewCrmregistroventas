@@ -18,14 +18,7 @@ try {
             WHERE activo = TRUE AND permiso_plataforma = TRUE
             ORDER BY metodo_pago, nombre_ancronimo";
     
-    $result = $conn->query($sql);
-
-    $plataformas = [];
-    while($row = $result->fetch(PDO::FETCH_ASSOC)) {
-        $plataformas[] = $row;
-    }
-
-    echo json_encode($plataformas);
+    echo json_encode($conn->query($sql)->fetchAll(PDO::FETCH_ASSOC));
     
 } catch (Exception $e) {
     http_response_code(500);

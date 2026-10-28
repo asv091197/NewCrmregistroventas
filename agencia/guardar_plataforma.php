@@ -17,31 +17,26 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 }
 
-// Verificar si el usuario tiene permisos
-$es_admin = ($_SESSION['rol'] ?? '') === 'admin';
-$tiene_permiso_plataforma = false;
-
-if ($es_admin && isset($_SESSION['usuario_id'])) {
-    try {
-        $conn_check = conexionPDO();
-        $stmt = $conn_check->prepare("SELECT permiso_plataforma FROM usuarios_facturacion WHERE id = ?");
-        $stmt->execute([$_SESSION['usuario_id']]);
-        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($usuario && $usuario['permiso_plataforma'] == 1) {
-            $tiene_permiso_plataforma = true;
-        }
-    } catch (Exception $e) {
-        error_log("Error al verificar permisos: " . $e->getMessage());
-    }
-}
-
 // Conexión a la base de datos
 try {
     $conn = conexionPDO();
 } catch (PDOException $e) {
     http_response_code(500);
     die(json_encode(["success" => false, "message" => "Conexión fallida: " . $e->getMessage()]));
+}
+
+// Verificar si el usuario tiene permisos (superadmin tiene lo mismo que admin)
+$es_admin = in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin'], true);
+$tiene_permiso_plataforma = false;
+
+if ($es_admin) {
+    try {
+        $stmt = $conn->prepare("SELECT permiso_plataforma FROM usuarios_facturacion WHERE id = ?");
+        $stmt->execute([$_SESSION['usuario_id']]);
+        $tiene_permiso_plataforma = $stmt->fetchColumn() == 1;
+    } catch (Exception $e) {
+        error_log("Error al verificar permisos: " . $e->getMessage());
+    }
 }
 
 try {

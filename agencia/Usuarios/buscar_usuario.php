@@ -7,24 +7,24 @@ ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/php_errors.log');
 
 require_once __DIR__ . '/../../session_config.php'; session_start();
-if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin'  && $_SESSION['rol'] !== 'superadmin' ) {
+$rol = $_SESSION['rol'] ?? '';
+if (!isset($_SESSION['usuario_id']) || ($rol !== 'admin' && $rol !== 'superadmin')) {
     die('Acceso no autorizado');
 }
 
 // Conexión a base de datos
-
 try {
     $pdo = conexionPDO();
 } catch (PDOException $e) {
     die("Error de conexión");
 }
 
-$buscar = isset($_GET['buscar']) ? trim($_GET['buscar']) : '';
-$fechaInicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : '';
-$fechaFin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : '';
-$salaFiltro = isset($_GET['sala']) ? $_GET['sala'] : '';
-// NUEVO: Parámetro para mostrar inactivos
-$mostrar_inactivos = isset($_GET['mostrar_inactivos']) ? (bool)$_GET['mostrar_inactivos'] : false;
+$buscar = trim($_GET['buscar'] ?? '');
+$fechaInicio = $_GET['fecha_inicio'] ?? '';
+$fechaFin = $_GET['fecha_fin'] ?? '';
+$salaFiltro = $_GET['sala'] ?? '';
+// Parámetro para mostrar inactivos
+$mostrar_inactivos = !empty($_GET['mostrar_inactivos']);
 
 if (strlen($buscar) < 1) {
     echo '<tr><td colspan="7" class="text-center">Ingrese un término de búsqueda</td></tr>';
@@ -33,153 +33,142 @@ if (strlen($buscar) < 1) {
 
 try {
     // Obtener el mapa de salas para mostrar nombres
-    $stmtSalas = $pdo->query("SELECT id, nombre FROM salas WHERE activo = 1");
     $salasMap = [];
-    foreach ($stmtSalas as $sala) {
+    foreach ($pdo->query("SELECT id, nombre FROM salas WHERE activo = 1") as $sala) {
         $salasMap[$sala['id']] = $sala['nombre'];
     }
-    
-    // Construir consulta con filtros
+
+    // Construir consulta con filtros (placeholders distintos: no se pueden repetir con prepares nativos)
+    $like = "%$buscar%";
     $whereConditions = ["(u.nombre LIKE :buscar1 OR u.apepat LIKE :buscar2 OR u.apemat LIKE :buscar3 OR u.correo LIKE :buscar4)"];
-    $params = [':buscar1' => "%$buscar%", ':buscar2' => "%$buscar%", ':buscar3' => "%$buscar%", ':buscar4' => "%$buscar%"];
-    
-    // NUEVO: Filtro para estado activo/inactivo
+    $params = [':buscar1' => $like, ':buscar2' => $like, ':buscar3' => $like, ':buscar4' => $like];
+
+    // Por defecto, solo mostrar usuarios activos
     if (!$mostrar_inactivos) {
-        // Por defecto, solo mostrar usuarios activos
         $whereConditions[] = "u.activo = 1";
     }
-    
+
     if (!empty($fechaInicio)) {
         $whereConditions[] = "u.fecha_registro >= :fecha_inicio";
         $params[':fecha_inicio'] = $fechaInicio . ' 00:00:00';
     }
-    
+
     if (!empty($fechaFin)) {
         $whereConditions[] = "u.fecha_registro <= :fecha_fin";
         $params[':fecha_fin'] = $fechaFin . ' 23:59:59';
     }
-    
-    // Filtro para sala - CORREGIDO (misma lógica que en usuarios.php)
+
+    // Filtro para sala
     if (!empty($salaFiltro) && $salaFiltro !== 'todas') {
         // Solo usuarios que tienen acceso a esta sala específica
         $whereConditions[] = "JSON_CONTAINS(u.salas_permitidas, :sala_filtro)";
         $params[':sala_filtro'] = json_encode($salaFiltro);
     } elseif ($salaFiltro === 'todas') {
-        // Cuando se selecciona "Todas las salas", mostrar usuarios con acceso a todas las salas
+        // "Todas las salas": usuarios con acceso a todas las salas
         $whereConditions[] = "u.acceso_todas_salas = 1";
     }
-    
+
     $whereClause = 'WHERE ' . implode(' AND ', $whereConditions);
-    
-    $sql = "SELECT u.id, u.nombre, u.apepat, u.apemat, u.correo, u.rol, u.fecha_registro, u.acceso_todas_salas, u.salas_permitidas, u.activo
-            FROM usuarios u 
+
+    $stmt = $pdo->prepare("SELECT u.id, u.nombre, u.apepat, u.apemat, u.correo, u.rol, u.fecha_registro, u.acceso_todas_salas, u.salas_permitidas, u.activo
+            FROM usuarios u
             $whereClause
-            ORDER BY u.id DESC 
-            LIMIT 50";
-    
-    $stmt = $pdo->prepare($sql);
+            ORDER BY u.id DESC
+            LIMIT 50");
     $stmt->execute($params);
     $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Obtener el total de resultados para el contador
-    $sqlCount = "SELECT COUNT(*) as total FROM usuarios u $whereClause";
-    $stmtCount = $pdo->prepare($sqlCount);
+
+    // Total de resultados para el contador
+    $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM usuarios u $whereClause");
     $stmtCount->execute($params);
-    $totalResultados = $stmtCount->fetch(PDO::FETCH_ASSOC)['total'];
-    
+    $totalResultados = (int)$stmtCount->fetchColumn();
+
     if (count($usuarios) > 0) {
         // Div oculto para pasar el contador de resultados al JavaScript
         echo '<div id="resultado-contador" data-total="' . $totalResultados . '" style="display: none;"></div>';
-        
+
         foreach ($usuarios as $usuario) {
             $fechaRegistro = date('d/m/Y H:i', strtotime($usuario['fecha_registro']));
             $badgeClass = $usuario['rol'] === 'admin' ? 'bg-danger' : 'bg-primary';
-            
-            // Clase para estado inactivo
             $estadoClass = $usuario['activo'] == 1 ? '' : 'table-warning';
-            
-            echo "<tr data-id='{$usuario['id']}' class='{$estadoClass}'>";
-              echo "<td style='cursor: pointer;'> {$usuario['apemat']}</td>";
-            echo "<td style='cursor: pointer;'>{$usuario['nombre']} {$usuario['apepat']} </td>";
-            echo "<td style='cursor: pointer;'>{$usuario['correo']}</td>";
-            echo "<td class='text-center' style='cursor: pointer;'><span class='badge {$badgeClass} rol-badge'>{$usuario['rol']}</span></td>";
-            
-            // Columna de salas modificada para mostrar nombres
+
+            // Valores escapados para HTML
+            $uid = (int)$usuario['id'];
+            $nombre = htmlspecialchars($usuario['nombre'] ?? '');
+            $apepat = htmlspecialchars($usuario['apepat'] ?? '');
+            $apemat = htmlspecialchars($usuario['apemat'] ?? '');
+            $correo = htmlspecialchars($usuario['correo'] ?? '');
+            $rolUsuario = htmlspecialchars($usuario['rol'] ?? '');
+
+            echo "<tr data-id='{$uid}' class='{$estadoClass}'>";
+            echo "<td style='cursor: pointer;'> {$apemat}</td>";
+            echo "<td style='cursor: pointer;'>{$nombre} {$apepat} </td>";
+            echo "<td style='cursor: pointer;'>{$correo}</td>";
+            echo "<td class='text-center' style='cursor: pointer;'><span class='badge {$badgeClass} rol-badge'>{$rolUsuario}</span></td>";
+
+            // Columna de salas con nombres
             echo "<td class='text-center' style='cursor: pointer;'>";
             if ($usuario['acceso_todas_salas'] == 1) {
                 echo "<span class='badge bg-success salas-badge' title='Todas las salas'>Todas las salas</span>";
-            } elseif (!empty($usuario['salas_permitidas'])) {
-                $salasIds = json_decode($usuario['salas_permitidas'], true);
+            } else {
+                $salasIds = json_decode($usuario['salas_permitidas'] ?? '', true);
                 $nombresSalas = [];
-                
-                foreach ($salasIds as $salaId) {
+                foreach (is_array($salasIds) ? $salasIds : [] as $salaId) {
                     if (isset($salasMap[$salaId])) {
                         $nombresSalas[] = $salasMap[$salaId];
                     }
                 }
-                
+
                 if (count($nombresSalas) > 0) {
-                    $textoSalas = implode(', ', $nombresSalas);
-                    $countSalas = count($nombresSalas);
+                    $textoSalas = htmlspecialchars(implode(', ', $nombresSalas));
                     echo "<div class='sala-nombre' title='{$textoSalas}'>{$textoSalas}</div>";
                 } else {
                     echo "<span class='badge bg-secondary salas-badge'>Sin salas</span>";
                 }
-            } else {
-                echo "<span class='badge bg-secondary salas-badge'>Sin salas</span>";
             }
             echo "</td>";
-            
+
             // Columna de estado
             $estadoBadge = $usuario['activo'] == 1 ?
                 '<span class="badge bg-success">Activo</span>' :
                 '<span class="badge bg-warning text-dark">Inactivo</span>';
             echo "<td class='text-center' style='cursor: pointer;'>{$estadoBadge}</td>";
-            
+
             echo "<td class='text-center' style='cursor: pointer;'>{$fechaRegistro}</td>";
+
+            // Botón activar/desactivar
+            [$btnClass, $btnAccion, $btnIcono, $btnTexto] = $usuario['activo'] == 1
+                ? ['btn-warning', 'desactivar', 'bi-pause-circle', 'Desactivar']
+                : ['btn-success', 'activar', 'bi-play-circle', 'Activar'];
             echo "<td class='text-center'>";
-            if ($usuario['activo'] == 1) {
-                echo "<button class='btn btn-sm btn-warning btn-cambiar-estado' data-id='{$usuario['id']}' data-nombre='{$usuario['nombre']} {$usuario['apepat']} {$usuario['apemat']}' data-accion='desactivar'>";
-                echo "<i class='bi bi-pause-circle'></i> Desactivar";
-                echo "</button>";
-            } else {
-                echo "<button class='btn btn-sm btn-success btn-cambiar-estado' data-id='{$usuario['id']}' data-nombre='{$usuario['nombre']} {$usuario['apepat']} {$usuario['apemat']}' data-accion='activar'>";
-                echo "<i class='bi bi-play-circle'></i> Activar";
-                echo "</button>";
-            }
+            echo "<button class='btn btn-sm {$btnClass} btn-cambiar-estado' data-id='{$uid}' data-nombre='{$nombre} {$apepat} {$apemat}' data-accion='{$btnAccion}'>";
+            echo "<i class='bi {$btnIcono}'></i> {$btnTexto}";
+            echo "</button>";
             echo "</td>";
             echo "</tr>";
         }
     } else {
         $mensajeNoResultados = "No se encontraron resultados";
-        
+
         if (!$mostrar_inactivos) {
             $mensajeNoResultados .= " activos";
         }
-        
+
         if (!empty($fechaInicio) || !empty($fechaFin)) {
             $mensajeNoResultados .= " en el rango de fechas seleccionado";
         }
-        
+
         if (!empty($salaFiltro)) {
             if ($salaFiltro === 'todas') {
                 $mensajeNoResultados .= " con acceso a todas las salas";
             } else {
-                $nombreSala = '';
-                foreach ($salasMap as $salaId => $salaNombre) {
-                    if ($salaId == $salaFiltro) {
-                        $nombreSala = $salaNombre;
-                        break;
-                    }
-                }
-                $mensajeNoResultados .= " con acceso a la sala: " . htmlspecialchars($nombreSala);
+                $mensajeNoResultados .= " con acceso a la sala: " . htmlspecialchars($salasMap[$salaFiltro] ?? '');
             }
         }
-        
+
         echo '<tr><td colspan="7" class="text-center">' . $mensajeNoResultados . '</td></tr>';
     }
 } catch (PDOException $e) {
     error_log("Error en búsqueda: " . $e->getMessage());
     echo '<tr><td colspan="7" class="text-center">Error en la búsqueda</td></tr>';
 }
-?>

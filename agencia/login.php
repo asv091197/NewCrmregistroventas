@@ -200,14 +200,7 @@ function registrarLogLogin($conexion, array $datos) {
             $userAgent
         ]);
 
-        $logId = (int)$conexion->lastInsertId();
-        debugLog('Log de login registrado (agencia)', [
-            'correo' => $correo, 'exito' => $exito, 'ip' => $ip,
-            'dispositivo' => $dispositivo, 'so' => $so, 'navegador' => $navegador,
-            'pais' => $pais, 'ciudad' => $ciudad
-        ]);
-        $stmt = null;
-        return $logId;
+        return (int)$conexion->lastInsertId();
     } catch (Exception $e) {
         debugLog('Excepción registrando log_login: ' . $e->getMessage());
     }
@@ -218,18 +211,9 @@ function registrarLogLogin($conexion, array $datos) {
 // FIN FUNCIONES DE LOGS
 // ============================================================
 
-debugLog('=== INICIO DE PROCESO LOGIN ===');
-debugLog('Navegador: ' . ($_SERVER['HTTP_USER_AGENT'] ?? 'No disponible'));
-
 require_once __DIR__ . '/../session_config.php'; session_start();
-debugLog('Sesión ID: ' . session_id());
 
 if (isset($_SESSION['usuario_id']) && isset($_SESSION['rol'])) {
-    debugLog('Usuario ya tiene sesión activa', [
-        'usuario_id' => $_SESSION['usuario_id'],
-        'rol' => $_SESSION['rol']
-    ]);
-    
     if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin') {
         header("Location: opcionesAdmin.php");
     } else {
@@ -238,30 +222,24 @@ if (isset($_SESSION['usuario_id']) && isset($_SESSION['rol'])) {
     exit;
 }
 
-$conexion = null;
 $mensaje = "";
 $mensaje_tipo = "";
-$redirect_url = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    debugLog('Método POST recibido', $_POST);
-    
+    // Nunca registrar $_POST completo: contiene la contraseña
     $correo = trim($_POST['correo'] ?? '');
     $contraseña = $_POST['contraseña'] ?? '';
-    
+
     if (empty($correo) || empty($contraseña)) {
         $mensaje = "Por favor complete todos los campos";
         $mensaje_tipo = "danger";
-        debugLog('Campos vacíos', ['correo' => $correo, 'password_length' => strlen($contraseña)]);
-        
+
         try {
-            $connLog = conexionPDO();
-            registrarLogLogin($connLog, [
+            registrarLogLogin(conexionPDO(), [
                 'correo'       => $correo,
                 'exito'        => false,
                 'motivo_fallo' => 'Campos vacíos'
             ]);
-            $connLog = null;
         } catch (Exception $e) {
             debugLog('Error log campos vacíos: ' . $e->getMessage());
         }
@@ -289,13 +267,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             if (count($filas) === 1) {
                 [$id, $nombre, $apemat, $hash, $rol, $acceso_todas_salas, $salas_permitidas_json] = $filas[0];
 
-                debugLog('Usuario encontrado', [
-                    'id' => $id,
-                    'nombre' => $nombre,
-                    'apemat' => $apemat,
-                    'rol' => $rol
-                ]);
-                
                 if (password_verify($contraseña, $hash)) {
                     $_SESSION['usuario_id'] = $id;
                     $_SESSION['nombre'] = $nombre;
@@ -330,24 +301,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         'usuario_id' => $id
                     ]);
                     $_SESSION['log_origen'] = 'agencia';
-                    
-                    debugLog('Login exitoso', [
-                        'usuario' => $correo,
-                        'rol' => $rol,
-                        'apemat' => $apemat,
-                        'session_id' => session_id()
-                    ]);
-                    
-                    $stmt = null;
 
-                    if ($rol === 'admin' || $rol === 'superadmin') {
-                        $redirect_url = "opcionesAdmin.php";
-                    } else {
-                        $redirect_url = "Agencia/agencia.php";
-                    }
-                    
-                    debugLog('Redirigiendo a', $redirect_url);
-                    
+                    $redirect_url = ($rol === 'admin' || $rol === 'superadmin') ? "opcionesAdmin.php" : "Agencia/agencia.php";
+
                     ob_end_clean();
                     header("Location: " . $redirect_url);
                     exit();
@@ -355,8 +311,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 } else {
                     $mensaje = "Contraseña incorrecta.";
                     $mensaje_tipo = "danger";
-                    debugLog('Contraseña incorrecta para usuario', $correo);
-                    
+
                     // LOG FALLIDO - contraseña incorrecta
                     registrarLogLogin($conexion, [
                         'correo'       => $correo,
@@ -368,8 +323,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             } else {
                 $mensaje = "Correo no registrado o usuario inactivo.";
                 $mensaje_tipo = "danger";
-                debugLog('Usuario no encontrado o inactivo', $correo);
-                
+
                 // LOG FALLIDO - usuario inexistente/inactivo
                 registrarLogLogin($conexion, [
                     'correo'       => $correo,
@@ -377,26 +331,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     'motivo_fallo' => 'Usuario no registrado o inactivo'
                 ]);
             }
-            
-            if (isset($stmt) && $stmt instanceof PDOStatement) {
-                $stmt = null;
-            }
-
         } catch (Exception $e) {
             $mensaje = "Error interno del sistema";
             $mensaje_tipo = "danger";
             debugLog('EXCEPCIÓN: ' . $e->getMessage());
-        } finally {
-            $conexion = null;
         }
     }
-} else {
-    debugLog('Método no POST', $_SERVER['REQUEST_METHOD']);
 }
-
-$conexion = null;
-
-debugLog('=== FIN DE PROCESO LOGIN ===');
 ?>
 
 <!DOCTYPE html>
@@ -602,7 +543,7 @@ debugLog('=== FIN DE PROCESO LOGIN ===');
                             </span>
                             <input type="email" class="form-control" id="correo" name="correo" 
                                    placeholder="usuario@ejemplo.com" required 
-                                   value="<?php echo isset($_POST['correo']) ? htmlspecialchars($_POST['correo']) : ''; ?>"
+                                   value="<?php echo htmlspecialchars($_POST['correo'] ?? ''); ?>"
                                    autocomplete="email">
                         </div>
                     </div>
@@ -675,16 +616,13 @@ debugLog('=== FIN DE PROCESO LOGIN ===');
         
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             const btnLogin = document.getElementById('btnLogin');
-            
+
             if (formSubmitting) {
                 e.preventDefault();
                 return false;
             }
-            
-            const emailInput = document.getElementById('correo');
-            const passwordInput = document.getElementById('contraseña');
-            
-            if (!emailInput.value || !passwordInput.value) {
+
+            if (!this.correo.value || !document.getElementById('contraseña').value) {
                 e.preventDefault();
                 return false;
             }

@@ -28,12 +28,7 @@ try {
     // Obtener parámetros
     $sala_id = isset($_GET['sala_id']) ? intval($_GET['sala_id']) : null;
     $todos = isset($_GET['todos']) ? $_GET['todos'] === '1' : false;
-    
-    // LOG para debugging
-    error_log("=== OBTENER USUARIOS ===");
-    error_log("Sala ID solicitada: " . ($sala_id ?: 'NULL'));
-    error_log("Parámetro todos: " . ($todos ? 'SI' : 'NO'));
-    
+
     // Crear conexión PDO
     try {
         $conn = conexionPDO();
@@ -42,70 +37,30 @@ try {
         sendError("Error de conexión a la base de datos");
     }
 
-    // Si se solicita TODOS los usuarios
-    if ($todos) {
-        // Obtener todos los usuarios activos
-        $sql = "SELECT 
-                    id, 
-                    nombre, 
-                    apepat, 
-                    apemat,
-                    CONCAT_WS(' ',  apemat) AS nombre_completo
-                FROM usuarios 
-                WHERE activo = 1 
-                AND rol = 'usuario'
-                AND salas_permitidas IS NOT NULL
-                ORDER BY nombre, apepat";
-        
-        error_log("SQL SIN FILTRO (todos los usuarios) - Parámetro todos=1 recibido");
-        error_log("SQL: " . $sql);
-        
-        $stmt = $conn->prepare($sql);
-        $params = [];
-    } elseif ($sala_id) {
-        // Filtrar usuarios por sala específica
-        $sql = "SELECT 
-                    id, 
-                    nombre, 
-                    apepat, 
-                    apemat,
-                    CONCAT_WS(' ',  apemat) AS nombre_completo
-                FROM usuarios 
-                WHERE activo = 1 
-                AND rol = 'usuario'
-                AND JSON_CONTAINS(salas_permitidas, ?, '$')
-                ORDER BY nombre, apepat";
-        
-        error_log("SQL CON FILTRO de sala: " . $sala_id);
-        error_log("SQL: " . $sql);
-        
-        $stmt = $conn->prepare($sql);
-
-        $json_sala = '["' . $sala_id . '"]';
-        error_log("JSON buscado: " . $json_sala);
-        
-        $params = [$json_sala];
+    // Filtrar por sala solo si se indicó sala y no se pidieron TODOS;
+    // sin parámetros también se devuelven todos (por defecto)
+    if (!$todos && $sala_id) {
+        $filtro = "AND JSON_CONTAINS(salas_permitidas, ?, '$')";
+        $params = ['["' . $sala_id . '"]'];
     } else {
-        // Si no hay parámetros, también devolver todos (por defecto)
-        $sql = "SELECT 
-                    id, 
-                    nombre, 
-                    apepat, 
-                    apemat,
-                    CONCAT_WS(' ',  apemat) AS nombre_completo
-                FROM usuarios 
-                WHERE activo = 1 
-                AND rol = 'usuario'
-                AND salas_permitidas IS NOT NULL
-                ORDER BY nombre, apepat";
-        
-        error_log("SQL SIN FILTRO (sin parámetros)");
-        error_log("SQL: " . $sql);
-        
-        $stmt = $conn->prepare($sql);
+        $filtro = "AND salas_permitidas IS NOT NULL";
         $params = [];
     }
-    
+
+    $sql = "SELECT
+                id,
+                nombre,
+                apepat,
+                apemat,
+                CONCAT_WS(' ',  apemat) AS nombre_completo
+            FROM usuarios
+            WHERE activo = 1
+            AND rol = 'usuario'
+            $filtro
+            ORDER BY nombre, apepat";
+
+    $stmt = $conn->prepare($sql);
+
     // Ejecutar consulta
     if (!$stmt->execute($params)) {
         error_log("Error al ejecutar consulta");
@@ -113,22 +68,17 @@ try {
     }
 
     $usuarios = [];
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    if (count($rows) > 0) {
-        foreach ($rows as $row) {
-            // Limpiar símbolos
-            if (!empty($row['apemat'])) {
-                $row['apemat'] = preg_replace('/[^\p{L}\p{N}\s]/u', '', $row['apemat']);
-            }
-            if (!empty($row['nombre_completo'])) {
-                $row['nombre_completo'] = preg_replace('/[^\p{L}\p{N}\s]/u', '', $row['nombre_completo']);
-            }
-            $usuarios[] = $row;
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        // Limpiar símbolos
+        if (!empty($row['apemat'])) {
+            $row['apemat'] = preg_replace('/[^\p{L}\p{N}\s]/u', '', $row['apemat']);
         }
+        if (!empty($row['nombre_completo'])) {
+            $row['nombre_completo'] = preg_replace('/[^\p{L}\p{N}\s]/u', '', $row['nombre_completo']);
+        }
+        $usuarios[] = $row;
     }
-    
-    error_log("Usuarios encontrados: " . count($usuarios));
-    
+
     sendSuccess($usuarios);
 
 } catch (Exception $e) {

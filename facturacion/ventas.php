@@ -67,20 +67,19 @@ try {
   error_log("Error al obtener datos del usuario: " . $e->getMessage());
 }
 
+// Superadmin siempre tiene acceso a todas las salas
+if ($_SESSION['rol'] === 'superadmin') {
+  $accesoTodasSalas = 1;
+}
+
 // Determinar el rango de fechas del mes en curso para usuarios no admin O admin sin acceso a todas salas
 $fechaInicioMes = '';
 $fechaFinMes = '';
 $esAdmin = ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin');
 $tieneAccesoTodasSalas = ($esAdmin && $accesoTodasSalas == 1);
 
-// Si es admin pero NO tiene acceso a todas salas, tratarlo como usuario restringido
-if ($esAdmin && $accesoTodasSalas == 0) {
-  $tieneAccesoTodasSalas = false;
-
-  if (!empty($salasPermitidas)) {
-    $salaUsuarioId = intval($salasPermitidas[0]);
-  }
-} elseif (!$esAdmin) {
+// Si es admin pero NO tiene acceso a todas salas, se trata como usuario restringido (filtro por salas permitidas)
+if (!$esAdmin) {
   $fechaInicioMes = date('Y-m-01');
   $fechaFinMes = date('Y-m-t');
 }
@@ -661,7 +660,7 @@ try {
                     <?php endif; ?>
         </ul>
         <span class="navbar-text text-muted me-3">
-          <?= htmlspecialchars($_SESSION['nombre']) ?>
+          <?= htmlspecialchars($_SESSION['nombre'] ?? '') ?>
         </span>
         <a href="logout.php" class="btn btn-sm btn-outline-danger">
           <i class="bi bi-box-arrow-right"></i> Salir
@@ -749,7 +748,7 @@ try {
                   Solo puedes ver y filtrar ventas del mes en curso
                   (<?= date('F Y') ?>) y de tu sala asignada.
                 <?php else: ?>
-                  Solo puedes ver ventas de tus salas permitidas (<?= implode(', ', $salasPermitidas) ?>).
+                  Solo puedes ver ventas de tus salas permitidas (<?= htmlspecialchars(implode(', ', $salasPermitidas)) ?>).
                 <?php endif; ?>
                 <?php if (!$salaUsuarioId && empty($salasPermitidas)): ?>
                   <br><span class="text-danger"><strong>Advertencia:</strong> No tienes salas asignadas. No podrás ver ventas.</span>
@@ -1215,34 +1214,24 @@ try {
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="JS/ventas.js"></script>
   <script>
-    // Pasar datos PHP a JavaScript
-    const totalVentas = <?= $totalVentas ?>;
-    const datosVentas = <?= json_encode($todasLasVentas) ?>;
-    const busquedaInicial = "<?= htmlspecialchars($busqueda) ?>";
-    const plataformaIdsInicial = <?= json_encode($plataformaIds) ?>;
-    const tipoVentaInicial = "<?= htmlspecialchars($tipoVenta) ?>";
-    const salaIdInicial = <?= $salaId ?>;
+    // Pasar datos PHP a JavaScript (json_encode seguro dentro de <script>)
+    <?php $jsonJs = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE; ?>
+    const totalVentas = <?= (int)$totalVentas ?>;
+    const datosVentas = <?= json_encode($todasLasVentas, $jsonJs) ?>;
+    const busquedaInicial = <?= json_encode((string)$busqueda, $jsonJs) ?>;
+    const plataformaIdsInicial = <?= json_encode($plataformaIds, $jsonJs) ?>;
+    const tipoVentaInicial = <?= json_encode((string)$tipoVenta, $jsonJs) ?>;
+    const salaIdInicial = <?= (int)$salaId ?>;
     const esUsuarioAdminParam = <?= $esAdmin ? 'true' : 'false'; ?>;
     const tieneAccesoTodasSalasParam = <?= $tieneAccesoTodasSalas ? 'true' : 'false'; ?>;
-    const salasPermitidasParam = <?= json_encode($salasPermitidas) ?>;
+    const salasPermitidasParam = <?= json_encode($salasPermitidas, $jsonJs) ?>;
     const fechaInicioMesParam = "<?= $fechaInicioMes ?>";
     const fechaFinMesParam = "<?= $fechaFinMes ?>";
-    const salaUsuarioIdParam = <?= $salaUsuarioId ?: 'null' ?>;
-    const rolUsuarioParam = "<?= $_SESSION['rol'] ?? '' ?>";
-    const salasDesdePHP = <?= json_encode($salas) ?>;
-    const salaUsuarioNombreParam = "<?= htmlspecialchars($salaUsuarioNombre) ?>";
+    const salaUsuarioIdParam = <?= $salaUsuarioId ? (int)$salaUsuarioId : 'null' ?>;
+    const rolUsuarioParam = <?= json_encode($_SESSION['rol'] ?? '', $jsonJs) ?>;
+    const salasDesdePHP = <?= json_encode($salas, $jsonJs) ?>;
+    const salaUsuarioNombreParam = <?= json_encode((string)$salaUsuarioNombre, $jsonJs) ?>;
     const tienePermisoPlataformaParam = <?= $tiene_permiso_plataforma ? 'true' : 'false'; ?>;
-
-    console.log('Datos PHP pasados a JS:', {
-      totalVentas,
-      datosVentasCount: datosVentas.length,
-      esUsuarioAdminParam,
-      rolUsuarioParam,
-      tieneAccesoTodasSalasParam,
-      salaUsuarioNombreParam,
-      tienePermisoPlataformaParam,
-      salasDesdePHP
-    });
 
     // Inicializar la aplicación
     document.addEventListener('DOMContentLoaded', function() {

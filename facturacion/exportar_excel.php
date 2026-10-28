@@ -17,11 +17,6 @@ while (ob_get_level()) {
 }
 ob_start();
 
-// Habilitar visualización de errores temporalmente para diagnóstico
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 // Verificar si ya se han enviado headers
 if (headers_sent()) {
     die('Error: Headers ya han sido enviados. Verifique que no haya espacios en blanco o caracteres antes de <?php.');
@@ -66,19 +61,33 @@ function normalizarNombre($nombre)
     return trim(strtolower($nombre));
 }
 
-// Función para obtener configuración de OVER por sala
-function obtenerConfigOverPorSala($configOver, $salaId)
+// Nombre de la persona en un rol de la venta: primero el nombre manual, luego el del sistema (null si no hay)
+function nombreEnRol($venta, $campoManual, $campoNombre)
 {
-    $configPorSala = [];
-
-    foreach ($configOver as $persona => $config) {
-        if (in_array($salaId, $config['salas'])) {
-            $configPorSala[$persona] = $config;
-        }
+    if (!empty($venta[$campoManual]) && trim($venta[$campoManual]) !== '') {
+        return trim($venta[$campoManual]);
     }
-
-    return $configPorSala;
+    if (!empty($venta[$campoNombre]) && $venta[$campoNombre] !== 'No asignado') {
+        return trim($venta[$campoNombre]);
+    }
+    return null;
 }
+
+// Nombre de la hoja de un usuario (Excel no permite * : / \ ? [ ] y admite máximo 31 caracteres)
+function tituloHojaUsuario($usuario)
+{
+    $titulo = str_replace(['*', ':', '/', '\\', '?', '[', ']'], '', $usuario['titulo_limpio']);
+    if (empty(trim($titulo))) $titulo = 'Usuario_' . $usuario['ventas_count'];
+    return substr($titulo, 0, 31);
+}
+
+// Roles de cada venta: [campo nombre manual, campo nombre del sistema, campo ganancia]
+$rolesVenta = [
+    'Liner'    => ['liner_nombre_manual', 'liner_nombre', 'ganancia_liner'],
+    'Closer 1' => ['closer1_nombre_manual', 'closer1_nombre', 'ganancia_closer1'],
+    'Closer 2' => ['closer2_nombre_manual', 'closer2_nombre', 'ganancia_closer2'],
+    'Front'    => ['full_stack_nombre_manual', 'front_nombre', 'ganancia_fullstack'],
+];
 
 // Conexión a base de datos
 
@@ -244,10 +253,6 @@ try {
         $venta['closer1_nombre_manual'] = limpiarTexto($venta['closer1_nombre_manual']);
         $venta['closer2_nombre_manual'] = limpiarTexto($venta['closer2_nombre_manual']);
         $venta['full_stack_nombre_manual'] = limpiarTexto($venta['full_stack_nombre_manual']);
-        $venta['cliente'] = limpiarTexto($venta['cliente']);
-        $venta['apepat'] = limpiarTexto($venta['apepat']);
-        $venta['apemat'] = limpiarTexto($venta['apemat']);
-        $venta['producto'] = limpiarTexto($venta['producto']);
     }
     unset($venta); // Romper la referencia
 
@@ -545,21 +550,21 @@ if (!empty($fechaInicio) && !empty($fechaFin)) {
 
 // AGREGAR SALA AL TEXTO DEL FILTRO
 if (!empty($salaNombre)) {
-    $filtroTexto .= empty($filtroTexto) ? "Sala: " . $salaNombre : " | Sala: " . $salaNombre;
+    $filtroTexto .= " | Sala: " . $salaNombre;
 }
 
 // Agregar tipo_venta al texto del filtro
 if (!empty($tipoVenta)) {
-    $tipoVentaTexto = $tipoVenta === 'nuevo' ? 'Nuevo' : 'Repack';
-    $filtroTexto .= empty($filtroTexto) ? "Tipo: " . $tipoVentaTexto : " | Tipo: " . $tipoVentaTexto;
+    $filtroTexto .= " | Tipo: " . ($tipoVenta === 'nuevo' ? 'Nuevo' : 'Repack');
 }
 
+// Texto plano en la celda (Excel no interpreta HTML)
 if (!empty($busqueda)) {
-    $filtroTexto .= empty($filtroTexto) ? "Búsqueda: " . htmlspecialchars($busqueda) : " | Búsqueda: " . htmlspecialchars($busqueda);
+    $filtroTexto .= " | Búsqueda: " . $busqueda;
 }
 
 if (!empty($plataformasNombres)) {
-    $filtroTexto .= empty($filtroTexto) ? "Plataformas: " . implode(', ', $plataformasNombres) : " | Plataformas: " . implode(', ', $plataformasNombres);
+    $filtroTexto .= " | Plataformas: " . implode(', ', $plataformasNombres);
 }
 
 $sheet->mergeCells('A3:' . $ultimaColumna . '3');
@@ -588,9 +593,6 @@ $sheet->getStyle('A4:' . $ultimaColumna . '4')->getFont()->setBold(true)->setSiz
 $sheet->getStyle('A4:' . $ultimaColumna . '4')->getFont()->getColor()->setRGB('E74C3C');
 $sheet->getStyle('A4:' . $ultimaColumna . '4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FDEBD0');
 $sheet->getStyle('A4:' . $ultimaColumna . '4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-// Mapear cada venta a su fila para la vinculación posterior
-$ventasMap = [];
 
 // Llenar datos en hoja principal
 $row = 6;
@@ -671,11 +673,6 @@ if ($esFiltroPlataforma) {
 
                 $totalPlataforma += $totalDia;
 
-                // Almacenar referencia de la primera venta del día para el mapa
-                if (!empty($fechaData['ventas'])) {
-                    $ventasMap[$fechaData['ventas'][0]['id']] = $row;
-                }
-
                 $row++;
             }
 
@@ -685,7 +682,6 @@ if ($esFiltroPlataforma) {
             if ($filaFinPlataforma >= $filaInicioPlataforma) {
                 $sheet->setCellValue('A' . $row, 'TOTAL ' . $plataformaNombre . ':');
                 $sheet->setCellValue('B' . $row, $totalPlataforma);
-                $sheet->mergeCells('A' . $row . ':A' . $row);
                 applySafeStyle($sheet, 'A' . $row . ':E' . $row, 'total');
                 $sheet->getStyle('B' . $row)->getNumberFormat()->setFormatCode('"$"#,##0.00');
 
@@ -709,7 +705,6 @@ if ($esFiltroPlataforma) {
 
             $sheet->setCellValue('A' . $row, 'TOTAL GENERAL:');
             $sheet->setCellValue('B' . $row, $granTotal);
-            $sheet->mergeCells('A' . $row . ':A' . $row);
             applySafeStyle($sheet, 'A' . $row . ':E' . $row, 'granTotal');
             $sheet->getStyle('B' . $row)->getNumberFormat()->setFormatCode('"$"#,##0.00');
         }
@@ -751,17 +746,11 @@ if ($esFiltroPlataforma) {
             $sheet->setCellValue('D' . $row, $venta['tipo_venta'] ?? 'N/A');       // Tipo Venta
             $sheet->setCellValue('E' . $row, $grupo['sala']);                      // Sala
 
-            // Almacenar referencia a la primera venta del grupo para el mapa
-            if (!empty($grupo['ventas'])) {
-                $ventasMap[$grupo['ventas'][0]['id']] = $row;
-            }
-
             $row++;
         }
 
         // Fila de totales para una sola plataforma
         if ($row > 6) {
-            $sheet->mergeCells('A' . $row . ':A' . $row);
             $sheet->setCellValue('A' . $row, 'TOTALES (automáticos):');
 
             // Solo Venta Bruto para plataforma
@@ -778,9 +767,6 @@ if ($esFiltroPlataforma) {
     $row++;
 
     foreach ($ventas as $venta) {
-        // Almacenar el ID de la venta y su fila en un mapa para vincularlo más tarde
-        $ventasMap[$venta['id']] = $row;
-
         $fechaFormateada = date('d/m/Y', strtotime($venta['fecha']));
 
         $sheet->setCellValue('A' . $row, $fechaFormateada);                    // Fecha
@@ -1099,191 +1085,29 @@ $usuariosComisiones = [];
 
 if ($tieneComisiones && !empty($ventas)) {
     foreach ($ventas as $venta) {
-        // Determinar el nombre a usar para cada rol (PRIMERO nombre manual, luego nombre del sistema)
+        foreach ($rolesVenta as $rol => [$campoManual, $campoNombre, $campoGanancia]) {
+            // Determinar el nombre a usar (PRIMERO nombre manual, luego nombre del sistema)
+            $nombre = nombreEnRol($venta, $campoManual, $campoNombre);
+            $ganancia = (float)($venta[$campoGanancia] ?? 0);
+            if (!$nombre || $ganancia <= 0) {
+                continue;
+            }
 
-        // LINER
-        $nombreLiner = !empty($venta['liner_nombre_manual']) && trim($venta['liner_nombre_manual']) !== ''
-            ? trim($venta['liner_nombre_manual'])
-            : (!empty($venta['liner_nombre']) && $venta['liner_nombre'] !== 'No asignado'
-                ? trim($venta['liner_nombre'])
-                : null);
-
-        if ($nombreLiner && (float)($venta['ganancia_liner'] ?? 0) > 0) {
             // Usar el nombre NORMALIZADO como clave para agrupar por nombre
-            $claveUsuario = normalizarNombre($nombreLiner);
-
+            $claveUsuario = normalizarNombre($nombre);
             if (!isset($usuariosComisiones[$claveUsuario])) {
                 $usuariosComisiones[$claveUsuario] = [
-                    'nombre' => $nombreLiner, // Nombre original (con mayúsculas y formato)
-                    'nombre_normalizado' => $claveUsuario, // Para comparación
-                    'nombre_manual' => !empty($venta['liner_nombre_manual']) ? trim($venta['liner_nombre_manual']) : '',
-                    'tipo_nombre' => !empty($venta['liner_nombre_manual']) ? 'Manual' : 'Sistema',
-                    'nombre_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $nombreLiner), 0, 25),
+                    'nombre' => $nombre, // Nombre original (con mayúsculas y formato)
                     'comision_total' => 0,
-                    'over' => 0,
                     'descuento' => 0,
                     'sueldo' => 0,
-                    'spiff' => 0,
-                    'tiene_over' => false,
-                    'es_over' => false,
-                    'sala_id' => $venta['sala_id'] ?? null,
-                    'over_config' => null,
-                    'over_nombre_exacto' => null,
-                    'roles' => [] // Para trackear roles
+                    'sala_id' => $venta['sala_id'] ?? null
                 ];
             }
             // SUMAR la comisión al usuario existente
-            $usuariosComisiones[$claveUsuario]['comision_total'] += (float)($venta['ganancia_liner'] ?? 0);
-
-            // Agregar rol si no existe
-            if (!in_array('Liner', $usuariosComisiones[$claveUsuario]['roles'])) {
-                $usuariosComisiones[$claveUsuario]['roles'][] = 'Liner';
-            }
-        }
-
-        // CLOSER 1
-        $nombreCloser1 = !empty($venta['closer1_nombre_manual']) && trim($venta['closer1_nombre_manual']) !== ''
-            ? trim($venta['closer1_nombre_manual'])
-            : (!empty($venta['closer1_nombre']) && $venta['closer1_nombre'] !== 'No asignado'
-                ? trim($venta['closer1_nombre'])
-                : null);
-
-        if ($nombreCloser1 && (float)($venta['ganancia_closer1'] ?? 0) > 0) {
-            $claveUsuario = normalizarNombre($nombreCloser1);
-
-            if (!isset($usuariosComisiones[$claveUsuario])) {
-                $usuariosComisiones[$claveUsuario] = [
-                    'nombre' => $nombreCloser1,
-                    'nombre_normalizado' => $claveUsuario,
-                    'nombre_manual' => !empty($venta['closer1_nombre_manual']) ? trim($venta['closer1_nombre_manual']) : '',
-                    'tipo_nombre' => !empty($venta['closer1_nombre_manual']) ? 'Manual' : 'Sistema',
-                    'nombre_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $nombreCloser1), 0, 25),
-                    'comision_total' => 0,
-                    'over' => 0,
-                    'descuento' => 0,
-                    'sueldo' => 0,
-                    'spiff' => 0,
-                    'tiene_over' => false,
-                    'es_over' => false,
-                    'sala_id' => $venta['sala_id'] ?? null,
-                    'over_config' => null,
-                    'over_nombre_exacto' => null,
-                    'roles' => []
-                ];
-            }
-            // SUMAR la comisión
-            $usuariosComisiones[$claveUsuario]['comision_total'] += (float)($venta['ganancia_closer1'] ?? 0);
-
-            if (!in_array('Closer 1', $usuariosComisiones[$claveUsuario]['roles'])) {
-                $usuariosComisiones[$claveUsuario]['roles'][] = 'Closer 1';
-            }
-        }
-
-        // CLOSER 2
-        $nombreCloser2 = !empty($venta['closer2_nombre_manual']) && trim($venta['closer2_nombre_manual']) !== ''
-            ? trim($venta['closer2_nombre_manual'])
-            : (!empty($venta['closer2_nombre']) && $venta['closer2_nombre'] !== 'No asignado'
-                ? trim($venta['closer2_nombre'])
-                : null);
-
-        if ($nombreCloser2 && (float)($venta['ganancia_closer2'] ?? 0) > 0) {
-            $claveUsuario = normalizarNombre($nombreCloser2);
-
-            if (!isset($usuariosComisiones[$claveUsuario])) {
-                $usuariosComisiones[$claveUsuario] = [
-                    'nombre' => $nombreCloser2,
-                    'nombre_normalizado' => $claveUsuario,
-                    'nombre_manual' => !empty($venta['closer2_nombre_manual']) ? trim($venta['closer2_nombre_manual']) : '',
-                    'tipo_nombre' => !empty($venta['closer2_nombre_manual']) ? 'Manual' : 'Sistema',
-                    'nombre_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $nombreCloser2), 0, 25),
-                    'comision_total' => 0,
-                    'over' => 0,
-                    'descuento' => 0,
-                    'sueldo' => 0,
-                    'spiff' => 0,
-                    'tiene_over' => false,
-                    'es_over' => false,
-                    'sala_id' => $venta['sala_id'] ?? null,
-                    'over_config' => null,
-                    'over_nombre_exacto' => null,
-                    'roles' => []
-                ];
-            }
-            // SUMAR la comisión
-            $usuariosComisiones[$claveUsuario]['comision_total'] += (float)($venta['ganancia_closer2'] ?? 0);
-
-            if (!in_array('Closer 2', $usuariosComisiones[$claveUsuario]['roles'])) {
-                $usuariosComisiones[$claveUsuario]['roles'][] = 'Closer 2';
-            }
-        }
-
-        // FRONT
-        $nombreFront = !empty($venta['full_stack_nombre_manual']) && trim($venta['full_stack_nombre_manual']) !== ''
-            ? trim($venta['full_stack_nombre_manual'])
-            : (!empty($venta['front_nombre']) && $venta['front_nombre'] !== 'No asignado'
-                ? trim($venta['front_nombre'])
-                : null);
-
-        if ($nombreFront && (float)($venta['ganancia_fullstack'] ?? 0) > 0) {
-            $claveUsuario = normalizarNombre($nombreFront);
-
-            if (!isset($usuariosComisiones[$claveUsuario])) {
-                $usuariosComisiones[$claveUsuario] = [
-                    'nombre' => $nombreFront,
-                    'nombre_normalizado' => $claveUsuario,
-                    'nombre_manual' => !empty($venta['full_stack_nombre_manual']) ? trim($venta['full_stack_nombre_manual']) : '',
-                    'tipo_nombre' => !empty($venta['full_stack_nombre_manual']) ? 'Manual' : 'Sistema',
-                    'nombre_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $nombreFront), 0, 25),
-                    'comision_total' => 0,
-                    'over' => 0,
-                    'descuento' => 0,
-                    'sueldo' => 0,
-                    'spiff' => 0,
-                    'tiene_over' => false,
-                    'es_over' => false,
-                    'sala_id' => $venta['sala_id'] ?? null,
-                    'over_config' => null,
-                    'over_nombre_exacto' => null,
-                    'roles' => []
-                ];
-            }
-            // SUMAR la comisión
-            $usuariosComisiones[$claveUsuario]['comision_total'] += (float)($venta['ganancia_fullstack'] ?? 0);
-
-            if (!in_array('Front', $usuariosComisiones[$claveUsuario]['roles'])) {
-                $usuariosComisiones[$claveUsuario]['roles'][] = 'Front';
-            }
+            $usuariosComisiones[$claveUsuario]['comision_total'] += $ganancia;
         }
     }
-
-    // ============================================================================
-    // IDENTIFICAR USUARIOS OVER Y NO-OVER SEGÚN LA CONFIGURACIÓN POR SALA
-    // ============================================================================
-
-    foreach ($usuariosComisiones as $clave => $usuario) {
-        $nombreUsuario = trim($usuario['nombre']);
-        $salaUsuario = $usuario['sala_id'];
-
-        // Buscar coincidencia PARCIAL en la configuración de OVER POR SALA
-        foreach ($configOver as $key => $config) {
-            if (stripos($nombreUsuario, $config['nombre']) !== false) {
-                // Verificar si el usuario pertenece a una sala válida para este OVER
-                if (in_array($salaUsuario, $config['salas'])) {
-                    $usuariosComisiones[$clave]['tiene_over'] = true;
-                    $usuariosComisiones[$clave]['es_over'] = true;
-                    $usuariosComisiones[$clave]['over_config'] = $config;
-                    $usuariosComisiones[$clave]['over_nombre_exacto'] = $config['nombre'];
-                    break;
-                }
-            }
-        }
-    }
-
-    // Contar usuarios no-over
-    $usuariosNoOver = array_filter($usuariosComisiones, function ($usuario) {
-        return !$usuario['es_over'];
-    });
-    $totalUsuariosNoOver = count($usuariosNoOver);
 
     // Ordenar por comisión total descendente
     uasort($usuariosComisiones, function ($a, $b) {
@@ -1377,7 +1201,6 @@ try {
 
     // Fila de totales
     if ($resumenPlataformaRow > 6) {
-        $resumenPlataformaSheet->mergeCells('A' . $resumenPlataformaRow . ':A' . $resumenPlataformaRow);
         $resumenPlataformaSheet->setCellValue('A' . $resumenPlataformaRow, 'TOTALES (automáticos):');
 
         // Total de ventas brutas
@@ -1420,204 +1243,46 @@ $rangosUsuarios = []; // Para almacenar rangos de filas por usuario
 
 if ($tieneComisiones && !empty($ventas)) {
     foreach ($ventas as $venta) {
-        // Procesar Liner - USAR NOMBRE MANUAL SI ESTÁ DISPONIBLE
-        $nombreLiner = !empty($venta['liner_nombre_manual']) && trim($venta['liner_nombre_manual']) !== ''
-            ? trim($venta['liner_nombre_manual'])
-            : (!empty($venta['liner_nombre']) && $venta['liner_nombre'] !== 'No asignado'
-                ? trim($venta['liner_nombre'])
-                : null);
+        foreach ($rolesVenta as $rol => [$campoManual, $campoNombre, $campoGanancia]) {
+            // USAR NOMBRE MANUAL SI ESTÁ DISPONIBLE
+            $nombre = nombreEnRol($venta, $campoManual, $campoNombre);
+            $ganancia = (float)($venta[$campoGanancia] ?? 0);
+            if (!$nombre || $ganancia <= 0) {
+                continue;
+            }
 
-        if ($nombreLiner && (float)($venta['ganancia_liner'] ?? 0) > 0) {
-            $claveUsuario = normalizarNombre($nombreLiner);
+            $claveUsuario = normalizarNombre($nombre);
             if (!isset($usuariosConGanancias[$claveUsuario])) {
                 $usuariosConGanancias[$claveUsuario] = [
-                    'nombre' => $nombreLiner,
-                    'titulo_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $nombreLiner), 0, 25),
-                    'nombre_manual' => !empty($venta['liner_nombre_manual']) ? trim($venta['liner_nombre_manual']) : '',
-                    'tipo_nombre' => !empty($venta['liner_nombre_manual']) ? 'manual' : 'sistema',
+                    'nombre' => $nombre,
+                    'titulo_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $nombre), 0, 25),
                     'roles' => [],
                     'ventas_count' => 0,
                     'ganancia_total' => 0,
-                    'ganancia_por_rol' => ['Liner' => 0, 'Closer 1' => 0, 'Closer 2' => 0, 'Front' => 0],
                     'ventas' => [],
                     'tiene_over' => false,
                     'over_config' => null,
-                    'over_nombre_exacto' => null,
                     'sala_id' => $venta['sala_id'] ?? null
                 ];
             }
-            $gananciaLiner = (float)($venta['ganancia_liner'] ?? 0);
-            if ($gananciaLiner > 0) {
-                $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-                $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $gananciaLiner;
-                $usuariosConGanancias[$claveUsuario]['ganancia_por_rol']['Liner'] += $gananciaLiner;
-                if (!in_array('Liner', $usuariosConGanancias[$claveUsuario]['roles'])) {
-                    $usuariosConGanancias[$claveUsuario]['roles'][] = 'Liner';
-                }
-                $usuariosConGanancias[$claveUsuario]['ventas'][] = [
-                    'id' => $venta['id'],
-                    'fecha' => $venta['fecha'],
-                    'cliente_nombre' => $venta['cliente_nombre'],
-                    'rol_en_venta' => 'Liner',
-                    'ganancia_en_venta' => $gananciaLiner,
-                    'plataforma_nombre_completo' => $venta['plataforma_nombre_completo'] ?? 'N/A',
-                    'precio_neto' => $venta['precio_neto'],
-                    'venta_bruto' => $venta['precio'],
-                    'tipo_venta' => $venta['tipo_venta'],
-                    'sala_id' => $venta['sala_id'] ?? null,
-                    'sala_nombre' => $venta['sala_nombre'] ?? 'N/A'
-                ];
+            $usuariosConGanancias[$claveUsuario]['ventas_count']++;
+            $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $ganancia;
+            if (!in_array($rol, $usuariosConGanancias[$claveUsuario]['roles'])) {
+                $usuariosConGanancias[$claveUsuario]['roles'][] = $rol;
             }
-        }
-
-        // Procesar Closer 1 - USAR NOMBRE MANUAL SI ESTÁ DISPONIBLE
-        $nombreCloser1 = !empty($venta['closer1_nombre_manual']) && trim($venta['closer1_nombre_manual']) !== ''
-            ? trim($venta['closer1_nombre_manual'])
-            : (!empty($venta['closer1_nombre']) && $venta['closer1_nombre'] !== 'No asignado'
-                ? trim($venta['closer1_nombre'])
-                : null);
-
-        if ($nombreCloser1 && (float)($venta['ganancia_closer1'] ?? 0) > 0) {
-            $claveUsuario = normalizarNombre($nombreCloser1);
-            if (!isset($usuariosConGanancias[$claveUsuario])) {
-                $usuariosConGanancias[$claveUsuario] = [
-                    'nombre' => $nombreCloser1,
-                    'titulo_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $nombreCloser1), 0, 25),
-                    'nombre_manual' => !empty($venta['closer1_nombre_manual']) ? trim($venta['closer1_nombre_manual']) : '',
-                    'tipo_nombre' => !empty($venta['closer1_nombre_manual']) ? 'manual' : 'sistema',
-                    'roles' => [],
-                    'ventas_count' => 0,
-                    'ganancia_total' => 0,
-                    'ganancia_por_rol' => ['Liner' => 0, 'Closer 1' => 0, 'Closer 2' => 0, 'Front' => 0],
-                    'ventas' => [],
-                    'tiene_over' => false,
-                    'over_config' => null,
-                    'over_nombre_exacto' => null,
-                    'sala_id' => $venta['sala_id'] ?? null
-                ];
-            }
-            $gananciaCloser1 = (float)($venta['ganancia_closer1'] ?? 0);
-            if ($gananciaCloser1 > 0) {
-                $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-                $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $gananciaCloser1;
-                $usuariosConGanancias[$claveUsuario]['ganancia_por_rol']['Closer 1'] += $gananciaCloser1;
-                if (!in_array('Closer 1', $usuariosConGanancias[$claveUsuario]['roles'])) {
-                    $usuariosConGanancias[$claveUsuario]['roles'][] = 'Closer 1';
-                }
-                $usuariosConGanancias[$claveUsuario]['ventas'][] = [
-                    'id' => $venta['id'],
-                    'fecha' => $venta['fecha'],
-                    'cliente_nombre' => $venta['cliente_nombre'],
-                    'rol_en_venta' => 'Closer 1',
-                    'ganancia_en_venta' => $gananciaCloser1,
-                    'plataforma_nombre_completo' => $venta['plataforma_nombre_completo'] ?? 'N/A',
-                    'precio_neto' => $venta['precio_neto'],
-                    'venta_bruto' => $venta['precio'],
-                    'tipo_venta' => $venta['tipo_venta'],
-                    'sala_id' => $venta['sala_id'] ?? null,
-                    'sala_nombre' => $venta['sala_nombre'] ?? 'N/A'
-                ];
-            }
-        }
-
-        // Procesar Closer 2 - USAR NOMBRE MANUAL SI ESTÁ DISPONIBLE
-        $nombreCloser2 = !empty($venta['closer2_nombre_manual']) && trim($venta['closer2_nombre_manual']) !== ''
-            ? trim($venta['closer2_nombre_manual'])
-            : (!empty($venta['closer2_nombre']) && $venta['closer2_nombre'] !== 'No asignado'
-                ? trim($venta['closer2_nombre'])
-                : null);
-
-        if ($nombreCloser2 && (float)($venta['ganancia_closer2'] ?? 0) > 0) {
-            $claveUsuario = normalizarNombre($nombreCloser2);
-            if (!isset($usuariosConGanancias[$claveUsuario])) {
-                $usuariosConGanancias[$claveUsuario] = [
-                    'nombre' => $nombreCloser2,
-                    'titulo_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $nombreCloser2), 0, 25),
-                    'nombre_manual' => !empty($venta['closer2_nombre_manual']) ? trim($venta['closer2_nombre_manual']) : '',
-                    'tipo_nombre' => !empty($venta['closer2_nombre_manual']) ? 'manual' : 'sistema',
-                    'roles' => [],
-                    'ventas_count' => 0,
-                    'ganancia_total' => 0,
-                    'ganancia_por_rol' => ['Liner' => 0, 'Closer 1' => 0, 'Closer 2' => 0, 'Front' => 0],
-                    'ventas' => [],
-                    'tiene_over' => false,
-                    'over_config' => null,
-                    'over_nombre_exacto' => null,
-                    'sala_id' => $venta['sala_id'] ?? null
-                ];
-            }
-            $gananciaCloser2 = (float)($venta['ganancia_closer2'] ?? 0);
-            if ($gananciaCloser2 > 0) {
-                $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-                $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $gananciaCloser2;
-                $usuariosConGanancias[$claveUsuario]['ganancia_por_rol']['Closer 2'] += $gananciaCloser2;
-                if (!in_array('Closer 2', $usuariosConGanancias[$claveUsuario]['roles'])) {
-                    $usuariosConGanancias[$claveUsuario]['roles'][] = 'Closer 2';
-                }
-                $usuariosConGanancias[$claveUsuario]['ventas'][] = [
-                    'id' => $venta['id'],
-                    'fecha' => $venta['fecha'],
-                    'cliente_nombre' => $venta['cliente_nombre'],
-                    'rol_en_venta' => 'Closer 2',
-                    'ganancia_en_venta' => $gananciaCloser2,
-                    'plataforma_nombre_completo' => $venta['plataforma_nombre_completo'] ?? 'N/A',
-                    'precio_neto' => $venta['precio_neto'],
-                    'venta_bruto' => $venta['precio'],
-                    'tipo_venta' => $venta['tipo_venta'],
-                    'sala_id' => $venta['sala_id'] ?? null,
-                    'sala_nombre' => $venta['sala_nombre'] ?? 'N/A'
-                ];
-            }
-        }
-
-        // Procesar Front - USAR NOMBRE MANUAL SI ESTÁ DISPONIBLE
-        $nombreFront = !empty($venta['full_stack_nombre_manual']) && trim($venta['full_stack_nombre_manual']) !== ''
-            ? trim($venta['full_stack_nombre_manual'])
-            : (!empty($venta['front_nombre']) && $venta['front_nombre'] !== 'No asignado'
-                ? trim($venta['front_nombre'])
-                : null);
-
-        if ($nombreFront && (float)($venta['ganancia_fullstack'] ?? 0) > 0) {
-            $claveUsuario = normalizarNombre($nombreFront);
-            if (!isset($usuariosConGanancias[$claveUsuario])) {
-                $usuariosConGanancias[$claveUsuario] = [
-                    'nombre' => $nombreFront,
-                    'titulo_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $nombreFront), 0, 25),
-                    'nombre_manual' => !empty($venta['full_stack_nombre_manual']) ? trim($venta['full_stack_nombre_manual']) : '',
-                    'tipo_nombre' => !empty($venta['full_stack_nombre_manual']) ? 'manual' : 'sistema',
-                    'roles' => [],
-                    'ventas_count' => 0,
-                    'ganancia_total' => 0,
-                    'ganancia_por_rol' => ['Liner' => 0, 'Closer 1' => 0, 'Closer 2' => 0, 'Front' => 0],
-                    'ventas' => [],
-                    'tiene_over' => false,
-                    'over_config' => null,
-                    'over_nombre_exacto' => null,
-                    'sala_id' => $venta['sala_id'] ?? null
-                ];
-            }
-            $gananciaFront = (float)($venta['ganancia_fullstack'] ?? 0);
-            if ($gananciaFront > 0) {
-                $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-                $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $gananciaFront;
-                $usuariosConGanancias[$claveUsuario]['ganancia_por_rol']['Front'] += $gananciaFront;
-                if (!in_array('Front', $usuariosConGanancias[$claveUsuario]['roles'])) {
-                    $usuariosConGanancias[$claveUsuario]['roles'][] = 'Front';
-                }
-                $usuariosConGanancias[$claveUsuario]['ventas'][] = [
-                    'id' => $venta['id'],
-                    'fecha' => $venta['fecha'],
-                    'cliente_nombre' => $venta['cliente_nombre'],
-                    'rol_en_venta' => 'Front',
-                    'ganancia_en_venta' => $gananciaFront,
-                    'plataforma_nombre_completo' => $venta['plataforma_nombre_completo'] ?? 'N/A',
-                    'precio_neto' => $venta['precio_neto'],
-                    'venta_bruto' => $venta['precio'],
-                    'tipo_venta' => $venta['tipo_venta'],
-                    'sala_id' => $venta['sala_id'] ?? null,
-                    'sala_nombre' => $venta['sala_nombre'] ?? 'N/A'
-                ];
-            }
+            $usuariosConGanancias[$claveUsuario]['ventas'][] = [
+                'id' => $venta['id'],
+                'fecha' => $venta['fecha'],
+                'cliente_nombre' => $venta['cliente_nombre'],
+                'rol_en_venta' => $rol,
+                'ganancia_en_venta' => $ganancia,
+                'plataforma_nombre_completo' => $venta['plataforma_nombre_completo'] ?? 'N/A',
+                'precio_neto' => $venta['precio_neto'],
+                'venta_bruto' => $venta['precio'],
+                'tipo_venta' => $venta['tipo_venta'],
+                'sala_id' => $venta['sala_id'] ?? null,
+                'sala_nombre' => $venta['sala_nombre'] ?? 'N/A'
+            ];
         }
     }
 }
@@ -1628,20 +1293,15 @@ foreach ($usuariosConGanancias as $clave => $usuario) {
     $salaUsuario = $usuario['sala_id'];
 
     // Buscar coincidencia PARCIAL en la configuración de OVER
-    foreach ($configOver as $key => $config) {
-        // Convertir a mayúsculas y buscar si el nombre de configuración está contenido en el nombre del usuario
+    foreach ($configOver as $config) {
+        // Buscar si el nombre de configuración está contenido en el nombre del usuario
         if (stripos($nombreUsuario, $config['nombre']) !== false) {
-            // Verificar si el usuario pertenece a una sala válida para este OVER
-            if (in_array($salaUsuario, $config['salas'])) {
-                $usuariosConGanancias[$clave]['tiene_over'] = true;
-                $usuariosConGanancias[$clave]['over_config'] = $config;
-                $usuariosConGanancias[$clave]['over_nombre_exacto'] = $config['nombre'];
+            // Solo tiene OVER si el usuario pertenece a una sala válida para este OVER
+            $enSala = in_array($salaUsuario, $config['salas']);
+            $usuariosConGanancias[$clave]['tiene_over'] = $enSala;
+            $usuariosConGanancias[$clave]['over_config'] = $enSala ? $config : null;
+            if ($enSala) {
                 break;
-            } else {
-                // Si no pertenece a la sala adecuada, no tiene OVER
-                $usuariosConGanancias[$clave]['tiene_over'] = false;
-                $usuariosConGanancias[$clave]['over_config'] = null;
-                $usuariosConGanancias[$clave]['over_nombre_exacto'] = null;
             }
         }
     }
@@ -1659,10 +1319,7 @@ if (!empty($usuariosConGanancias)) {
 
     foreach ($usuariosConGanancias as $clave => $usuario) {
         try {
-            $tituloHoja = $usuario['titulo_limpio'];
-            $tituloHoja = str_replace(['*', ':', '/', '\\', '?', '[', ']'], '', $tituloHoja);
-            if (empty(trim($tituloHoja))) $tituloHoja = 'Usuario_' . $usuario['ventas_count'];
-            $tituloHoja = substr($tituloHoja, 0, 31);
+            $tituloHoja = tituloHojaUsuario($usuario);
 
             $userSheet = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, $tituloHoja);
             $spreadsheet->addSheet($userSheet);
@@ -2003,11 +1660,7 @@ if (!empty($usuariosConGanancias)) {
         $volumenRow = 6;
 
         foreach ($usuariosConGanancias as $clave => $usuario) {
-            $nombreHojaUsuario = $usuario['titulo_limpio'];
-            $nombreHojaUsuario = str_replace(['*', ':', '/', '\\', '?', '[', ']'], '', $nombreHojaUsuario);
-            if (empty(trim($nombreHojaUsuario))) $nombreHojaUsuario = 'Usuario_' . $usuario['ventas_count'];
-            $nombreHojaUsuario = substr($nombreHojaUsuario, 0, 31);
-            $nombreHojaEscapado = "'" . str_replace("'", "''", $nombreHojaUsuario) . "'";
+            $nombreHojaEscapado = "'" . str_replace("'", "''", tituloHojaUsuario($usuario)) . "'";
             
             // Obtener el rango de filas para este usuario
             $rango = isset($rangosUsuarios[$usuario['titulo_limpio']]) ? $rangosUsuarios[$usuario['titulo_limpio']] : null;
@@ -2164,22 +1817,12 @@ if ($tieneComisiones && !empty($usuariosComisiones)) {
         foreach ($usuariosComisiones as $usuario) {
             $resumenSheet->setCellValue('A' . $resumenRow, $usuario['nombre']);
             
-            // Buscar el nombre de la hoja del usuario
-            $nombreHojaUsuario = '';
-            $rangoUsuario = null;
-            foreach ($usuariosConGanancias as $clave => $userData) {
-                if (normalizarNombre($userData['nombre']) === normalizarNombre($usuario['nombre'])) {
-                    $nombreHojaUsuario = $userData['titulo_limpio'];
-                    $nombreHojaUsuario = str_replace(['*', ':', '/', '\\', '?', '[', ']'], '', $nombreHojaUsuario);
-                    if (empty(trim($nombreHojaUsuario))) $nombreHojaUsuario = 'Usuario_' . $userData['ventas_count'];
-                    $nombreHojaUsuario = substr($nombreHojaUsuario, 0, 31);
-                    $rangoUsuario = isset($rangosUsuarios[$userData['titulo_limpio']]) ? $rangosUsuarios[$userData['titulo_limpio']] : null;
-                    break;
-                }
-            }
-            
-            if (!empty($nombreHojaUsuario) && $rangoUsuario) {
-                $nombreHojaEscapado = "'" . str_replace("'", "''", $nombreHojaUsuario) . "'";
+            // Buscar la hoja del usuario (ambos arreglos usan el nombre normalizado como clave)
+            $userData = $usuariosConGanancias[normalizarNombre($usuario['nombre'])] ?? null;
+            $rangoUsuario = $userData ? ($rangosUsuarios[$userData['titulo_limpio']] ?? null) : null;
+
+            if ($rangoUsuario) {
+                $nombreHojaEscapado = "'" . str_replace("'", "''", tituloHojaUsuario($userData)) . "'";
                 // FÓRMULA que suma la columna D (Ganancia por Rol) de la hoja individual
                 $resumenSheet->setCellValue('B' . $resumenRow, 
                     "=SUM(" . $nombreHojaEscapado . "!D" . $rangoUsuario['inicio'] . ":D" . $rangoUsuario['fin'] . ")");
@@ -2226,7 +1869,8 @@ if ($tieneComisiones && !empty($usuariosComisiones)) {
         // SISTEMA DE OVER
         // ============================================================================
         
-        $overStartRow = ($resumenRow > 6 ? $resumenRow : $totalRow) + 3;
+        // $usuariosComisiones no está vacío, así que siempre hay fila de totales en $resumenRow
+        $overStartRow = $resumenRow + 3;
         
         $resumenSheet->setCellValue('A' . $overStartRow, 'SISTEMA DE OVER - BONOS POR META');
         $resumenSheet->getStyle('A' . $overStartRow)->getFont()->setBold(true)->setSize(12);
@@ -2236,9 +1880,8 @@ if ($tieneComisiones && !empty($usuariosComisiones)) {
         applySafeStyle($resumenSheet, 'A' . ($overStartRow + 1) . ':E' . ($overStartRow + 1), 'header');
         
         // Calcular ventas netas por sala
-        $ventaNetoTotal = 0;
         $ventaNetoTotalPorSala = [1 => 0, 2 => 0];
-        
+
         foreach ($ventas as $venta) {
             $salaIdVenta = $venta['sala_id'] ?? 0;
             if ($salaIdVenta == 1) {
@@ -2246,7 +1889,6 @@ if ($tieneComisiones && !empty($usuariosComisiones)) {
             } elseif ($salaIdVenta == 2) {
                 $ventaNetoTotalPorSala[2] += (float)$venta['precio_neto'];
             }
-            $ventaNetoTotal += (float)$venta['precio_neto'];
         }
         
         $overRow = $overStartRow + 2;

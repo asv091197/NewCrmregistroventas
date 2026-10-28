@@ -6,11 +6,6 @@ while (ob_get_level()) {
 }
 ob_start();
 
-// Habilitar visualización de errores temporalmente para diagnóstico
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 // Verificar si ya se han enviado headers
 if (headers_sent()) {
     die('Error: Headers ya han sido enviados. Verifique que no haya espacios en blanco o caracteres antes de <?php.');
@@ -40,54 +35,12 @@ try {
     die("Error de conexión a la base de datos: " . $e->getMessage());
 }
 
-// ============================================================================
-// VERIFICACIÓN DE PERMISOS Y RESTRICCIONES POR ROL
-// ============================================================================
-
-// Determinar si es admin
-$esAdmin = isset($_SESSION['rol']) && in_array($_SESSION['rol'], ['admin', 'superadmin'], true);
-
-// Determinar el rango de fechas del mes en curso para usuarios no admin
-$fechaInicioMes = '';
-$fechaFinMes = '';
-
-if (!$esAdmin) {
-    $fechaInicioMes = date('Y-m-01'); // Primer día del mes
-    $fechaFinMes = date('Y-m-t'); // Último día del mes
-}
-
 // Obtener parámetros de filtrado
+// (solo admin/superadmin llegan aquí, así que no aplica la restricción al mes en curso de usuarios normales)
 $fechaInicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : '';
 $fechaFin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : '';
 $busqueda = isset($_GET['busqueda']) ? $_GET['busqueda'] : '';
 $plataformaIds = isset($_GET['plataforma_id']) ? (array)$_GET['plataforma_id'] : [];
-
-// Para usuarios no admin, aplicar restricciones de fecha
-if (!$esAdmin) {
-    if (empty($fechaInicio)) {
-        $fechaInicio = $fechaInicioMes;
-    }
-    if (empty($fechaFin)) {
-        $fechaFin = $fechaFinMes;
-    }
-    
-    if (!empty($fechaInicio) && $fechaInicio < $fechaInicioMes) {
-        $fechaInicio = $fechaInicioMes;
-    }
-    if (!empty($fechaInicio) && $fechaInicio > $fechaFinMes) {
-        $fechaInicio = $fechaInicioMes;
-    }
-    if (!empty($fechaFin) && $fechaFin > $fechaFinMes) {
-        $fechaFin = $fechaFinMes;
-    }
-    if (!empty($fechaFin) && $fechaFin < $fechaInicioMes) {
-        $fechaFin = $fechaFinMes;
-    }
-    if (!empty($fechaInicio) && !empty($fechaFin) && $fechaInicio > $fechaFin) {
-        $fechaInicio = $fechaInicioMes;
-        $fechaFin = $fechaFinMes;
-    }
-}
 
 // Construir consulta base - MODIFICADO PARA OBTENER SOLO APEMAT
 $sql = "SELECT v.*, 
@@ -112,14 +65,6 @@ $sql = "SELECT v.*,
 // Preparar condiciones WHERE y parámetros
 $conditions = [];
 $params = [];
-
-// Si el usuario no es admin, forzar el filtro del mes en curso
-if (!$esAdmin) {
-    $conditions[] = "v.fecha >= ?";
-    $conditions[] = "v.fecha <= ?";
-    $params[] = $fechaInicioMes . ' 00:00:00';
-    $params[] = $fechaFinMes . ' 23:59:59';
-}
 
 if (!empty($fechaInicio)) {
     $conditions[] = "v.fecha >= ?";
@@ -394,14 +339,8 @@ $html = '<!DOCTYPE html>
 // Título principal
 $html .= '<div class="header">
     <div class="title">REPORTE DE VENTAS - GRUPO IDEAS</div>
-    <div class="subtitle">Resumen General - ' . date('d/m/Y H:i:s') . '</div>';
-
-// Información sobre restricciones para usuarios no admin
-if (!$esAdmin) {
-    $html .= '<div class="subtitle" style="color: #E74C3C;">MES ACTUAL: ' . date('F Y') . '</div>';
-}
-
-$html .= '</div>';
+    <div class="subtitle">Resumen General - ' . date('d/m/Y H:i:s') . '</div>
+</div>';
 
 // Información de filtros aplicados
 $filtroTexto = 'Todos los registros';
@@ -414,29 +353,17 @@ if (!empty($fechaInicio) && !empty($fechaFin)) {
 }
 
 if (!empty($busqueda)) {
-    $filtroTexto .= empty($filtroTexto) ? "Búsqueda: " . htmlspecialchars($busqueda) : " | Búsqueda: " . htmlspecialchars($busqueda);
+    $filtroTexto .= " | Búsqueda: " . $busqueda;
 }
 
 if (!empty($plataformasNombres)) {
-    $filtroTexto .= empty($filtroTexto) ? "Plataformas: " . implode(', ', $plataformasNombres) : " | Plataformas: " . implode(', ', $plataformasNombres);
+    $filtroTexto .= " | Plataformas: " . implode(', ', $plataformasNombres);
 }
 
-// Agregar información sobre restricciones para usuarios no admin
-if (!$esAdmin) {
-    $filtroTexto .= " | Rango del mes: " . date('d/m/Y', strtotime($fechaInicioMes)) . " al " . date('d/m/Y', strtotime($fechaFinMes));
-}
-
-$html .= '<div class="filtro-info">Filtro aplicado: ' . $filtroTexto . '</div>';
+$html .= '<div class="filtro-info">Filtro aplicado: ' . htmlspecialchars($filtroTexto) . '</div>';
 
 // Instrucciones y modo de usuario
-$instrucciones = 'REPORTE EN PDF - ';
-if (!$esAdmin) {
-    $instrucciones .= '[MODO RESTRINGIDO: Solo datos del mes actual]';
-    $html .= '<div class="instrucciones restringido">' . $instrucciones . '</div>';
-} else {
-    $instrucciones .= '[MODO ADMIN: Acceso completo]';
-    $html .= '<div class="instrucciones">' . $instrucciones . '</div>';
-}
+$html .= '<div class="instrucciones">REPORTE EN PDF - [MODO ADMIN: Acceso completo]</div>';
 
 if ($multiplesPlataformas) {
     $html .= '<div class="instrucciones">TABLAS SEPARADAS POR PLATAFORMA - TOTALES POR DÍA</div>';
@@ -487,9 +414,10 @@ if ($esFiltroPlataforma) {
         foreach ($ventasPorPlataforma as $plataformaId => $plataformaData) {
             $contadorTablas++;
             $plataformaNombre = $plataformaData['nombre'];
-            
+            $plataformaNombreHtml = htmlspecialchars($plataformaNombre);
+
             // TÍTULO DE LA PLATAFORMA
-            $html .= '<div class="plataforma-header">PLATAFORMA: ' . strtoupper($plataformaNombre) . '</div>';
+            $html .= '<div class="plataforma-header">PLATAFORMA: ' . htmlspecialchars(strtoupper($plataformaNombre)) . '</div>';
             
             // TABLA DE LA PLATAFORMA
             $html .= '<table>
@@ -518,7 +446,7 @@ if ($esFiltroPlataforma) {
                 $html .= '<tr class="' . $claseFila . '">
                     <td class="texto-destacado">' . $fechaFormateada . '</td>
                     <td class="moneda numero-grande">$' . number_format($totalDia, 2) . '</td>
-                    <td>' . $plataformaNombre . '</td>
+                    <td>' . $plataformaNombreHtml . '</td>
                 </tr>';
                 
                 $totalPlataforma += $totalDia;
@@ -526,7 +454,7 @@ if ($esFiltroPlataforma) {
             
             // TOTAL DE LA PLATAFORMA
             $html .= '<tr class="total-row">
-                <td class="text-bold">TOTAL ' . $plataformaNombre . ':</td>
+                <td class="text-bold">TOTAL ' . $plataformaNombreHtml . ':</td>
                 <td class="moneda text-bold numero-grande">$' . number_format($totalPlataforma, 2) . '</td>
                 <td></td>
             </tr>';
@@ -594,7 +522,7 @@ if ($esFiltroPlataforma) {
             $html .= '<tr class="' . $claseFila . '">
                 <td class="texto-destacado">' . $fechaFormateada . '</td>
                 <td class="moneda numero-grande">$' . number_format($grupo['total_bruto'], 2) . '</td>
-                <td>' . $grupo['plataforma'] . '</td>
+                <td>' . htmlspecialchars($grupo['plataforma']) . '</td>
             </tr>';
         }
         
@@ -609,7 +537,8 @@ if ($esFiltroPlataforma) {
     }
 } else {
     // REPORTE COMPLETO CON TODOS LOS DETALLES - SOLO APEMAT LIMPIO
-    $html .= '<table>
+    // Inicio de tabla con encabezados (se repite tras cada salto de página)
+    $inicioTabla = '<table>
         <thead>
             <tr>
                 <th>Fecha</th>
@@ -629,7 +558,8 @@ if ($esFiltroPlataforma) {
             </tr>
         </thead>
         <tbody>';
-    
+    $html .= $inicioTabla;
+
     $totalBruto = 0;
     $totalNeto = 0;
     $totalComisiones = 0;
@@ -678,27 +608,7 @@ if ($esFiltroPlataforma) {
         
         // Agregar salto de página cada 15 filas (reducido por letras más grandes)
         if ($contadorFilas % 15 === 0) {
-            $html .= '</tbody></table><div class="page-break"></div>';
-            $html .= '<table>
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Venta Bruto</th>
-                        <th>Venta Neto</th>
-                        <th>Cliente</th>
-                        <th>Liner</th>
-                        <th>Comisión Liner</th>
-                        <th>Closer 1</th>
-                        <th>Comisión Closer 1</th>
-                        <th>Closer 2</th>
-                        <th>Comisión Closer 2</th>
-                        <th>Front</th>
-                        <th>Comisión Front</th>
-                        <th>Plataforma</th>
-                        <th>Suma Comisión</th>
-                    </tr>
-                </thead>
-                <tbody>';
+            $html .= '</tbody></table><div class="page-break"></div>' . $inicioTabla;
         }
     }
     

@@ -197,14 +197,7 @@ function registrarLogLoginFacturacion($conexion, array $datos) {
             $userAgent
         ]);
 
-        $logId = (int)$conexion->lastInsertId();
-        debugLog('Log login facturacion registrado', [
-            'correo' => $correo, 'exito' => $exito, 'ip' => $ip,
-            'dispositivo' => $dispositivo, 'so' => $so, 'navegador' => $navegador,
-            'pais' => $pais, 'ciudad' => $ciudad
-        ]);
-        $stmt = null;
-        return $logId;
+        return (int)$conexion->lastInsertId();
     } catch (Exception $e) {
         debugLog('Excepción registrando log facturacion: ' . $e->getMessage());
     }
@@ -215,24 +208,15 @@ function registrarLogLoginFacturacion($conexion, array $datos) {
 // FIN FUNCIONES DE LOGS
 // ============================================================
 
-debugLog('=== INICIO DE PROCESO LOGIN FACTURACION ===');
-
 if (isset($_SESSION['usuario_id']) && isset($_SESSION['rol'])) {
     if (in_array($_SESSION['rol'], ['admin', 'superadmin'], true)) {
-        debugLog('Usuario admin ya tiene sesión activa para facturación', [
-            'usuario_id' => $_SESSION['usuario_id'],
-            'rol' => $_SESSION['rol']
-        ]);
         header("Location: ventas.php");
         exit;
     } else {
-        debugLog('Sesión no admin detectada, limpiando sesión', [
-            'usuario_id' => $_SESSION['usuario_id'],
-            'rol' => $_SESSION['rol']
-        ]);
+        // Sesión no admin: limpiar y comenzar una nueva
         session_unset();
         session_destroy();
-        require_once __DIR__ . '/../session_config.php'; session_start();
+        session_start();
     }
 }
 
@@ -240,22 +224,20 @@ try {
     $conexion = conexionPDO();
 } catch (PDOException $e) {
     debugLog('Error de conexión a BD', $e->getMessage());
-    die("Error de conexión: " . $e->getMessage());
+    die("Error de conexión: " . htmlspecialchars($e->getMessage()));
 }
 
 $mensaje = "";
 $mensaje_tipo = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    debugLog('Método POST recibido para facturación', $_POST);
-
+    // Nunca registrar $_POST completo: contiene la contraseña
     $correo     = trim($_POST['correo'] ?? '');
     $contraseña = $_POST['contraseña'] ?? '';
 
     if (empty($correo) || empty($contraseña)) {
         $mensaje = "Por favor complete todos los campos";
         $mensaje_tipo = "danger";
-        debugLog('Campos vacíos en facturación', ['correo' => $correo, 'password_length' => strlen($contraseña)]);
 
         registrarLogLoginFacturacion($conexion, [
             'correo'       => $correo,
@@ -275,122 +257,88 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             FROM usuarios_facturacion u
             WHERE u.correo = ? AND u.activo = 1
         ");
+        $stmt->execute([$correo]);
+        $filas = $stmt->fetchAll(PDO::FETCH_NUM);
+        $stmt = null;
 
-        if (!$stmt) {
-            debugLog('Error en prepare para facturación', $conexion->errorInfo()[2] ?? '');
-            $mensaje = "Error interno del sistema";
-            $mensaje_tipo = "danger";
-        } else {
-            $stmt->execute([$correo]);
-            $filas = $stmt->fetchAll(PDO::FETCH_NUM);
+        if (count($filas) === 1) {
+            [$id, $nombre, $hash, $rol, $acceso_todas_salas, $salas_permitidas_json] = $filas[0];
 
-            if (count($filas) === 1) {
-                [$id, $nombre, $hash, $rol, $acceso_todas_salas, $salas_permitidas_json] = $filas[0];
-
-                debugLog('Usuario encontrado en facturación', [
-                    'id' => $id, 'nombre' => $nombre, 'rol' => $rol
-                ]);
-
-                if (password_verify($contraseña, $hash)) {
-                    if (!in_array($rol, ['admin', 'superadmin'], true)) {
-                        $mensaje = "Acceso denegado: solo los roles admin y superadmin pueden iniciar sesión.";
-                        $mensaje_tipo = "danger";
-                        debugLog('Intento de acceso con rol no admin', [
-                            'correo' => $correo, 'rol' => $rol
-                        ]);
-
-                        registrarLogLoginFacturacion($conexion, [
-                            'correo'       => $correo,
-                            'exito'        => false,
-                            'motivo_fallo' => 'Rol no autorizado: ' . $rol,
-                            'usuario_id'   => $id
-                        ]);
-
-                    } else {
-                        session_regenerate_id(true);
-                        $_SESSION['usuario_id'] = $id;
-                        $_SESSION['nombre']     = $nombre;
-                        $_SESSION['rol']        = $rol;
-                        $_SESSION['correo']     = $correo;
-
-                        if ($acceso_todas_salas == 1) {
-                            unset($_SESSION['sala_id']);
-                            $_SESSION['acceso_todas_salas'] = true;
-                            debugLog('Usuario con acceso a todas las salas (facturación)');
-                        } else {
-                            if (!empty($salas_permitidas_json) && $salas_permitidas_json !== 'null') {
-                                $salas_permitidas = json_decode($salas_permitidas_json, true);
-                                if (is_array($salas_permitidas) && count($salas_permitidas) > 0) {
-                                    $_SESSION['sala_id'] = intval($salas_permitidas[0]);
-                                    $_SESSION['todas_salas_permitidas'] = $salas_permitidas;
-                                    debugLog('Salas permitidas asignadas en facturación', $salas_permitidas);
-                                } else {
-                                    unset($_SESSION['sala_id']);
-                                }
-                            } else {
-                                unset($_SESSION['sala_id']);
-                            }
-                            $_SESSION['acceso_todas_salas'] = false;
-                        }
-
-                        $_SESSION['ultimo_acceso'] = time();
-
-                        // LOG EXITOSO
-                        $_SESSION['log_login_id'] = registrarLogLoginFacturacion($conexion, [
-                            'correo'     => $correo,
-                            'exito'      => true,
-                            'usuario_id' => $id
-                        ]);
-                        $_SESSION['log_origen'] = 'facturacion';
-
-                        debugLog('Login exitoso en facturación', [
-                            'usuario'    => $correo,
-                            'rol'        => $rol,
-                            'session_id' => session_id()
-                        ]);
-
-                        $stmt = null;
-                        $conexion = null;
-
-                        debugLog('Redirigiendo a ventas.php (facturación)');
-                        header("Location: ventas.php");
-                        exit();
-                    }
-                } else {
-                    $mensaje = "Contraseña incorrecta.";
+            if (password_verify($contraseña, $hash)) {
+                if (!in_array($rol, ['admin', 'superadmin'], true)) {
+                    $mensaje = "Acceso denegado: solo los roles admin y superadmin pueden iniciar sesión.";
                     $mensaje_tipo = "danger";
-                    debugLog('Contraseña incorrecta para usuario en facturación', $correo);
 
                     registrarLogLoginFacturacion($conexion, [
                         'correo'       => $correo,
                         'exito'        => false,
-                        'motivo_fallo' => 'Contraseña incorrecta',
+                        'motivo_fallo' => 'Rol no autorizado: ' . $rol,
                         'usuario_id'   => $id
                     ]);
+
+                } else {
+                    session_regenerate_id(true);
+                    $_SESSION['usuario_id'] = $id;
+                    $_SESSION['nombre']     = $nombre;
+                    $_SESSION['rol']        = $rol;
+                    $_SESSION['correo']     = $correo;
+
+                    if ($acceso_todas_salas == 1) {
+                        unset($_SESSION['sala_id']);
+                        $_SESSION['acceso_todas_salas'] = true;
+                    } else {
+                        $salas_permitidas = (!empty($salas_permitidas_json) && $salas_permitidas_json !== 'null')
+                            ? json_decode($salas_permitidas_json, true)
+                            : null;
+                        if (is_array($salas_permitidas) && count($salas_permitidas) > 0) {
+                            $_SESSION['sala_id'] = intval($salas_permitidas[0]);
+                            $_SESSION['todas_salas_permitidas'] = $salas_permitidas;
+                        } else {
+                            unset($_SESSION['sala_id']);
+                        }
+                        $_SESSION['acceso_todas_salas'] = false;
+                    }
+
+                    $_SESSION['ultimo_acceso'] = time();
+
+                    // LOG EXITOSO
+                    $_SESSION['log_login_id'] = registrarLogLoginFacturacion($conexion, [
+                        'correo'     => $correo,
+                        'exito'      => true,
+                        'usuario_id' => $id
+                    ]);
+                    $_SESSION['log_origen'] = 'facturacion';
+
+                    $conexion = null;
+
+                    header("Location: ventas.php");
+                    exit();
                 }
             } else {
-                $mensaje = "Correo no registrado o usuario inactivo.";
+                $mensaje = "Contraseña incorrecta.";
                 $mensaje_tipo = "danger";
-                debugLog('Usuario no encontrado o inactivo en facturación', $correo);
 
                 registrarLogLoginFacturacion($conexion, [
                     'correo'       => $correo,
                     'exito'        => false,
-                    'motivo_fallo' => 'Usuario no registrado o inactivo'
+                    'motivo_fallo' => 'Contraseña incorrecta',
+                    'usuario_id'   => $id
                 ]);
             }
+        } else {
+            $mensaje = "Correo no registrado o usuario inactivo.";
+            $mensaje_tipo = "danger";
 
-            if (isset($stmt) && $stmt instanceof PDOStatement) {
-                $stmt = null;
-            }
+            registrarLogLoginFacturacion($conexion, [
+                'correo'       => $correo,
+                'exito'        => false,
+                'motivo_fallo' => 'Usuario no registrado o inactivo'
+            ]);
         }
     }
-} else {
-    debugLog('Método no POST para facturación', $_SERVER['REQUEST_METHOD']);
 }
 
 $conexion = null;
-debugLog('=== FIN DE PROCESO LOGIN FACTURACION ===');
 ?>
 
 <!DOCTYPE html>
@@ -868,15 +816,7 @@ debugLog('=== FIN DE PROCESO LOGIN FACTURACION ===');
                 return false;
             }
         });
-        
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.target.matches('button') && !formSubmitting) {
-                const btnLogin = document.getElementById('btnLogin');
-                if (!btnLogin.disabled) {
-                    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-                }
-            }
-        });
+        // Enter en los campos usa el envío nativo del formulario (pasa por la validación del submit)
     </script>
 </body>
 </html>

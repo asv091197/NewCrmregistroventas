@@ -5,17 +5,18 @@ require_once __DIR__ . '/../../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
 require_once __DIR__ . '/../../includes/registro_acciones.php';
 
-if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin'  && $_SESSION['rol'] !== 'superadmin') {
+$rolSesion = $_SESSION['rol'] ?? '';
+if (!isset($_SESSION['usuario_id']) || ($rolSesion !== 'admin' && $rolSesion !== 'superadmin')) {
     header("Location: ../login.php");
     exit;
 }
 
 // Conexión a la base de datos
-
 try {
     $pdo = conexionPDO();
 } catch (PDOException $e) {
-    die("Error de conexión: " . $e->getMessage());
+    error_log("Error de conexión: " . $e->getMessage());
+    die("Error de conexión a la base de datos.");
 }
 
 // OBTENER INFORMACIÓN DEL ADMIN LOGEADO
@@ -25,44 +26,49 @@ try {
     $stmtAdmin->execute([$admin_id]);
     $adminData = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
 
-    $admin_acceso_todas = $adminData['acceso_todas_salas'] ?? 0;
-    $admin_salas_permitidas = $adminData['salas_permitidas'] ?? '[]';
+    // Superadmin siempre tiene acceso a todas las salas
+    $admin_acceso_todas = $rolSesion === 'superadmin' ? 1 : (int)($adminData['acceso_todas_salas'] ?? 0);
 
     // Convertir salas permitidas a array
-    $admin_salas_array = json_decode($admin_salas_permitidas, true) ?? [];
+    $admin_salas_array = json_decode($adminData['salas_permitidas'] ?? '[]', true);
+    if (!is_array($admin_salas_array)) {
+        $admin_salas_array = [];
+    }
 } catch (PDOException $e) {
-    die("Error al cargar permisos del administrador: " . $e->getMessage());
+    error_log("Error al cargar permisos del administrador: " . $e->getMessage());
+    die("Error al cargar permisos del administrador.");
 }
 
 // Procesamiento del formulario
 $mensaje = '';
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nombre_agente = trim($_POST["apemat"]);  // Campo: Nombre Agente
-    $nombre_asesor = trim($_POST["nombre"]);  // Campo: Nombre Asesor
-    $apellido_asesor = trim($_POST["apepat"]); // Campo: Apellido Asesor
-    $email = trim($_POST["email"]);
-    $pass = $_POST["password"];
-    $rol = $_POST["rol"];
-    $acceso_salas = $_POST["acceso_salas"];
-    $salas_seleccionadas = isset($_POST["salas_seleccionadas"]) ? $_POST["salas_seleccionadas"] : '';
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $nombre_agente = trim($_POST["apemat"] ?? '');  // Campo: Nombre Agente
+    $nombre_asesor = trim($_POST["nombre"] ?? '');  // Campo: Nombre Asesor
+    $apellido_asesor = trim($_POST["apepat"] ?? ''); // Campo: Apellido Asesor
+    $email = trim($_POST["email"] ?? '');
+    $pass = $_POST["password"] ?? '';
+    $rol = $_POST["rol"] ?? '';
+    $acceso_salas = $_POST["acceso_salas"] ?? '';
+    $salas_seleccionadas = $_POST["salas_seleccionadas"] ?? '';
 
-    // VALIDAR PERMISOS DEL ADMIN
+    // VALIDAR ROL Y PERMISOS DEL ADMIN
     $error_permiso = false;
 
-    if ($admin_acceso_todas == 0) {
+    if (!empty($rol) && !in_array($rol, ['admin', 'usuario'], true)) {
+        $mensaje = "<div class='alert alert-danger'>Rol de usuario no válido.</div>";
+        $error_permiso = true;
+    } elseif ($acceso_salas === 'especificas' && empty($salas_seleccionadas)) {
+        $mensaje = "<div class='alert alert-danger'>Debes seleccionar una sala para el usuario.</div>";
+        $error_permiso = true;
+    } elseif ($admin_acceso_todas == 0) {
         // Admin limitado: solo puede crear usuarios con acceso a sus salas
         if ($acceso_salas === 'todas') {
             $mensaje = "<div class='alert alert-danger'>No tienes permiso para crear usuarios con acceso a todas las salas.</div>";
             $error_permiso = true;
-        } elseif ($acceso_salas === 'especificas' && empty($salas_seleccionadas)) {
-            $mensaje = "<div class='alert alert-danger'>Debes seleccionar una sala para el usuario.</div>";
+        } elseif ($acceso_salas === 'especificas' && !in_array($salas_seleccionadas, $admin_salas_array)) {
+            // La sala seleccionada debe estar entre las permitidas del admin
+            $mensaje = "<div class='alert alert-danger'>No tienes permiso para asignar esa sala al usuario.</div>";
             $error_permiso = true;
-        } elseif ($acceso_salas === 'especificas' && !empty($salas_seleccionadas)) {
-            // Verificar que la sala seleccionada esté entre las permitidas del admin
-            if (!in_array($salas_seleccionadas, $admin_salas_array)) {
-                $mensaje = "<div class='alert alert-danger'>No tienes permiso para asignar esa sala al usuario.</div>";
-                $error_permiso = true;
-            }
         }
     }
 
@@ -98,11 +104,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'salas_permitidas' => $salas_permitidas
                 ]);
 
-                $mensaje = "<div class='alert alert-success'>Usuario registrado como <strong>$rol</strong>.</div>";
+                $mensaje = "<div class='alert alert-success'>Usuario registrado como <strong>" . htmlspecialchars($rol) . "</strong>.</div>";
 
                 header("refresh:2;url=usuarios.php");
             } catch (PDOException $e) {
-                $mensaje = "<div class='alert alert-danger'>Error: " . $e->getMessage() . "</div>";
+                $mensaje = "<div class='alert alert-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
             }
         }
     } elseif (!$error_permiso) {
@@ -308,9 +314,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                             $salas = $stmtSalas->fetchAll(PDO::FETCH_ASSOC);
                                             if (count($salas) > 0) {
                                                 foreach ($salas as $sala) {
+                                                    $salaId = (int)$sala['id'];
+                                                    $salaNombre = htmlspecialchars($sala['nombre']);
                                                     echo "<div class='form-check'>";
-                                                    echo "<input class='form-check-input' type='radio' name='salas_seleccionadas' value='{$sala['id']}' id='sala_{$sala['id']}'>";
-                                                    echo "<label class='form-check-label' for='sala_{$sala['id']}'>{$sala['nombre']}</label>";
+                                                    echo "<input class='form-check-input' type='radio' name='salas_seleccionadas' value='{$salaId}' id='sala_{$salaId}'>";
+                                                    echo "<label class='form-check-label' for='sala_{$salaId}'>{$salaNombre}</label>";
                                                     echo "</div>";
                                                 }
                                             } else {

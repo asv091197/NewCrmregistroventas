@@ -25,10 +25,7 @@ function limpiarTexto($texto) {
 }
 
 // Mostrar mensaje de éxito si existe en la URL
-$mensajeExito = '';
-if (isset($_GET['success'])) {
-    $mensajeExito = $_GET['success'];
-}
+$mensajeExito = $_GET['success'] ?? '';
 
 // Conexión a base de datos con mejor manejo de errores
 
@@ -44,16 +41,17 @@ $fechaInicioMes = '';
 $fechaFinMes = '';
 $esAdmin = true; // Por defecto asumimos que es admin
 
-if (isset($_SESSION['rol']) && $_SESSION['rol'] !== 'admin') {
+// Superadmin tiene los mismos permisos que admin
+if (isset($_SESSION['rol']) && $_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') {
     $esAdmin = false;
     $fechaInicioMes = date('Y-m-01'); // Primer día del mes
     $fechaFinMes = date('Y-m-t'); // Último día del mes
 }
 
 // En la sección donde obtienes los parámetros de filtrado
-$fechaInicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : '';
-$fechaFin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : '';
-$busqueda = isset($_GET['busqueda']) ? $_GET['busqueda'] : '';
+$fechaInicio = $_GET['fecha_inicio'] ?? '';
+$fechaFin = $_GET['fecha_fin'] ?? '';
+$busqueda = $_GET['busqueda'] ?? '';
 $plataformaIds = isset($_GET['plataforma_id']) ? (array)$_GET['plataforma_id'] : [];
 
 // Para usuarios no admin, si no hay fechas seleccionadas, usar el mes actual
@@ -139,9 +137,7 @@ if (!empty($whereConditions)) {
 
 // Obtener las plataformas para el select
 try {
-    $sqlPlataformas = "SELECT id, nombre_ancronimo, plataformaspei FROM plataforma ORDER BY nombre_ancronimo";
-    $stmtPlataformas = $pdo->query($sqlPlataformas);
-    $plataformas = $stmtPlataformas->fetchAll(PDO::FETCH_ASSOC);
+    $plataformas = $pdo->query("SELECT id, nombre_ancronimo, plataformaspei FROM plataforma ORDER BY nombre_ancronimo")->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     error_log("Error al obtener plataformas: " . $e->getMessage());
     $plataformas = [];
@@ -168,23 +164,15 @@ try {
         ORDER BY v.fecha_registro ASC";
 
     $stmtTodasVentas = $pdo->prepare($sqlTodasVentas);
-    foreach ($params as $key => $value) {
-        $stmtTodasVentas->bindValue($key, $value);
-    }
-    $stmtTodasVentas->execute();
+    $stmtTodasVentas->execute($params);
     $todasLasVentas = $stmtTodasVentas->fetchAll(PDO::FETCH_ASSOC);
     
     // Aplicar limpieza de símbolos a los campos de nombres
+    $camposLimpiar = ['cliente_nombre', 'liner_nombre', 'closer1_nombre', 'closer2_nombre', 'full_stack_nombre', 'cliente', 'apepat', 'apemat', 'producto'];
     foreach ($todasLasVentas as &$venta) {
-        $venta['cliente_nombre'] = limpiarTexto($venta['cliente_nombre']);
-        $venta['liner_nombre'] = limpiarTexto($venta['liner_nombre']);
-        $venta['closer1_nombre'] = limpiarTexto($venta['closer1_nombre']);
-        $venta['closer2_nombre'] = limpiarTexto($venta['closer2_nombre']);
-        $venta['full_stack_nombre'] = limpiarTexto($venta['full_stack_nombre']);
-        $venta['cliente'] = limpiarTexto($venta['cliente']);
-        $venta['apepat'] = limpiarTexto($venta['apepat']);
-        $venta['apemat'] = limpiarTexto($venta['apemat']);
-        $venta['producto'] = limpiarTexto($venta['producto']);
+        foreach ($camposLimpiar as $campo) {
+            $venta[$campo] = limpiarTexto($venta[$campo]);
+        }
     }
     unset($venta); // Romper la referencia
     
@@ -418,7 +406,7 @@ try {
           </li>
         </ul>
         <span class="navbar-text text-muted me-3">
-          <?= htmlspecialchars($_SESSION['nombre']) ?>
+          <?= htmlspecialchars($_SESSION['nombre'] ?? '') ?>
         </span>
         <a href="logout.php" class="btn btn-sm btn-outline-danger">
           <i class="bi bi-box-arrow-right"></i> Salir
@@ -458,15 +446,15 @@ try {
   
   <?php if ($esAdmin): ?>
       <!-- Solo mostrar botones de exportación para admin -->
-      <a href="exportar_excel.php?<?= http_build_query($_GET) ?>" class="btn btn-success ms-2" id="exportar-excel-btn">
+      <a href="exportar_excel.php?<?= htmlspecialchars(http_build_query($_GET)) ?>" class="btn btn-success ms-2" id="exportar-excel-btn">
           <i class="bi bi-file-earmark-excel-fill"></i> Exportar a Excel
       </a>
-      <a href="exportar_pdf.php?<?= http_build_query($_GET) ?>" class="btn btn-danger ms-2" id="exportar-pdf-btn">
+      <a href="exportar_pdf.php?<?= htmlspecialchars(http_build_query($_GET)) ?>" class="btn btn-danger ms-2" id="exportar-pdf-btn">
           <i class="bi bi-file-earmark-pdf-fill"></i> Exportar a PDF
       </a>
   <?php else: ?>
       <!-- Botón "Ver Excel" para usuarios no admin -->
-      <a href="ver_excel.php?<?= http_build_query($_GET) ?>" class="btn btn-info ms-2" id="ver-excel-btn">
+      <a href="ver_excel.php?<?= htmlspecialchars(http_build_query($_GET)) ?>" class="btn btn-info ms-2" id="ver-excel-btn">
           <i class="bi bi-file-earmark-excel-fill"></i> Ver Excel
       </a>
   <?php endif; ?>
@@ -526,9 +514,9 @@ try {
                   <?php foreach ($plataformas as $plataforma): ?>
                   <div class="form-check">
                     <input class="form-check-input plataforma-checkbox" type="checkbox" name="plataforma_id[]" 
-                          id="plataforma_<?= $plataforma['id'] ?>" value="<?= $plataforma['id'] ?>" 
+                          id="plataforma_<?= (int)$plataforma['id'] ?>" value="<?= (int)$plataforma['id'] ?>" 
                           <?= (in_array($plataforma['id'], $plataformaIds)) ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="plataforma_<?= $plataforma['id'] ?>">
+                    <label class="form-check-label" for="plataforma_<?= (int)$plataforma['id'] ?>">
                       <?= htmlspecialchars($plataforma['nombre_ancronimo'] . ' (' . $plataforma['plataformaspei'] . ')') ?>
                     </label>
                   </div>
@@ -628,17 +616,17 @@ try {
                 
                   $fechaFormateada = $fecha->format('d/m/Y H:i');
                   
-                  // Aplicar limpieza final por si acaso
-                  $clienteNombre = limpiarTexto($venta['cliente_nombre']);
-                  $producto = limpiarTexto($venta['producto']);
-                  $linerNombre = limpiarTexto($venta['liner_nombre'] ?? 'No asignado');
-                  $closer1Nombre = limpiarTexto($venta['closer1_nombre'] ?? 'No asignado');
-                  $closer2Nombre = limpiarTexto($venta['closer2_nombre'] ?? 'No asignado');
-                  $fullStackNombre = limpiarTexto($venta['full_stack_nombre'] ?? 'No asignado');
+                  // Los nombres ya se limpiaron al obtener las ventas
+                  $clienteNombre = $venta['cliente_nombre'];
+                  $producto = $venta['producto'];
+                  $linerNombre = $venta['liner_nombre'] ?? 'No asignado';
+                  $closer1Nombre = $venta['closer1_nombre'] ?? 'No asignado';
+                  $closer2Nombre = $venta['closer2_nombre'] ?? 'No asignado';
+                  $fullStackNombre = $venta['full_stack_nombre'] ?? 'No asignado';
                   $plataformaNombre = limpiarTexto($venta['plataforma_nombre_completo'] ?? 'N/A');
                   
                   echo "<tr data-venta='" . htmlspecialchars(json_encode($venta)) . "' style='cursor: pointer;'>";
-                  echo "<td>{$fechaFormateada}</td>";
+                  echo "<td>" . htmlspecialchars($fechaFormateada) . "</td>";
                   echo "<td>$" . number_format($venta['precio'], 2) . "</td>";
                   echo "<td>$" . number_format($venta['precio_neto'], 2) . "</td>";
                   echo "<td>" . htmlspecialchars($clienteNombre) . "</td>";
@@ -810,9 +798,9 @@ try {
   <script>
     // Pasar datos PHP a JavaScript
     const totalVentas = <?= $totalVentas ?>;
-    const datosVentas = <?= json_encode($todasLasVentas) ?>;
-    const busquedaInicial = "<?= htmlspecialchars($busqueda) ?>";
-    const plataformaIdsInicial = <?= json_encode($plataformaIds) ?>;
+    const datosVentas = <?= json_encode($todasLasVentas, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    const busquedaInicial = <?= json_encode($busqueda, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    const plataformaIdsInicial = <?= json_encode($plataformaIds, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const esUsuarioAdmin = <?= $esAdmin ? 'true' : 'false'; ?>;
     const fechaInicioMes = "<?= $fechaInicioMes ?>";
     const fechaFinMes = "<?= $fechaFinMes ?>";

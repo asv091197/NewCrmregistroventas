@@ -9,12 +9,13 @@ header('Access-Control-Allow-Origin: *');
 
 require_once __DIR__ . '/../session_config.php'; session_start();
 
-// Verificación de sesión mejorada
-if (!isset($_SESSION['usuario_id']) || empty($_SESSION['rol']) || 
-    !in_array($_SESSION['rol'], ['admin', 'usuario'])) {
+// Verificación de sesión (superadmin tiene los mismos permisos que admin)
+$rol = $_SESSION['rol'] ?? '';
+if (!isset($_SESSION['usuario_id']) || !in_array($rol, ['admin', 'superadmin', 'usuario'], true)) {
     header("Location: ../login.php");
     exit;
 }
+$esAdmin = $rol === 'admin' || $rol === 'superadmin';
 // Configuración de manejo de errores
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -38,20 +39,24 @@ try {
 }
 
 // Obtener parámetros de filtrado
-$fechaInicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : '';
-$fechaFin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : '';
+$fechaInicio = $_GET['fecha_inicio'] ?? '';
+$fechaFin = $_GET['fecha_fin'] ?? '';
 
 // Configuración de paginación
 $clientesPorPagina = 10;
-$paginaActual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
-if ($paginaActual < 1) $paginaActual = 1;
+$paginaActual = max(1, (int)($_GET['pagina'] ?? 1));
+
+// Valores por defecto si la consulta falla
+$clientes = [];
+$totalClientes = 0;
+$totalPaginas = 0;
 
 // Construir consulta base con filtros
 $whereConditions = [];
 $params = [];
 
 // Si el usuario no es admin, filtrar solo sus clientes
-if ($_SESSION['rol'] !== 'admin') {
+if (!$esAdmin) {
     $whereConditions[] = "c.usuario_id = :usuario_actual";
     $params[':usuario_actual'] = $_SESSION['usuario_id'];
 }
@@ -79,8 +84,8 @@ try {
         $stmtTotal->bindValue($key, $value);
     }
     $stmtTotal->execute();
-    $totalClientes = $stmtTotal->fetch(PDO::FETCH_ASSOC)['total'];
-    $totalPaginas = ceil($totalClientes / $clientesPorPagina);
+    $totalClientes = (int)$stmtTotal->fetchColumn();
+    $totalPaginas = (int)ceil($totalClientes / $clientesPorPagina);
 
     // Asegurar que la página actual no exceda el total de páginas
     if ($paginaActual > $totalPaginas && $totalPaginas > 0) {
@@ -114,13 +119,8 @@ try {
     $stmtClientes->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmtClientes->execute();
     $clientes = $stmtClientes->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Liberar memoria
-    unset($stmtTotal, $stmtClientes);
-    
 } catch (PDOException $e) {
     error_log("Error en consulta: " . $e->getMessage());
-    
 }
 ?>
 <!DOCTYPE html>
@@ -218,19 +218,17 @@ try {
   </style>
 </head>
 
-<body class="bg-light" data-rol="<?= htmlspecialchars($_SESSION['rol']) ?>">
+<body class="bg-light" data-rol="<?= htmlspecialchars($rol) ?>">
   <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
     <div class="container-fluid">
       <div class="d-flex align-items-center ms-auto">
         <ul class="navbar-nav me-3">
-          <?php if ($_SESSION['rol'] === 'admin'): ?>
+          <?php if ($esAdmin): ?>
           <li class="nav-item">
             <a class="nav-link text-dark" href="../opcionesAdmin.php" style="text-decoration: none;">
              Dashboard
             </a>
           </li>
-          <?php endif; ?> 
-          <?php if ($_SESSION['rol'] === 'admin'): ?>
           <li class="nav-item">
             <a class="nav-link text-dark" href="../Usuarios/usuarios.php" style="text-decoration: none;">
               👤 Usuarios
@@ -245,7 +243,7 @@ try {
         </ul>
 
         <span class="navbar-text text-muted me-3">
-          <?= htmlspecialchars($_SESSION['nombre']) ?>
+          <?= htmlspecialchars($_SESSION['nombre'] ?? '') ?>
         </span>
 
         <a href="../logout.php" class="btn btn-sm btn-outline-danger">
@@ -270,7 +268,7 @@ try {
         </div>
 
         <!-- Filtros - SOLO PARA ADMIN -->
-        <?php if ($_SESSION['rol'] === 'admin'): ?>
+        <?php if ($esAdmin): ?>
         <div class="filter-section mb-4">
           <div class="filter-header" onclick="toggleFilters()">
             <i class="bi bi-funnel"></i> Filtros de Fecha
@@ -346,19 +344,20 @@ try {
             </thead>
             <tbody id="tabla-clientes">
               <?php
+              $h = fn($v) => htmlspecialchars((string)($v ?? ''), ENT_QUOTES);
               if (count($clientes) > 0) {
                 foreach ($clientes as $cliente) {
                   $fechaRegistro = date('d/m/Y H:i', strtotime($cliente['fecha_registro']));
                   $closerClass = ($cliente['closer_nombre_completo'] === 'No asignado') ? 'no-asignado' : '';
-                  
-                  echo "<tr data-id='{$cliente['id']}'>";
-                  echo "<td>{$cliente['nombre']} {$cliente['apepat']} {$cliente['apemat']}</td>";
-                  echo "<td>{$cliente['asunto']}</td>";
-                  echo "<td title='" . htmlspecialchars($cliente['descripcion_corta']) . "'>" . 
-                       htmlspecialchars($cliente['descripcion_corta']) . 
-                       (strlen($cliente['descripcion_corta']) >= 100 ? '...' : '') . "</td>";
-                  echo "<td>{$cliente['usuario_nombre']} {$cliente['usuario_apepat']} {$cliente['usuario_apemat']}</td>";
-                  echo "<td class='{$closerClass}'>{$cliente['closer_nombre_completo']}</td>";
+                  $descripcion = $h($cliente['descripcion_corta']);
+
+                  echo "<tr data-id='" . (int)$cliente['id'] . "'>";
+                  echo "<td>" . $h($cliente['nombre']) . " " . $h($cliente['apepat']) . " " . $h($cliente['apemat']) . "</td>";
+                  echo "<td>" . $h($cliente['asunto']) . "</td>";
+                  echo "<td title='{$descripcion}'>{$descripcion}" .
+                       (strlen($cliente['descripcion_corta'] ?? '') >= 100 ? '...' : '') . "</td>";
+                  echo "<td>" . $h($cliente['usuario_nombre']) . " " . $h($cliente['usuario_apepat']) . " " . $h($cliente['usuario_apemat']) . "</td>";
+                  echo "<td class='{$closerClass}'>" . $h($cliente['closer_nombre_completo']) . "</td>";
                   echo "<td class='text-center'>{$fechaRegistro}</td>";
                   echo "</tr>";
                 }
@@ -433,7 +432,7 @@ try {
       <div class="modal-content">
         <form id="formEditar">
           <div class="modal-header">
-            <h5 class="modal-title"><?= $_SESSION['rol'] === 'admin' ? 'Editar' : 'Ver' ?> Cliente</h5>
+            <h5 class="modal-title"><?= $esAdmin ? 'Editar' : 'Ver' ?> Cliente</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
 
@@ -444,48 +443,48 @@ try {
             <div class="row">
               <div class="col-md-4 mb-2">
                 <label class="form-label small">Nombre:</label>
-                <input type="text" id="editar_nombre" name="nombre" class="form-control form-control-sm <?= $_SESSION['rol'] !== 'admin' ? 'readonly-field' : '' ?>" 
-                       <?= $_SESSION['rol'] !== 'admin' ? 'readonly' : '' ?>>
+                <input type="text" id="editar_nombre" name="nombre" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>" 
+                       <?= !$esAdmin ? 'readonly' : '' ?>>
               </div>
               <div class="col-md-4 mb-2">
                 <label class="form-label small">Apellido Paterno:</label>
-                <input type="text" id="editar_apepat" name="apepat" class="form-control form-control-sm <?= $_SESSION['rol'] !== 'admin' ? 'readonly-field' : '' ?>"
-                       <?= $_SESSION['rol'] !== 'admin' ? 'readonly' : '' ?>>
+                <input type="text" id="editar_apepat" name="apepat" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>"
+                       <?= !$esAdmin ? 'readonly' : '' ?>>
               </div>
               <div class="col-md-4 mb-2">
                 <label class="form-label small">Apellido Materno:</label>
-                <input type="text" id="editar_apemat" name="apemat" class="form-control form-control-sm <?= $_SESSION['rol'] !== 'admin' ? 'readonly-field' : '' ?>"
-                       <?= $_SESSION['rol'] !== 'admin' ? 'readonly' : '' ?>>
+                <input type="text" id="editar_apemat" name="apemat" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>"
+                       <?= !$esAdmin ? 'readonly' : '' ?>>
               </div>
             </div>
 
             <div class="row">
               <div class="col-md-6 mb-2">
                 <label class="form-label small">Número 1:</label>
-                <input type="text" id="editar_numero1" name="numero1" class="form-control form-control-sm <?= $_SESSION['rol'] !== 'admin' ? 'readonly-field' : '' ?>"
-                       <?= $_SESSION['rol'] !== 'admin' ? 'readonly' : '' ?>>
+                <input type="text" id="editar_numero1" name="numero1" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>"
+                       <?= !$esAdmin ? 'readonly' : '' ?>>
               </div>
               <div class="col-md-6 mb-2">
                 <label class="form-label small">Número 2:</label>
-                <input type="text" id="editar_numero2" name="numero2" class="form-control form-control-sm <?= $_SESSION['rol'] !== 'admin' ? 'readonly-field' : '' ?>"
-                       <?= $_SESSION['rol'] !== 'admin' ? 'readonly' : '' ?>>
+                <input type="text" id="editar_numero2" name="numero2" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>"
+                       <?= !$esAdmin ? 'readonly' : '' ?>>
               </div>
             </div>
 
             <div class="mb-2">
               <label class="form-label small">Asunto:</label>
-              <input type="text" id="editar_asunto" name="asunto" class="form-control form-control-sm <?= $_SESSION['rol'] !== 'admin' ? 'readonly-field' : '' ?>"
-                     <?= $_SESSION['rol'] !== 'admin' ? 'readonly' : '' ?>>
+              <input type="text" id="editar_asunto" name="asunto" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>"
+                     <?= !$esAdmin ? 'readonly' : '' ?>>
             </div>
 
             <div class="mb-2">
               <label class="form-label small">Descripción:</label>
-              <textarea id="editar_descripcion" name="descripcion" class="form-control form-control-sm <?= $_SESSION['rol'] !== 'admin' ? 'readonly-field' : '' ?>" rows="3"
-                        <?= $_SESSION['rol'] !== 'admin' ? 'readonly' : '' ?>></textarea>
+              <textarea id="editar_descripcion" name="descripcion" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>" rows="3"
+                        <?= !$esAdmin ? 'readonly' : '' ?>></textarea>
             </div>
 
             <!-- Usuario asignado (solo para admin) -->
-            <?php if ($_SESSION['rol'] === 'admin'): ?>
+            <?php if ($esAdmin): ?>
             <div class="mb-2">
               <label class="form-label small">Asignado a Usuario:</label>
               <select id="usuarios_id" name="usuarios_id" class="form-select form-select-sm">
@@ -511,7 +510,7 @@ try {
 
           <div class="modal-footer">
             <!-- Botón de guardar solo para admin, pero asignación de closer para todos -->
-            <?php if ($_SESSION['rol'] === 'admin'): ?>
+            <?php if ($esAdmin): ?>
               <button type="submit" class="btn btn-primary btn-sm">Guardar cambios</button>
             <?php else: ?>
               <button type="button" id="btnGuardarCloser" class="btn btn-primary btn-sm">Guardar Closer</button>
@@ -526,13 +525,12 @@ try {
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   // Variables globales
-  const rolUsuario = document.body.getAttribute('data-rol');
-  let paginaActual = <?= $paginaActual ?>;
-  const totalPaginas = <?= $totalPaginas ?>;
+  const esAdmin = <?= $esAdmin ? 'true' : 'false' ?>;
   const totalClientesInicial = <?= $totalClientes ?>;
   let valoresOriginales = {};
   let usuariosCargados = [];
   let closersCargados = [];
+  let promesaUsuarios = null;
   let timeoutBusqueda = null;
 
   // ====================== FUNCIONES UTILITARIAS ======================
@@ -558,9 +556,7 @@ try {
     const buscarInput = getElement('buscar');
     const clearButton = getElement('clear-search');
     if (buscarInput && clearButton) {
-      buscarInput.addEventListener('input', function () {
-        clearButton.style.display = this.value ? 'block' : 'none';
-      });
+      // La visibilidad del botón al escribir se controla en configurarBusqueda()
       clearButton.addEventListener('click', function () {
         buscarInput.value = '';
         clearButton.style.display = 'none';
@@ -631,8 +627,8 @@ try {
     if (fechaFin) params.append('fecha_fin', fechaFin);
     
     // Incluir información del usuario para el filtrado
-    params.append('usuario_id', <?= $_SESSION['usuario_id'] ?>);
-    params.append('rol', '<?= $_SESSION['rol'] ?>');
+    params.append('usuario_id', <?= (int)$_SESSION['usuario_id'] ?>);
+    params.append('rol', <?= json_encode($rol, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>);
     
     fetch(`buscar_clientes.php?${params.toString()}`)
       .then(response => response.text())
@@ -678,12 +674,19 @@ try {
     });
   }
 
-  // ====================== USUARIOS ======================
+  // ====================== USUARIOS / CLOSERS ======================
+  // Usuarios y closers salen del mismo endpoint: una sola petición compartida
   function cargarUsuarios() {
-    return fetch('obtener_usuarios.php')
-      .then(res => res.json())
-      .then(data => { usuariosCargados = data; })
-      .catch(() => { usuariosCargados = []; });
+    if (!promesaUsuarios) {
+      promesaUsuarios = fetch('obtener_usuarios.php')
+        .then(res => res.json())
+        .then(data => { usuariosCargados = closersCargados = data; })
+        .catch(() => {
+          usuariosCargados = closersCargados = [];
+          promesaUsuarios = null; // permitir reintentar
+        });
+    }
+    return promesaUsuarios;
   }
 
   function llenarSelectUsuarios(usuarioSeleccionadoId = '') {
@@ -697,14 +700,6 @@ try {
       option.selected = (u.id == usuarioSeleccionadoId);
       select.appendChild(option);
     });
-  }
-
-  // ====================== CLOSERS ======================
-  function cargarClosers() {
-    return fetch('obtener_usuarios.php')
-      .then(res => res.json())
-      .then(data => { closersCargados = data; })
-      .catch(() => { closersCargados = []; });
   }
 
   function llenarSelectClosers(closerSeleccionadoId = '') {
@@ -732,16 +727,9 @@ try {
 
   // ====================== EDITAR CLIENTE ======================
   function abrirModalEditar(id) {
-    // Cargar closers para todos los usuarios
+    // Cargar closers (y usuarios) si aún no están
     if (closersCargados.length === 0) {
-      cargarClosers().then(() => {
-        // Solo cargar usuarios si es admin
-        if (rolUsuario === 'admin' && usuariosCargados.length === 0) {
-          cargarUsuarios().then(() => obtenerDatosCliente(id));
-        } else {
-          obtenerDatosCliente(id);
-        }
-      });
+      cargarUsuarios().then(() => obtenerDatosCliente(id));
     } else {
       obtenerDatosCliente(id);
     }
@@ -771,7 +759,7 @@ try {
         });
         
         // Llenar select de usuarios solo si es admin
-        if (rolUsuario === 'admin') {
+        if (esAdmin) {
           llenarSelectUsuarios(data.usuario_id);
         }
         
@@ -783,7 +771,6 @@ try {
       })
       .catch(error => {
         console.error('Error al obtener datos del cliente:', error);
-        
       });
   }
 
@@ -793,7 +780,7 @@ try {
     if (!form) return;
     
     // Configurar el envío del formulario para administradores
-    if (rolUsuario === 'admin') {
+    if (esAdmin) {
       form.addEventListener('submit', e => {
         e.preventDefault();
         guardarCambios();
@@ -895,12 +882,7 @@ try {
     configurarBotonLimpiar();
     configurarBusqueda();
     configurarBotonAgregarCloser(); // Ahora disponible para todos
-    cargarClosers(); // Cargar closers para todos los usuarios
-    
-    // Solo cargar usuarios si es admin
-    if (rolUsuario === 'admin') {
-      cargarUsuarios();
-    }
+    cargarUsuarios(); // Closers para todos (y usuarios para admin)
     
     configurarFormulario();
     agregarEventosFila();

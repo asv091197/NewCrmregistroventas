@@ -28,16 +28,19 @@ set_exception_handler(function ($exception) {
 });
 
 // Obtener información del usuario
-$nombreUsuario = 'Usuario';
-if (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
-    $nombreUsuario = htmlspecialchars($_SESSION['nombre']);
-}
+$nombreUsuario = !empty($_SESSION['nombre']) ? $_SESSION['nombre'] : 'Usuario';
 
 // Variables para control de acceso
-$es_admin = (($_SESSION['rol'] ?? '') === 'admin') || (($_SESSION['rol'] ?? '') === 'superadmin');
+$rol = $_SESSION['rol'] ?? '';
+$es_admin = $rol === 'admin' || $rol === 'superadmin';
 $accesoTodasSalas = 1; // Por defecto sí tiene acceso
 $tiene_permiso_plataforma = false; // Nueva variable
 $salasPermitidas = [];
+
+// Determinar qué salas mostrar según el tipo de usuario
+$salas_disponibles = [];
+$sala_id = null;
+$nombreSala = 'No asignada';
 
 try {
     $pdo = conexionPDO();
@@ -53,10 +56,10 @@ try {
         $tiene_permiso_plataforma = $usuarioData['permiso_plataforma'] == 1;
     }
 
-    // Determinar qué salas mostrar según el tipo de usuario
-    $salas_disponibles = [];
-    $sala_id = null;
-    $nombreSala = 'No asignada';
+    // Superadmin siempre tiene acceso a todas las salas
+    if ($rol === 'superadmin') {
+        $accesoTodasSalas = 1;
+    }
 
     if ($es_admin) {
         if ($accesoTodasSalas == 1) {
@@ -93,16 +96,8 @@ try {
         }
     } else {
         // Para usuario normal: usar sesión o obtener del usuario
-        if (isset($_SESSION['sala_id']) && $_SESSION['sala_id']) {
+        if (!empty($_SESSION['sala_id'])) {
             $sala_id = $_SESSION['sala_id'];
-
-            // Obtener nombre de la sala
-            $stmt = $pdo->prepare("SELECT nombre FROM salas WHERE id = ? AND activo = 1");
-            $stmt->execute([$sala_id]);
-            $sala = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($sala) {
-                $nombreSala = htmlspecialchars($sala['nombre']);
-            }
         } else {
             // Si no hay sala en sesión, obtener del usuario
             $stmt = $pdo->prepare("SELECT salas_permitidas FROM usuarios WHERE id = ?");
@@ -114,15 +109,17 @@ try {
                 if (!empty($salas_permitidas) && is_array($salas_permitidas)) {
                     $sala_id = $salas_permitidas[0];
                     $_SESSION['sala_id'] = $sala_id;
-
-                    // Obtener nombre de la sala
-                    $stmt = $pdo->prepare("SELECT nombre FROM salas WHERE id = ? AND activo = 1");
-                    $stmt->execute([$sala_id]);
-                    $sala = $stmt->fetch(PDO::FETCH_ASSOC);
-                    if ($sala) {
-                        $nombreSala = htmlspecialchars($sala['nombre']);
-                    }
                 }
+            }
+        }
+
+        // Obtener nombre de la sala
+        if ($sala_id) {
+            $stmt = $pdo->prepare("SELECT nombre FROM salas WHERE id = ? AND activo = 1");
+            $stmt->execute([$sala_id]);
+            $sala = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($sala) {
+                $nombreSala = $sala['nombre'];
             }
         }
     }
@@ -345,7 +342,7 @@ try {
         <div class="container-fluid">
             <div class="d-flex align-items-center ms-auto">
                 <ul class="navbar-nav me-3">
-                    <?php if ($_SESSION['rol'] === 'superadmin'): ?>
+                    <?php if ($rol === 'superadmin'): ?>
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="../agencia/opcionesAdmin.php" style="text-decoration: none;">
                                 Dashboard Agentes
@@ -369,7 +366,7 @@ try {
                     </li>
                 </ul>
                 <span class="navbar-text text-muted me-3">
-                    <?= $nombreUsuario ?>
+                    <?= htmlspecialchars($nombreUsuario) ?>
                 </span>
                 <a href="logout.php" class="btn btn-sm btn-outline-danger">
                     <i class="fas fa-sign-out-alt"></i> Salir
@@ -391,7 +388,7 @@ try {
                         <div class="col-md-6">
                             <label for="salaSelector" class="form-label required-field">Sala</label>
                             <select class="form-select" id="salaSelector" name="salaSelector" required
-                                data-acceso-todas-salas="<?= $accesoTodasSalas ?>"
+                                data-acceso-todas-salas="<?= htmlspecialchars((string)$accesoTodasSalas) ?>"
                                 data-es-admin="<?= $es_admin ? '1' : '0' ?>">
                                 <option value="" disabled>Selecciona una sala</option>
                                 <?php foreach ($salas_disponibles as $sala): ?>
@@ -410,7 +407,7 @@ try {
                     <!-- Mostrar información de la sala asignada para no-admin -->
                     <div class="sala-info mb-4">
                         <i class="fas fa-building"></i>
-                        <strong>Sala asignada:</strong> <?= $nombreSala ?>
+                        <strong>Sala asignada:</strong> <?= htmlspecialchars($nombreSala) ?>
                     </div>
                 <?php endif; ?>
 
@@ -421,7 +418,7 @@ try {
 
                 <form id="ventaForm" method="POST">
                     <!-- CAMPO HIDDEN PARA LA SALA - DEBE ESTAR DENTRO DEL FORM -->
-                    <input type="hidden" id="sala_id" name="sala_id" value="<?= $sala_id ?>">
+                    <input type="hidden" id="sala_id" name="sala_id" value="<?= htmlspecialchars((string)$sala_id) ?>">
 
                     <!-- Fecha y Precio -->
                     <div class="row mb-3">

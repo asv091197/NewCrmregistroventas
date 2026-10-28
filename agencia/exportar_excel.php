@@ -5,12 +5,13 @@ require_once __DIR__ . '/../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
 
 // Verificar autenticación y permisos
-if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'usuario' && $_SESSION['rol'] !== 'superadmin')) {
+$rol = $_SESSION['rol'] ?? '';
+if (!isset($_SESSION['usuario_id']) || !in_array($rol, ['admin', 'usuario', 'superadmin'], true)) {
     die("Acceso denegado. Debe iniciar sesión primero.");
 }
 
 // Solo administradores pueden exportar
-if ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') {
+if ($rol !== 'admin' && $rol !== 'superadmin') {
     die("Acceso denegado. Solo los administradores pueden exportar a Excel.");
 }
 
@@ -22,13 +23,12 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\Color;
 
 // Conexión a la base de datos
 try {
     $pdo = conexionPDO();
 } catch (PDOException $e) {
-    die("Error de conexión: " . $e->getMessage());
+    die("Error de conexión: " . htmlspecialchars($e->getMessage()));
 }
 
 // Obtener permisos del usuario admin
@@ -49,10 +49,14 @@ if ($permisos) {
         }
     }
 }
+// Superadmin siempre tiene acceso a todas las salas
+if ($rol === 'superadmin') {
+    $acceso_todas_salas = 1;
+}
 
 // Obtener parámetros de filtrado desde GET
-$fechaInicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : '';
-$fechaFin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : '';
+$fechaInicio = $_GET['fecha_inicio'] ?? '';
+$fechaFin = $_GET['fecha_fin'] ?? '';
 $salaFiltro = isset($_GET['sala_id']) ? (int)$_GET['sala_id'] : '';
 
 // Para admin con acceso limitado y sala asignada
@@ -149,7 +153,7 @@ try {
     $stmtClientes->execute();
     $clientes = $stmtClientes->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    die("Error al obtener los datos: " . $e->getMessage());
+    die("Error al obtener los datos: " . htmlspecialchars($e->getMessage()));
 }
 
 // Crear un nuevo objeto Spreadsheet
@@ -159,7 +163,7 @@ $sheet = $spreadsheet->getActiveSheet();
 // Configurar propiedades del documento
 $spreadsheet->getProperties()
     ->setCreator("CRM Sistema")
-    ->setLastModifiedBy($_SESSION['nombre'])
+    ->setLastModifiedBy($_SESSION['nombre'] ?? '')
     ->setTitle("Reporte de Clientes")
     ->setSubject("Exportación de clientes del CRM")
     ->setDescription("Reporte generado desde el sistema CRM")
@@ -291,7 +295,7 @@ $sheet->getColumnDimension('G')->setWidth(18);
 
 // Crear información de filtros aplicados
 $infoFiltros = "Reporte generado el: " . date('d/m/Y H:i:s') . "\n";
-$infoFiltros .= "Generado por: " . $_SESSION['nombre'] . "\n";
+$infoFiltros .= "Generado por: " . ($_SESSION['nombre'] ?? '') . "\n";
 $infoFiltros .= "Filtros aplicados: ";
 
 if (!empty($fechaInicio)) $infoFiltros .= "Desde: $fechaInicio ";
@@ -330,7 +334,4 @@ header('Pragma: public');
 // Crear el writer y enviar al navegador
 $writer = new Xlsx($spreadsheet);
 $writer->save('php://output');
-
-// Cerrar conexión a la base de datos
-$pdo = null;
 exit;

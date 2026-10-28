@@ -14,27 +14,6 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 }
 
-// Verificar si es admin y tiene permiso_plataforma
-$es_admin = ($_SESSION['rol'] ?? '') === 'admin';
-$tiene_permiso_plataforma = false;
-
-if ($es_admin) {
-    try {
-        $conn = conexionPDO();
-
-        $stmt = $conn->prepare("SELECT permiso_plataforma FROM usuarios_facturacion WHERE id = ?");
-        $stmt->execute([$_SESSION['usuario_id']]);
-        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($usuario && $usuario['permiso_plataforma'] == 1) {
-            $tiene_permiso_plataforma = true;
-        }
-    } catch (PDOException $e) {
-        error_log("Error al obtener permiso plataforma: " . $e->getMessage());
-        $tiene_permiso_plataforma = false;
-    }
-}
-
 header('Access-Control-Allow-Origin: *');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -68,6 +47,20 @@ try {
 } catch (PDOException $e) {
     $conn = null;
     $error = "Error de conexión: " . $e->getMessage();
+}
+
+// Verificar si es admin (o superadmin) y tiene permiso_plataforma
+$es_admin = in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin'], true);
+$tiene_permiso_plataforma = false;
+
+if ($es_admin && $conn) {
+    try {
+        $stmt = $conn->prepare("SELECT permiso_plataforma FROM usuarios_facturacion WHERE id = ?");
+        $stmt->execute([$_SESSION['usuario_id']]);
+        $tiene_permiso_plataforma = $stmt->fetchColumn() == 1;
+    } catch (PDOException $e) {
+        error_log("Error al obtener permiso plataforma: " . $e->getMessage());
+    }
 }
 
 if ($conn) {
@@ -129,11 +122,6 @@ if ($conn) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        .table-actions {
-            white-space: nowrap;
-            width: 140px;
-        }
-
         .badge-spei {
             background-color: #198754;
         }
@@ -240,7 +228,7 @@ if ($conn) {
                         </a>
                     </li>
                 </ul>
-                <span class="navbar-text text-muted me-3"><?= htmlspecialchars($_SESSION['nombre']) ?></span>
+                <span class="navbar-text text-muted me-3"><?= htmlspecialchars($_SESSION['nombre'] ?? '') ?></span>
                 <a href="logout.php" class="btn btn-sm btn-outline-danger">
                     <i class="bi bi-box-arrow-right"></i> Salir
                 </a>
@@ -562,7 +550,7 @@ if ($conn) {
         class PlataformaManager {
             constructor() {
                 this.searchTimeout = null;
-                this.currentSearch = '<?= $busqueda ?>';
+                this.currentSearch = <?= json_encode($busqueda, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
                 this.currentPage = <?= $pagina_actual ?>;
                 this.showInactive = <?= $mostrar_inactivos ? 'true' : 'false' ?>;
                 this.plataformaAProcesar = null;
@@ -732,7 +720,7 @@ if ($conn) {
 
             resetForm() {
                 $('#formPlataforma')[0].reset();
-                $('#plataformaId, #actionType').val('');
+                $('#plataformaId').val('');
                 $('#actionType').val('create');
                 $('#modalTitle').text('Agregar Nueva Plataforma');
                 

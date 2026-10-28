@@ -7,7 +7,8 @@ require_once __DIR__ . '/../../session_config.php'; session_start();
 require_once __DIR__ . '/../../includes/registro_acciones.php';
 
 // Verificar sesión y permisos
-if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin'  && $_SESSION['rol'] !== 'superadmin' ) {
+$rol = $_SESSION['rol'] ?? '';
+if (!isset($_SESSION['usuario_id']) || ($rol !== 'admin' && $rol !== 'superadmin')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'No autorizado']);
     exit;
@@ -19,13 +20,13 @@ try {
     $pdo = conexionPDO();
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Error de conexión a la base de datos: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Error de conexión a la base de datos']);
     exit;
 }
 
 // Obtener parámetros por POST
 $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-$accion = isset($_POST['accion']) ? $_POST['accion'] : '';
+$accion = $_POST['accion'] ?? '';
 
 // Validar parámetros
 if ($id <= 0) {
@@ -34,7 +35,7 @@ if ($id <= 0) {
     exit;
 }
 
-if (!in_array($accion, ['activar', 'desactivar'])) {
+if (!in_array($accion, ['activar', 'desactivar'], true)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Acción inválida. Debe ser "activar" o "desactivar"']);
     exit;
@@ -57,7 +58,7 @@ try {
     }
     
     // No permitir desactivarse a sí mismo
-    if ($id == $_SESSION['usuario_id'] && $accion === 'desactivar') {
+    if ($id === (int)$_SESSION['usuario_id'] && $accion === 'desactivar') {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'No puedes desactivar tu propio usuario']);
         exit;
@@ -68,9 +69,8 @@ try {
     $stmt->execute([$nuevoEstado, $id]);
     
     if ($stmt->rowCount() > 0) {
-        // Registrar en log
+        // Registrar en bitácora
         $nombreCompleto = $usuario['nombre'] . ' ' . $usuario['apepat'];
-        error_log("Usuario {$accionTexto}: ID {$id} - {$nombreCompleto} por admin ID {$_SESSION['usuario_id']}");
         registrarAccion($pdo, 'UPDATE', 'usuarios', $id, ['nombre' => $nombreCompleto, 'activo' => $nuevoEstado]);
         
         echo json_encode([
@@ -88,6 +88,6 @@ try {
 } catch (PDOException $e) {
     error_log("Error al cambiar estado de usuario: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Error interno del servidor: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Error interno del servidor']);
 }
 ?>

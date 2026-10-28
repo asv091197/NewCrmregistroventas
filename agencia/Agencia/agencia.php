@@ -2,22 +2,23 @@
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
-if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'usuario' && $_SESSION['rol'] !== 'superadmin')) {
+$rol = $_SESSION['rol'] ?? '';
+if (!isset($_SESSION['usuario_id']) || !in_array($rol, ['admin', 'usuario', 'superadmin'], true)) {
     header("Location: ../login.php");
     exit;
 }
+// Superadmin tiene los mismos permisos que admin
+$esAdmin = $rol === 'admin' || $rol === 'superadmin';
+$salaSesion = !empty($_SESSION['sala_id']) ? $_SESSION['sala_id'] : null;
 
 // Conexión a la base de datos
 $pdo = conexionPDO();
 
-// Obtener permisos del usuario si es admin o superadmin
+// Permisos de sala: superadmin siempre accede a todas; admin según su registro
 $acceso_todas_salas = 1;
 $salas_permitidas = [];
 
-if ($_SESSION['rol'] === 'superadmin') {
-    $acceso_todas_salas = 1;
-    $salas_permitidas = [];
-} elseif ($_SESSION['rol'] === 'admin') {
+if ($rol === 'admin') {
     $sqlPermisos = "SELECT acceso_todas_salas, salas_permitidas FROM usuarios WHERE id = :usuario_id";
     $stmtPermisos = $pdo->prepare($sqlPermisos);
     $stmtPermisos->execute([':usuario_id' => $_SESSION['usuario_id']]);
@@ -35,44 +36,34 @@ if ($_SESSION['rol'] === 'superadmin') {
 }
 
 // Obtener parámetros de filtrado
-$fechaInicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : '';
-$fechaFin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : '';
+$fechaInicio = $_GET['fecha_inicio'] ?? '';
+$fechaFin = $_GET['fecha_fin'] ?? '';
 
-if (($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin') && $acceso_todas_salas === 0 && isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])) {
-    $salaFiltro = isset($_GET['sala_id']) ? (int)$_GET['sala_id'] : $_SESSION['sala_id'];
+// Admin limitado a la sala de su sesión
+$limitadoASalaSesion = $esAdmin && $acceso_todas_salas === 0 && $salaSesion;
+// Admin limitado a sus salas permitidas (sin sala de sesión)
+$limitadoASalasPermitidas = $esAdmin && $acceso_todas_salas === 0 && !$salaSesion;
+
+if ($limitadoASalaSesion) {
+    $salaFiltro = isset($_GET['sala_id']) ? (int)$_GET['sala_id'] : $salaSesion;
 } else {
     $salaFiltro = isset($_GET['sala_id']) ? (int)$_GET['sala_id'] : '';
 }
 
-// Obtener la lista de salas para el filtro
+// Obtener la lista de salas para el filtro (y para el modal de edición)
 $salas = [];
-if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin') {
-    if ($acceso_todas_salas === 0 && isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])) {
-        $sqlSalas = "SELECT id, nombre FROM salas WHERE id = :sala_id AND activo = 1";
-        $stmtSalas = $pdo->prepare($sqlSalas);
-        $stmtSalas->execute([':sala_id' => $_SESSION['sala_id']]);
-        $salas = $stmtSalas->fetchAll(PDO::FETCH_ASSOC);
+if ($esAdmin) {
+    if ($limitadoASalaSesion) {
+        $stmtSalas = $pdo->prepare("SELECT id, nombre FROM salas WHERE id = :sala_id AND activo = 1");
+        $stmtSalas->execute([':sala_id' => $salaSesion]);
+    } elseif ($acceso_todas_salas === 0 && !empty($salas_permitidas)) {
+        $placeholders = implode(',', array_fill(0, count($salas_permitidas), '?'));
+        $stmtSalas = $pdo->prepare("SELECT id, nombre FROM salas WHERE activo = 1 AND id IN ($placeholders) ORDER BY nombre");
+        $stmtSalas->execute(array_map('intval', array_values($salas_permitidas)));
     } else {
-        $sqlSalas = "SELECT id, nombre FROM salas WHERE activo = 1";
-        
-        if ($acceso_todas_salas === 0 && !empty($salas_permitidas)) {
-            $placeholders = implode(',', array_fill(0, count($salas_permitidas), '?'));
-            $sqlSalas .= " AND id IN ($placeholders)";
-        }
-        
-        $sqlSalas .= " ORDER BY nombre";
-        
-        $stmtSalas = $pdo->prepare($sqlSalas);
-        
-        if ($acceso_todas_salas === 0 && !empty($salas_permitidas)) {
-            foreach ($salas_permitidas as $key => $sala_id) {
-                $stmtSalas->bindValue($key + 1, $sala_id, PDO::PARAM_INT);
-            }
-        }
-        
-        $stmtSalas->execute();
-        $salas = $stmtSalas->fetchAll(PDO::FETCH_ASSOC);
+        $stmtSalas = $pdo->query("SELECT id, nombre FROM salas WHERE activo = 1 ORDER BY nombre");
     }
+    $salas = $stmtSalas->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // Configuración de paginación
@@ -83,19 +74,19 @@ if ($paginaActual < 1) $paginaActual = 1;
 $whereConditions = [];
 $params = [];
 
-if ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin' && isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])) {
+if (!$esAdmin && $salaSesion) {
     $whereConditions[] = "c.sala_id = :sala_id";
-    $params[':sala_id'] = $_SESSION['sala_id'];
+    $params[':sala_id'] = $salaSesion;
 }
 
-if (($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin') && $acceso_todas_salas === 0 && isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])) {
+if ($limitadoASalaSesion) {
     $whereConditions[] = "c.sala_id = :sala_asignada";
-    $params[':sala_asignada'] = $_SESSION['sala_id'];
+    $params[':sala_asignada'] = $salaSesion;
 }
 
-if (($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin') && $acceso_todas_salas === 0 && !empty($salas_permitidas) && (!isset($_SESSION['sala_id']) || empty($_SESSION['sala_id']))) {
+if ($limitadoASalasPermitidas && !empty($salas_permitidas)) {
     $placeholders = [];
-    foreach ($salas_permitidas as $index => $sala_id) {
+    foreach (array_values($salas_permitidas) as $index => $sala_id) {
         $param_name = ":sala_permitida_" . $index;
         $placeholders[] = $param_name;
         $params[$param_name] = $sala_id;
@@ -103,12 +94,12 @@ if (($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin') && $acce
     $whereConditions[] = "c.sala_id IN (" . implode(',', $placeholders) . ")";
 }
 
-if (($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin') && $acceso_todas_salas === 1 && !empty($salaFiltro)) {
+if ($esAdmin && $acceso_todas_salas === 1 && !empty($salaFiltro)) {
     $whereConditions[] = "c.sala_id = :sala_filtro";
     $params[':sala_filtro'] = $salaFiltro;
 }
 
-if (($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin') && $acceso_todas_salas === 0 && !empty($salaFiltro) && (!isset($_SESSION['sala_id']) || empty($_SESSION['sala_id']))) {
+if ($limitadoASalasPermitidas && !empty($salaFiltro)) {
     if (in_array($salaFiltro, $salas_permitidas)) {
         $whereConditions[] = "c.sala_id = :sala_filtro";
         $params[':sala_filtro'] = $salaFiltro;
@@ -354,7 +345,7 @@ try {
 </head>
 
 <body class="bg-light" 
-  data-rol="<?= htmlspecialchars($_SESSION['rol']) ?>"
+  data-rol="<?= htmlspecialchars($rol) ?>"
   data-acceso-todas-salas="<?= $acceso_todas_salas ?>"
   data-salas-permitidas="<?= htmlspecialchars(json_encode($salas_permitidas)) ?>"
   data-usuario-id="<?= htmlspecialchars($_SESSION['usuario_id']) ?>"
@@ -364,14 +355,14 @@ try {
     <div class="container-fluid">
       <div class="d-flex align-items-center ms-auto">
         <ul class="navbar-nav me-3">
-          <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin'): ?>
+          <?php if ($esAdmin): ?>
           <li class="nav-item">
             <a class="nav-link text-dark" href="../opAdmin.php" style="text-decoration: none;">
              Dashboard
             </a>
           </li>
           <?php endif; ?> 
-          <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin'): ?>
+          <?php if ($esAdmin): ?>
           <li class="nav-item">
             <a class="nav-link text-dark" href="../Usuarios/usuarios.php" style="text-decoration: none;">
               👤 Usuarios
@@ -419,14 +410,14 @@ try {
             <i class="bi bi-person-plus-fill"></i> Agregar Cliente
           </a>
           
-          <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin'): ?>
+          <?php if ($esAdmin): ?>
           <a href="../exportar_excel.php?<?= http_build_query($_GET) ?>" class="btn btn-success ms-2" id="exportar-excel-btn">
             <i class="bi bi-file-earmark-excel-fill"></i> Exportar a Excel
           </a>
           <?php endif; ?>
         </div>
 
-        <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin'): ?>
+        <?php if ($esAdmin): ?>
         <div class="filter-section mb-4">
           <div class="filter-header" onclick="toggleFilters()">
             <i class="bi bi-funnel"></i> Filtros Avanzados
@@ -438,20 +429,20 @@ try {
               
               <div class="col-md-3">
                 <label for="sala_id" class="form-label">Sala</label>
-                <select class="form-select <?= ($acceso_todas_salas === 0 && isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])) ? 'disabled-select' : '' ?>" 
+                <select class="form-select <?= $limitadoASalaSesion ? 'disabled-select' : '' ?>" 
                         id="sala_id" name="sala_id" 
-                        <?= ($acceso_todas_salas === 0 && isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])) ? 'disabled' : '' ?>>
-                  <?php if ($acceso_todas_salas === 0 && isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])): ?>
+                        <?= $limitadoASalaSesion ? 'disabled' : '' ?>>
+                  <?php if ($limitadoASalaSesion): ?>
                     <?php 
                     $salaUsuario = '';
                     foreach ($salas as $sala) {
-                        if ($sala['id'] == $_SESSION['sala_id']) {
+                        if ($sala['id'] == $salaSesion) {
                             $salaUsuario = $sala['nombre'];
                             break;
                         }
                     }
                     ?>
-                    <option value="<?= htmlspecialchars($_SESSION['sala_id']) ?>" selected>
+                    <option value="<?= htmlspecialchars($salaSesion) ?>" selected>
                       <?= htmlspecialchars($salaUsuario ?: 'Sala asignada') ?>
                     </option>
                   <?php else: ?>
@@ -466,8 +457,8 @@ try {
                 </select>
                 
                 <?php if ($acceso_todas_salas === 0): ?>
-                  <?php if (isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])): ?>
-                    <input type="hidden" name="sala_id" value="<?= htmlspecialchars($_SESSION['sala_id']) ?>">
+                  <?php if ($salaSesion): ?>
+                    <input type="hidden" name="sala_id" value="<?= htmlspecialchars($salaSesion) ?>">
                     <small class="text-muted d-block mt-1">
                       <i class="bi bi-info-circle"></i> Acceso limitado a una sola sala
                     </small>
@@ -496,7 +487,7 @@ try {
                   <button type="submit" class="btn btn-primary">
                     <i class="bi bi-search"></i> Filtrar
                   </button>
-                  <?php if ($acceso_todas_salas === 1 || (!isset($_SESSION['sala_id']) || empty($_SESSION['sala_id']))): ?>
+                  <?php if (!$limitadoASalaSesion): ?>
                     <a href="agencia.php" class="btn btn-outline-secondary">
                       <i class="bi bi-x-circle"></i> Limpiar
                     </a>
@@ -531,7 +522,7 @@ try {
             <div class="mt-3">
               <small class="text-info permiso-info">
                 <i class="bi bi-shield-lock"></i> 
-                <?php if (isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])): ?>
+                <?php if ($salaSesion): ?>
                   Acceso limitado a la sala: <?= htmlspecialchars($salaUsuario ?: 'Sala asignada') ?>
                 <?php else: ?>
                   Tienes acceso limitado a <?= count($salas) ?> sala(s): 
@@ -593,15 +584,16 @@ try {
                     $closerClass = empty($closerApemat) ? 'no-asignado' : '';
                     $linerClass = empty($usuarioApemat) ? 'no-asignado' : '';
                     
-                    echo "<tr data-id='{$cliente['id']}'>";
-                    echo "<td>{$cliente['nombre']} {$cliente['apepat']} {$cliente['apemat']}</td>";
-                    echo "<td>{$cliente['asunto']}</td>";
-                    echo "<td title='" . htmlspecialchars($cliente['descripcion_corta']) . "'>" . 
-                         htmlspecialchars($cliente['descripcion_corta']) . 
-                         (strlen($cliente['descripcion_corta']) >= 100 ? '...' : '') . "</td>";
-                    echo "<td class='{$linerClass}'>" . ($usuarioApemat ?: 'No asignado') . "</td>";
-                    echo "<td class='{$closerClass}'>" . ($closerApemat ?: 'No asignado') . "</td>";
-                    echo "<td class='text-center'>{$salaNombre}</td>";
+                    $descripcionCorta = htmlspecialchars($cliente['descripcion_corta'] ?? '');
+
+                    echo "<tr data-id='" . (int)$cliente['id'] . "'>";
+                    echo "<td>" . htmlspecialchars("{$cliente['nombre']} {$cliente['apepat']} {$cliente['apemat']}") . "</td>";
+                    echo "<td>" . htmlspecialchars($cliente['asunto'] ?? '') . "</td>";
+                    echo "<td title='{$descripcionCorta}'>" . $descripcionCorta .
+                         (mb_strlen($cliente['descripcion_corta'] ?? '') >= 100 ? '...' : '') . "</td>";
+                    echo "<td class='{$linerClass}'>" . htmlspecialchars($usuarioApemat ?: 'No asignado') . "</td>";
+                    echo "<td class='{$closerClass}'>" . htmlspecialchars($closerApemat ?: 'No asignado') . "</td>";
+                    echo "<td class='text-center'>" . htmlspecialchars($salaNombre) . "</td>";
                     echo "<td class='text-center'>{$fechaRegistro}</td>";
                     echo "</tr>";
                 }
@@ -669,7 +661,7 @@ try {
       <div class="modal-content">
         <form id="formEditar">
           <div class="modal-header">
-            <h5 class="modal-title"><?= ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin') ? 'Editar' : 'Ver' ?> Cliente</h5>
+            <h5 class="modal-title"><?= $esAdmin ? 'Editar' : 'Ver' ?> Cliente</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
 
@@ -680,80 +672,48 @@ try {
             <div class="row">
               <div class="col-md-4 mb-2">
                 <label class="form-label small">Nombre:</label>
-                <input type="text" id="editar_nombre" name="nombre" class="form-control form-control-sm <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly-field' : '' ?>" 
-                       <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly' : '' ?>>
+                <input type="text" id="editar_nombre" name="nombre" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>" 
+                       <?= !$esAdmin ? 'readonly' : '' ?>>
               </div>
               <div class="col-md-4 mb-2">
                 <label class="form-label small">Apellido Paterno:</label>
-                <input type="text" id="editar_apepat" name="apepat" class="form-control form-control-sm <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly-field' : '' ?>"
-                       <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly' : '' ?>>
+                <input type="text" id="editar_apepat" name="apepat" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>"
+                       <?= !$esAdmin ? 'readonly' : '' ?>>
               </div>
               <div class="col-md-4 mb-2">
                 <label class="form-label small">Apellido Materno:</label>
-                <input type="text" id="editar_apemat" name="apemat" class="form-control form-control-sm <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly-field' : '' ?>"
-                       <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly' : '' ?>>
+                <input type="text" id="editar_apemat" name="apemat" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>"
+                       <?= !$esAdmin ? 'readonly' : '' ?>>
               </div>
             </div>
 
             <div class="row">
               <div class="col-md-6 mb-2">
                 <label class="form-label small">Número 1:</label>
-                <input type="text" id="editar_numero1" name="numero1" class="form-control form-control-sm <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly-field' : '' ?>"
-                       <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly' : '' ?>>
+                <input type="text" id="editar_numero1" name="numero1" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>"
+                       <?= !$esAdmin ? 'readonly' : '' ?>>
               </div>
               <div class="col-md-6 mb-2">
                 <label class="form-label small">Número 2:</label>
-                <input type="text" id="editar_numero2" name="numero2" class="form-control form-control-sm <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly-field' : '' ?>"
-                       <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly' : '' ?>>
+                <input type="text" id="editar_numero2" name="numero2" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>"
+                       <?= !$esAdmin ? 'readonly' : '' ?>>
               </div>
             </div>
 
             <div class="mb-2">
               <label class="form-label small">Asunto:</label>
-              <input type="text" id="editar_asunto" name="asunto" class="form-control form-control-sm <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly-field' : '' ?>"
-                     <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly' : '' ?>>
+              <input type="text" id="editar_asunto" name="asunto" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>"
+                     <?= !$esAdmin ? 'readonly' : '' ?>>
             </div>
 
             <div class="mb-2">
               <label class="form-label small">Descripción:</label>
-              <textarea id="editar_descripcion" name="descripcion" class="form-control form-control-sm <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly-field' : '' ?>" rows="3"
-                        <?= ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') ? 'readonly' : '' ?>></textarea>
+              <textarea id="editar_descripcion" name="descripcion" class="form-control form-control-sm <?= !$esAdmin ? 'readonly-field' : '' ?>" rows="3"
+                        <?= !$esAdmin ? 'readonly' : '' ?>></textarea>
             </div>
 
-            <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin'): ?>
-            <?php 
-            $salasParaModal = [];
-            
-            if ($_SESSION['rol'] === 'superadmin') {
-                $stmtTodasSalas = $pdo->query("SELECT id, nombre FROM salas WHERE activo = 1 ORDER BY nombre");
-                $salasParaModal = $stmtTodasSalas->fetchAll(PDO::FETCH_ASSOC);
-            } 
-            elseif ($acceso_todas_salas === 1) {
-                $stmtTodasSalas = $pdo->query("SELECT id, nombre FROM salas WHERE activo = 1 ORDER BY nombre");
-                $salasParaModal = $stmtTodasSalas->fetchAll(PDO::FETCH_ASSOC);
-            } 
-            else {
-                if (isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])) {
-                    $sqlSalaEspecifica = "SELECT id, nombre FROM salas WHERE id = :sala_id AND activo = 1";
-                    $stmtSalaEspecifica = $pdo->prepare($sqlSalaEspecifica);
-                    $stmtSalaEspecifica->execute([':sala_id' => $_SESSION['sala_id']]);
-                    $salasParaModal = $stmtSalaEspecifica->fetchAll(PDO::FETCH_ASSOC);
-                } 
-                elseif (!empty($salas_permitidas)) {
-                    $placeholders = implode(',', array_fill(0, count($salas_permitidas), '?'));
-                    $sqlSalasPermitidas = "SELECT id, nombre FROM salas WHERE id IN ($placeholders) AND activo = 1 ORDER BY nombre";
-                    $stmtSalasPermitidas = $pdo->prepare($sqlSalasPermitidas);
-                    foreach ($salas_permitidas as $key => $sala_id) {
-                        $stmtSalasPermitidas->bindValue($key + 1, $sala_id, PDO::PARAM_INT);
-                    }
-                    $stmtSalasPermitidas->execute();
-                    $salasParaModal = $stmtSalasPermitidas->fetchAll(PDO::FETCH_ASSOC);
-                } 
-                else {
-                    $salasParaModal = $salas;
-                }
-            }
-            ?>
+            <?php if ($esAdmin): ?>
+            <!-- Las salas del modal son las mismas que las del filtro -->
             <div class="col-12 mt-2">
               <button type="button" id="btnSeleccionarSala" class="btn btn-sm btn-outline-info">
                 <i class="bi bi-building"></i> Asignar Sala
@@ -764,7 +724,7 @@ try {
               <label class="form-label small mb-1">Seleccionar Sala:</label>
               <select class="form-select form-select-sm" name="sala_id_admin" id="salaSelectAdmin">
                 <option value="">-- Usar sala actual --</option>
-                <?php foreach ($salasParaModal as $sala): ?>
+                <?php foreach ($salas as $sala): ?>
                   <option value="<?= $sala['id'] ?>">
                     <?= htmlspecialchars($sala['nombre']) ?> (ID: <?= $sala['id'] ?>)
                   </option>
@@ -772,10 +732,10 @@ try {
               </select>
               <small class="text-muted">
                 Seleccione una sala específica. 
-                <?php if ($_SESSION['rol'] === 'admin' && $acceso_todas_salas === 0): ?>
+                <?php if ($rol === 'admin' && $acceso_todas_salas === 0): ?>
                 <span class="text-warning">
                   <i class="bi bi-exclamation-triangle"></i> 
-                  <?php if (isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])): ?>
+                  <?php if ($salaSesion): ?>
                     Solo puedes asignar tu sala asignada.
                   <?php else: ?>
                     Solo puedes asignar salas permitidas.
@@ -786,7 +746,7 @@ try {
             </div>
             <?php endif; ?>
 
-            <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin'): ?>
+            <?php if ($esAdmin): ?>
             <div class="mb-2">
               <label class="form-label small">Asignar a Usuario:</label>
               <select id="usuarios_id" name="usuarios_id" class="form-select form-select-sm">
@@ -795,7 +755,6 @@ try {
             </div>
             <?php endif; ?>
 
-            <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin' || $_SESSION['rol'] === 'usuario'): ?>
             <div class="col-12 mt-2">
               <button type="button" id="btnAgregarCloser" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-plus-circle"></i> Agregar/Modificar Closer
@@ -808,7 +767,6 @@ try {
                 <option value="">-- Seleccione un closer --</option>
               </select>
             </div>
-            <?php endif; ?>
             
             <div id="mensajePermisos" class="sin-permisos" style="display: none;">
               <i class="bi bi-exclamation-triangle"></i> 
@@ -817,7 +775,7 @@ try {
           </div>
 
           <div class="modal-footer">
-            <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin'): ?>
+            <?php if ($esAdmin): ?>
               <button type="submit" class="btn btn-primary btn-sm">Guardar cambios</button>
             <?php else: ?>
               <button type="button" id="btnGuardarCloser" class="btn btn-primary btn-sm">Guardar Closer</button>
@@ -835,20 +793,15 @@ try {
   // VARIABLES GLOBALES
   // ============================================================
   const rolUsuario = document.body.getAttribute('data-rol');
+  const esAdmin = rolUsuario === 'admin' || rolUsuario === 'superadmin';
   const acceso_todas_salas = parseInt(document.body.getAttribute('data-acceso-todas-salas') || '1');
   const salas_permitidas = JSON.parse(document.body.getAttribute('data-salas-permitidas') || '[]');
-  const usuarioId = document.body.getAttribute('data-usuario-id');
-  const salaIdUsuario = document.body.getAttribute('data-sala-id');
-  
-  let paginaActual = <?= $paginaActual ?>;
-  const totalPaginas = <?= $totalPaginas ?>;
-  const totalClientesInicial = <?= $totalClientes ?>;
-  let valoresOriginales = {};
+
+  const totalClientesInicial = <?= (int)$totalClientes ?>;
   let usuariosCargados = [];
   let closersCargados = [];
+  let clienteActual = null;          // Cliente abierto en el modal
   let timeoutBusqueda = null;
-  let busquedaEnCurso = false;
-  let ultimaBusqueda = '';
 
   // ============================================================
   // SOLUCIÓN RACE CONDITION: AbortController + Token de secuencia
@@ -863,6 +816,13 @@ try {
     return el;
   }
 
+  // Escapar texto antes de insertarlo con innerHTML
+  function escapeHtml(texto) {
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+  }
+
   function toggleFilters() {
     const filterContent = getElement('filterContent');
     if (filterContent) {
@@ -874,9 +834,7 @@ try {
     const buscarInput = getElement('buscar');
     const clearButton = getElement('clear-search');
     if (buscarInput && clearButton) {
-      buscarInput.addEventListener('input', function () {
-        clearButton.style.display = this.value ? 'block' : 'none';
-      });
+      // La visibilidad del botón al escribir se controla en configurarBusqueda()
       clearButton.addEventListener('click', function () {
         buscarInput.value = '';
         clearButton.style.display = 'none';
@@ -896,25 +854,25 @@ try {
   // ============================================================
   function configurarBusqueda() {
     const buscarInput = getElement('buscar');
+    const clearButton = getElement('clear-search');
     const tablaContainer = getElement('tabla-container');
     const mensaje = getElement('mensaje');
     const tablaClientes = getElement('tabla-clientes');
-    
+
     if (!buscarInput || !tablaContainer || !mensaje || !tablaClientes) return;
-    
+
     buscarInput.addEventListener('input', function() {
         const termino = this.value.trim();
-        
-        getElement('clear-search').style.display = termino ? 'block' : 'none';
-        
+
+        if (clearButton) clearButton.style.display = termino ? 'block' : 'none';
+
         // Cancelar timeout pendiente
         if (timeoutBusqueda) {
             clearTimeout(timeoutBusqueda);
         }
-        
+
         // Si está vacío, cancelar cualquier búsqueda en vuelo y restaurar
         if (termino === '') {
-            // Cancelar fetch pendiente
             if (abortController) {
                 abortController.abort();
                 abortController = null;
@@ -922,16 +880,16 @@ try {
             restaurarVistaInicial();
             return;
         }
-        
+
         // Debounce más alto para evitar disparar en cada tecla
         // 1 caracter: 500ms | 2+ caracteres: 350ms
         const delay = termino.length === 1 ? 500 : 350;
-        
+
         timeoutBusqueda = setTimeout(() => {
             realizarBusqueda(termino);
         }, delay);
     });
-    
+
     // Enter dispara búsqueda inmediata
     buscarInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -945,49 +903,42 @@ try {
             }
         }
     });
-    
+
     function realizarBusqueda(termino) {
-        // ============================================================
-        // SOLUCIÓN 1: Cancelar la petición anterior si sigue en vuelo
-        // ============================================================
+        // Cancelar la petición anterior si sigue en vuelo
         if (abortController) {
             abortController.abort();
         }
         abortController = new AbortController();
         const signalLocal = abortController.signal;
-        
-        // ============================================================
-        // SOLUCIÓN 2: Token de secuencia para descartar respuestas viejas
-        // ============================================================
+
+        // Token de secuencia para descartar respuestas viejas
         const miSecuencia = ++secuenciaBusqueda;
-        
-        ultimaBusqueda = termino;
-        busquedaEnCurso = true;
-        
+
         mensaje.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm" role="status"></span> Buscando clientes...</div>';
         tablaContainer.classList.add('loading');
         tablaClientes.innerHTML = '<tr><td colspan="7" class="text-center">Buscando...</td></tr>';
-        
+
         const params = new URLSearchParams();
         params.append('buscar', termino);
-        
-        const salaId = getElement('sala_id')?.value || '';
-        const fechaInicio = getElement('fecha_inicio')?.value || '';
-        const fechaFin = getElement('fecha_fin')?.value || '';
-        
+
+        const salaId = document.getElementById('sala_id')?.value || '';
+        const fechaInicio = document.getElementById('fecha_inicio')?.value || '';
+        const fechaFin = document.getElementById('fecha_fin')?.value || '';
+
         if (salaId) params.append('sala_id', salaId);
         if (fechaInicio) params.append('fecha_inicio', fechaInicio);
         if (fechaFin) params.append('fecha_fin', fechaFin);
-        
-        if (rolUsuario === 'admin' || rolUsuario === 'superadmin') {
+
+        if (esAdmin) {
           params.append('acceso_todas_salas', acceso_todas_salas);
           if (acceso_todas_salas === 0 && salas_permitidas.length > 0) {
             params.append('salas_permitidas', JSON.stringify(salas_permitidas));
           }
         }
-        
+
         params.append('t', new Date().getTime());
-        
+
         fetch(`buscar_clientes.php?${params.toString()}`, {
             signal: signalLocal  // ← Cancelación automática
         })
@@ -998,47 +949,41 @@ try {
             return response.text();
         })
         .then(data => {
-            // ============================================================
-            // VERIFICAR TOKEN: Si ya se hizo otra búsqueda, ignorar esta respuesta
-            // ============================================================
+            // Si ya se hizo otra búsqueda, ignorar esta respuesta
             if (miSecuencia !== secuenciaBusqueda) {
-                console.log(`Respuesta obsoleta ignorada (secuencia ${miSecuencia}, actual ${secuenciaBusqueda})`);
                 return;
             }
-            
-            const contadorMatch = data.match(/<div id="resultado-contador" data-total="(\d+)"><\/div>/);
+
+            const regexContador = /<div id="resultado-contador" data-total="(\d+)"><\/div>/;
+            const regexLimite = /<div id="resultado-limite" data-limite="(\d+)" data-truncado="(\d+)"><\/div>/;
+            const contadorMatch = data.match(regexContador);
+            const limiteMatch = data.match(regexLimite);
             const totalResultados = contadorMatch ? parseInt(contadorMatch[1]) : 0;
-            const limiteMatch = data.match(/<div id="resultado-limite" data-limite="(\d+)" data-truncado="(\d+)"><\/div>/);
             const truncado = limiteMatch ? parseInt(limiteMatch[2]) === 1 : false;
             const limite = limiteMatch ? parseInt(limiteMatch[1]) : 0;
-            
-            let htmlResultados = data
-                .replace(/<div id="resultado-contador" data-total="\d+"><\/div>/, '')
-                .replace(/<div id="resultado-limite" data-limite="\d+" data-truncado="\d+"><\/div>/, '');
-            
-            tablaClientes.innerHTML = htmlResultados;
+
+            tablaClientes.innerHTML = data.replace(regexContador, '').replace(regexLimite, '');
             actualizarContadorClientes(totalResultados, 'Resultados');
-            
+
+            const terminoHtml = escapeHtml(termino);
             if (totalResultados > 0) {
-                let mensajeExtra = '';
-                if (truncado) {
-                    mensajeExtra = ` <span class="text-warning">(Mostrando solo los primeros ${limite}. Refina tu búsqueda.)</span>`;
-                }
-                mensaje.innerHTML = `<div class="text-success">✓ Se encontraron ${totalResultados} resultados para "${termino}"${mensajeExtra}</div>`;
+                const mensajeExtra = truncado
+                    ? ` <span class="text-warning">(Mostrando solo los primeros ${limite}. Refina tu búsqueda.)</span>`
+                    : '';
+                mensaje.innerHTML = `<div class="text-success">✓ Se encontraron ${totalResultados} resultados para "${terminoHtml}"${mensajeExtra}</div>`;
             } else {
-                mensaje.innerHTML = `<div class="text-warning">No se encontraron resultados para "${termino}"</div>`;
+                mensaje.innerHTML = `<div class="text-warning">No se encontraron resultados para "${terminoHtml}"</div>`;
             }
-            
+
             agregarEventosFila();
         })
         .catch(error => {
             // Ignorar errores por cancelación
             if (error.name === 'AbortError') {
-                console.log('Búsqueda cancelada:', termino);
                 return;
             }
             console.error('Error en la búsqueda:', error);
-            
+
             // Solo mostrar error si sigue siendo la búsqueda actual
             if (miSecuencia === secuenciaBusqueda) {
                 mensaje.innerHTML = '<div class="text-danger">✗ Error al realizar la búsqueda</div>';
@@ -1049,7 +994,6 @@ try {
             // Solo quitar el loading si seguimos siendo la búsqueda actual
             if (miSecuencia === secuenciaBusqueda) {
                 tablaContainer.classList.remove('loading');
-                busquedaEnCurso = false;
             }
         });
     }
@@ -1058,15 +1002,15 @@ try {
   function restaurarVistaInicial() {
     const mensaje = getElement('mensaje');
     const tablaContainer = getElement('tabla-container');
-    
+
     if (mensaje) {
         mensaje.innerHTML = '<div class="text-info">↻ Restaurando vista inicial...</div>';
     }
-    
+
     if (tablaContainer) {
         tablaContainer.classList.add('loading');
     }
-    
+
     setTimeout(() => {
         window.location.href = 'agencia.php';
     }, 100);
@@ -1084,18 +1028,19 @@ try {
   }
 
   // ====================== USUARIOS Y CLOSERS ======================
-  function cargarUsuarios(salaId = null) {
+  // tipo: 'usuarios' | 'closers'
+  function cargarLista(tipo, salaId = null) {
     const params = new URLSearchParams();
     if (salaId) params.append('sala_id', salaId);
-    params.append('tipo', 'usuarios');
-    
-    if ((rolUsuario === 'admin' || rolUsuario === 'superadmin') && acceso_todas_salas === 0) {
+    params.append('tipo', tipo);
+
+    if (esAdmin && acceso_todas_salas === 0) {
         params.append('acceso_todas_salas', acceso_todas_salas);
         if (salas_permitidas.length > 0) {
             params.append('salas_permitidas', JSON.stringify(salas_permitidas));
         }
     }
-    
+
     return fetch(`obtener_usuarios.php?${params.toString()}`)
       .then(res => {
         if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
@@ -1103,228 +1048,124 @@ try {
       })
       .then(data => {
         if (data.success && Array.isArray(data.usuarios)) {
-          usuariosCargados = data.usuarios;
-          return usuariosCargados;
-        } else {
-          throw new Error(data.message || 'Error en la respuesta');
+          return data.usuarios;
         }
+        throw new Error(data.message || 'Error en la respuesta');
       })
       .catch(error => {
-        console.error('Error cargando usuarios:', error);
-        usuariosCargados = [];
+        console.error(`Error cargando ${tipo}:`, error);
         return [];
       });
+  }
+
+  function cargarUsuarios(salaId = null) {
+    return cargarLista('usuarios', salaId).then(lista => (usuariosCargados = lista));
   }
 
   function cargarClosers(salaId = null) {
-    const params = new URLSearchParams();
-    if (salaId) params.append('sala_id', salaId);
-    params.append('tipo', 'closers');
-    
-    if ((rolUsuario === 'admin' || rolUsuario === 'superadmin') && acceso_todas_salas === 0) {
-        params.append('acceso_todas_salas', acceso_todas_salas);
-        if (salas_permitidas.length > 0) {
-            params.append('salas_permitidas', JSON.stringify(salas_permitidas));
-        }
+    return cargarLista('closers', salaId).then(lista => (closersCargados = lista));
+  }
+
+  function llenarSelect(selectId, lista, placeholder, textoVacio, prefijo, seleccionadoId = '') {
+    const select = getElement(selectId);
+    if (!select) return;
+
+    select.innerHTML = `<option value="">${placeholder}</option>`;
+
+    if (!Array.isArray(lista) || lista.length === 0) {
+      select.innerHTML += `<option value="" disabled>${textoVacio}</option>`;
+      return;
     }
-    
-    return fetch(`obtener_usuarios.php?${params.toString()}`)
-      .then(res => {
-        if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-        if (data.success && Array.isArray(data.usuarios)) {
-          closersCargados = data.usuarios;
-          return closersCargados;
-        } else {
-          throw new Error(data.message || 'Error en la respuesta');
-        }
-      })
-      .catch(error => {
-        console.error('Error cargando closers:', error);
-        closersCargados = [];
-        return [];
-      });
+
+    lista.forEach(u => {
+      const option = document.createElement('option');
+      option.value = u.id;
+      option.textContent = u.apemat || `${prefijo} ${u.id}`;
+      option.selected = (u.id == seleccionadoId);
+      select.appendChild(option);
+    });
   }
 
   function llenarSelectUsuarios(usuarioSeleccionadoId = '') {
-    const select = getElement('usuarios_id');
-    if (!select) return;
-    
-    select.innerHTML = '<option value="">-- Selecciona un usuario --</option>';
-    
-    if (!Array.isArray(usuariosCargados) || usuariosCargados.length === 0) {
-      select.innerHTML += '<option value="" disabled>No hay usuarios disponibles para esta sala</option>';
-      return;
-    }
-    
-    usuariosCargados.forEach(u => {
-      const option = document.createElement('option');
-      option.value = u.id;
-      let displayText = u.apemat || `Usuario ${u.id}`;
-      option.textContent = displayText;
-      option.selected = (u.id == usuarioSeleccionadoId);
-      select.appendChild(option);
-    });
+    llenarSelect('usuarios_id', usuariosCargados, '-- Selecciona un usuario --',
+      'No hay usuarios disponibles para esta sala', 'Usuario', usuarioSeleccionadoId);
   }
 
   function llenarSelectClosers(closerSeleccionadoId = '') {
-    const select = getElement('usuario_closer');
-    if (!select) return;
-    
-    select.innerHTML = '<option value="">-- Seleccione un closer --</option>';
-    
-    if (!Array.isArray(closersCargados) || closersCargados.length === 0) {
-      select.innerHTML += '<option value="" disabled>No hay closers disponibles para esta sala</option>';
-      return;
-    }
-    
-    closersCargados.forEach(c => {
-      const option = document.createElement('option');
-      option.value = c.id;
-      let displayText = c.apemat || `Closer ${c.id}`;
-      option.textContent = displayText;
-      option.selected = (c.id == closerSeleccionadoId);
-      select.appendChild(option);
-    });
+    llenarSelect('usuario_closer', closersCargados, '-- Seleccione un closer --',
+      'No hay closers disponibles para esta sala', 'Closer', closerSeleccionadoId);
   }
 
   // ====================== CONFIGURACIÓN DE SALA ======================
   function configurarSelectSala() {
-    const btnSeleccionarSala = getElement('btnSeleccionarSala');
-    const salaAdminSection = getElement('salaAdminSection');
-    const salaSelectAdmin = getElement('salaSelectAdmin');
-    
+    const btnSeleccionarSala = document.getElementById('btnSeleccionarSala');
+    const salaAdminSection = document.getElementById('salaAdminSection');
+    const salaSelectAdmin = document.getElementById('salaSelectAdmin');
+
     if (btnSeleccionarSala && salaAdminSection) {
       btnSeleccionarSala.addEventListener('click', () => {
-        const isVisible = salaAdminSection.classList.contains('show');
-        if (isVisible) {
-          salaAdminSection.classList.remove('show');
-          btnSeleccionarSala.innerHTML = '<i class="bi bi-building"></i> Asignar Sala';
-        } else {
-          salaAdminSection.classList.add('show');
-          btnSeleccionarSala.innerHTML = '<i class="bi bi-building-slash"></i> Ocultar Sala';
-        }
+        const visible = salaAdminSection.classList.toggle('show');
+        btnSeleccionarSala.innerHTML = visible
+          ? '<i class="bi bi-building-slash"></i> Ocultar Sala'
+          : '<i class="bi bi-building"></i> Asignar Sala';
       });
     }
-    
+
     if (salaSelectAdmin) {
       salaSelectAdmin.addEventListener('change', function() {
         const nuevaSalaId = this.value;
-        
-        if ((rolUsuario === 'admin' || rolUsuario === 'superadmin') && acceso_todas_salas === 0 && nuevaSalaId) {
-            if (!salas_permitidas.includes(parseInt(nuevaSalaId))) {
-                alert('No tienes permisos para asignar esta sala');
-                this.value = '';
-                return;
-            }
+
+        if (esAdmin && acceso_todas_salas === 0 && nuevaSalaId && !salas_permitidas.includes(parseInt(nuevaSalaId))) {
+            alert('No tienes permisos para asignar esta sala');
+            this.value = '';
+            return;
         }
-        
-        const editarSalaId = getElement('editar_sala_id');
-        if (editarSalaId) {
-          editarSalaId.value = nuevaSalaId || '';
+
+        getElement('editar_sala_id').value = nuevaSalaId || '';
+        getElement('mensajePermisos').style.display = 'none';
+
+        // Recargar listas para la nueva sala conservando la selección del cliente abierto
+        if (esAdmin) {
+          getElement('usuarios_id').innerHTML = '<option value="">Cargando usuarios...</option>';
+          cargarUsuarios(nuevaSalaId).then(() => llenarSelectUsuarios(clienteActual?.usuario_id));
         }
-        
-        const mensajePermisos = getElement('mensajePermisos');
-        if ((rolUsuario === 'admin' || rolUsuario === 'superadmin') && acceso_todas_salas === 0 && nuevaSalaId && !salas_permitidas.includes(parseInt(nuevaSalaId))) {
-            if (mensajePermisos) mensajePermisos.style.display = 'block';
-        } else {
-            if (mensajePermisos) mensajePermisos.style.display = 'none';
-        }
-        
-        if (rolUsuario === 'admin' || rolUsuario === 'superadmin') {
-          const selectUsuario = getElement('usuarios_id');
-          if (selectUsuario) {
-            selectUsuario.innerHTML = '<option value="">Cargando usuarios...</option>';
-          }
-          
-          cargarUsuarios(nuevaSalaId)
-            .then(() => {
-              const clienteId = getElement('editar_id').value;
-              if (clienteId) {
-                fetch(`obtener_cliente.php?id=${clienteId}`)
-                  .then(response => response.json())
-                  .then(data => {
-                    if (data.success) {
-                      llenarSelectUsuarios(data.data.usuario_id);
-                    } else {
-                      llenarSelectUsuarios();
-                    }
-                  })
-                  .catch(() => llenarSelectUsuarios());
-              } else {
-                llenarSelectUsuarios();
-              }
-            })
-            .catch(() => {
-              if (selectUsuario) {
-                selectUsuario.innerHTML = '<option value="">No se pueden cargar usuarios para esta sala</option>';
-              }
-            });
-        }
-        
-        const selectCloser = getElement('usuario_closer');
-        if (selectCloser) {
-          selectCloser.innerHTML = '<option value="">Cargando closers...</option>';
-        }
-        
-        cargarClosers(nuevaSalaId)
-          .then(() => {
-            const clienteId = getElement('editar_id').value;
-            if (clienteId) {
-              fetch(`obtener_cliente.php?id=${clienteId}`)
-                .then(response => response.json())
-                .then(data => {
-                  if (data.success) {
-                    llenarSelectClosers(data.data.usuario_closer);
-                  } else {
-                    llenarSelectClosers();
-                  }
-                })
-                .catch(() => llenarSelectClosers());
-            } else {
-              llenarSelectClosers();
-            }
-          })
-          .catch(() => {
-            if (selectCloser) {
-              selectCloser.innerHTML = '<option value="">No se pueden cargar closers para esta sala</option>';
-            }
-          });
+
+        getElement('usuario_closer').innerHTML = '<option value="">Cargando closers...</option>';
+        cargarClosers(nuevaSalaId).then(() => llenarSelectClosers(clienteActual?.usuario_closer));
       });
     }
   }
 
   // ====================== EDITAR CLIENTE ======================
   function abrirModalEditar(id) {
-    const selectUsuario = getElement('usuarios_id');
+    const selectUsuario = document.getElementById('usuarios_id');
     const selectCloser = getElement('usuario_closer');
     if (selectUsuario) selectUsuario.innerHTML = '<option value="">-- Selecciona un usuario --</option>';
     if (selectCloser) selectCloser.innerHTML = '<option value="">-- Seleccione un closer --</option>';
-    
+
     const closerSection = getElement('closerSection');
-    const salaAdminSection = getElement('salaAdminSection');
+    const salaAdminSection = document.getElementById('salaAdminSection');
     if (closerSection) closerSection.style.display = 'none';
     if (salaAdminSection) salaAdminSection.classList.remove('show');
-    
+
     const btnCloser = getElement('btnAgregarCloser');
-    const btnSala = getElement('btnSeleccionarSala');
+    const btnSala = document.getElementById('btnSeleccionarSala');
     if (btnCloser) btnCloser.innerHTML = '<i class="bi bi-plus-circle"></i> Agregar/Modificar Closer';
     if (btnSala) btnSala.innerHTML = '<i class="bi bi-building"></i> Asignar Sala';
-    
+
     const mensajePermisos = getElement('mensajePermisos');
     if (mensajePermisos) mensajePermisos.style.display = 'none';
-    
-    fetch(`obtener_cliente.php?id=${id}`)
+
+    fetch(`obtener_cliente.php?id=${encodeURIComponent(id)}`)
       .then(response => response.json())
       .then(data => {
         if (!data.success) {
           throw new Error(data.message || 'Error al cargar cliente');
         }
-        
+
         const cliente = data.data;
-        
+        clienteActual = cliente;
+
         getElement('editar_id').value = cliente.id;
         getElement('editar_nombre').value = cliente.nombre || '';
         getElement('editar_apepat').value = cliente.apepat || '';
@@ -1333,55 +1174,31 @@ try {
         getElement('editar_numero2').value = cliente.numero2 || '';
         getElement('editar_asunto').value = cliente.asunto || '';
         getElement('editar_descripcion').value = cliente.descripcion || '';
-        
-        const editarSalaId = getElement('editar_sala_id');
-        if (cliente.sala_id) {
-          editarSalaId.value = cliente.sala_id;
-        }
-        
-        const salaSelectAdmin = getElement('salaSelectAdmin');
-        if (salaSelectAdmin && cliente.sala_id) {
-          salaSelectAdmin.value = cliente.sala_id;
-        }
-        
-        let salaIdParaCargar = null;
-        if ((rolUsuario === 'admin' || rolUsuario === 'superadmin') && salaSelectAdmin && salaSelectAdmin.value) {
-          salaIdParaCargar = salaSelectAdmin.value;
-        } else if (cliente.sala_id) {
-          salaIdParaCargar = cliente.sala_id;
-        }
-        
-        const cargarUsuariosPromise = (rolUsuario === 'admin' || rolUsuario === 'superadmin') ? 
-          cargarUsuarios(salaIdParaCargar) : 
-          Promise.resolve([]);
-        
-        const cargarClosersPromise = cargarClosers(salaIdParaCargar);
-        
-        Promise.all([cargarUsuariosPromise, cargarClosersPromise])
-          .then(([usuarios, closers]) => {
-            if (rolUsuario === 'admin' || rolUsuario === 'superadmin') {
+
+        // Siempre reasignar (también a vacío) para no arrastrar la sala del cliente abierto antes
+        getElement('editar_sala_id').value = cliente.sala_id || '';
+        const salaSelectAdmin = document.getElementById('salaSelectAdmin');
+        if (salaSelectAdmin) salaSelectAdmin.value = cliente.sala_id || '';
+
+        const salaIdParaCargar = cliente.sala_id || null;
+
+        Promise.all([
+          esAdmin ? cargarUsuarios(salaIdParaCargar) : Promise.resolve([]),
+          cargarClosers(salaIdParaCargar)
+        ])
+          .then(() => {
+            if (esAdmin) {
               llenarSelectUsuarios(cliente.usuario_id);
             }
-            
-            if (rolUsuario === 'admin' || rolUsuario === 'superadmin' || rolUsuario === 'usuario') {
-              llenarSelectClosers(cliente.usuario_closer);
+            llenarSelectClosers(cliente.usuario_closer);
+
+            if (cliente.usuario_closer && closerSection && btnCloser) {
+              closerSection.style.display = 'block';
+              btnCloser.innerHTML = '<i class="bi bi-dash-circle"></i> Ocultar Closer';
             }
-            
-            if (cliente.usuario_closer && (rolUsuario === 'admin' || rolUsuario === 'superadmin' || rolUsuario === 'usuario')) {
-              if (closerSection && btnCloser) {
-                closerSection.style.display = 'block';
-                btnCloser.innerHTML = '<i class="bi bi-dash-circle"></i> Ocultar Closer';
-              }
-            }
-            
-            const modal = new bootstrap.Modal(getElement('modalEditar'));
-            modal.show();
           })
-          .catch(error => {
-            console.error('Error cargando datos:', error);
-            const modal = new bootstrap.Modal(getElement('modalEditar'));
-            modal.show();
-          });
+          .catch(error => console.error('Error cargando datos:', error))
+          .finally(() => bootstrap.Modal.getOrCreateInstance(getElement('modalEditar')).show());
       })
       .catch(error => {
         console.error('Error obteniendo cliente:', error);
@@ -1393,13 +1210,13 @@ try {
   function configurarFormulario() {
     const form = getElement('formEditar');
     if (!form) return;
-    
-    if (rolUsuario === 'admin' || rolUsuario === 'superadmin') {
-      form.addEventListener('submit', e => {
-        e.preventDefault();
-        guardarCambios();
-      });
-    } else {
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (esAdmin) guardarCambios();
+    });
+
+    if (!esAdmin) {
       const btnGuardarCloser = getElement('btnGuardarCloser');
       if (btnGuardarCloser) {
         btnGuardarCloser.addEventListener('click', e => {
@@ -1407,11 +1224,32 @@ try {
           guardarSoloCloser();
         });
       }
-      
-      form.addEventListener('submit', e => {
-        e.preventDefault();
-      });
     }
+  }
+
+  // Envía el formulario, muestra la respuesta y recarga la página
+  function enviarYRecargar(url, formData, boton, mensajeError) {
+    const originalText = boton.innerHTML;
+    boton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+    boton.disabled = true;
+
+    fetch(url, {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.text())
+    .then(msg => {
+      alert(msg);
+      window.location.reload();
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert(mensajeError);
+    })
+    .finally(() => {
+      boton.innerHTML = originalText;
+      boton.disabled = false;
+    });
   }
 
   function guardarCambios() {
@@ -1420,104 +1258,53 @@ try {
       alert('Error: ID del cliente no encontrado');
       return;
     }
-    
-    if ((rolUsuario === 'admin' || rolUsuario === 'superadmin') && acceso_todas_salas === 0) {
+
+    if (acceso_todas_salas === 0) {
         const salaId = getElement('salaSelectAdmin').value;
         if (salaId && !salas_permitidas.includes(parseInt(salaId))) {
             alert('No tienes permisos para asignar esta sala');
             return;
         }
     }
-    
-    const formData = new FormData(getElement('formEditar'));
-    
-    const submitBtn = getElement('formEditar').querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
-    submitBtn.disabled = true;
-    
-    fetch('actualizar_cliente.php', { 
-      method: 'POST', 
-      body: formData 
-    })
-    .then(response => response.text())
-    .then(msg => { 
-      alert(msg); 
-      window.location.reload();
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('Error al actualizar el cliente');
-    })
-    .finally(() => {
-      submitBtn.innerHTML = originalText;
-      submitBtn.disabled = false;
-    });
+
+    const form = getElement('formEditar');
+    enviarYRecargar('actualizar_cliente.php', new FormData(form),
+      form.querySelector('button[type="submit"]'), 'Error al actualizar el cliente');
   }
 
   function guardarSoloCloser() {
     const id = getElement('editar_id').value;
-    const usuarioCloser = getElement('usuario_closer').value;
-    
     if (!id) {
       alert('Error: ID del cliente no encontrado');
       return;
     }
-    
-    const btnGuardarCloser = getElement('btnGuardarCloser');
-    const originalText = btnGuardarCloser.innerHTML;
-    btnGuardarCloser.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
-    btnGuardarCloser.disabled = true;
-    
+
     const formData = new FormData();
     formData.append('id', id);
-    formData.append('usuario_closer', usuarioCloser);
-    
-    fetch('actualizar_closer.php', { 
-      method: 'POST', 
-      body: formData 
-    })
-    .then(response => response.text())
-    .then(msg => { 
-      alert(msg); 
-      window.location.reload();
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('Error al actualizar el closer');
-    })
-    .finally(() => {
-      btnGuardarCloser.innerHTML = originalText;
-      btnGuardarCloser.disabled = false;
-    });
+    formData.append('usuario_closer', getElement('usuario_closer').value);
+
+    enviarYRecargar('actualizar_closer.php', formData, getElement('btnGuardarCloser'), 'Error al actualizar el closer');
   }
 
   // ====================== CONFIGURACIÓN DE CLOSER ======================
   function configurarBotonCloser() {
     const btnAgregarCloser = getElement('btnAgregarCloser');
     const closerSection = getElement('closerSection');
-    
+
     if (btnAgregarCloser && closerSection) {
       btnAgregarCloser.addEventListener('click', () => {
         const isVisible = closerSection.style.display === 'block';
         closerSection.style.display = isVisible ? 'none' : 'block';
-        
-        const icon = btnAgregarCloser.querySelector('i');
-        if (icon) {
-          icon.className = isVisible ? 'bi bi-plus-circle' : 'bi bi-dash-circle';
-        }
-        
-        btnAgregarCloser.innerHTML = isVisible ? 
-          '<i class="bi bi-plus-circle"></i> Agregar/Modificar Closer' : 
+
+        btnAgregarCloser.innerHTML = isVisible ?
+          '<i class="bi bi-plus-circle"></i> Agregar/Modificar Closer' :
           '<i class="bi bi-dash-circle"></i> Ocultar Closer';
-        
+
         if (!isVisible && closersCargados.length === 0) {
-          const salaSelectAdmin = getElement('salaSelectAdmin');
+          const salaSelectAdmin = document.getElementById('salaSelectAdmin');
           const salaId = salaSelectAdmin ? salaSelectAdmin.value : null;
-          
-          cargarClosers(salaId)
-            .then(() => llenarSelectClosers())
-            .catch(error => console.error('Error al cargar closers:', error));
+
+          cargarClosers(salaId).then(() => llenarSelectClosers());
         }
       });
     }

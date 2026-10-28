@@ -20,8 +20,6 @@ if (!isset($_SESSION['usuario_id']) || !in_array($_SESSION['rol'] ?? '', ['admin
 // Liberar el bloqueo de la sesión: la generación puede tardar y $_SESSION sigue disponible para la bitácora
 session_write_close();
 
-use TCPDF;
-
 date_default_timezone_set('America/Mexico_City');
 
 // Función para limpiar símbolos de los campos de texto
@@ -38,6 +36,26 @@ function normalizarNombre($nombre)
 {
     return trim(strtolower($nombre));
 }
+
+// Nombre de la persona en un rol de la venta: primero el nombre manual, luego el del sistema (null si no hay)
+function nombreEnRol($venta, $campoManual, $campoNombre)
+{
+    if (!empty($venta[$campoManual]) && trim($venta[$campoManual]) !== '') {
+        return trim($venta[$campoManual]);
+    }
+    if (!empty($venta[$campoNombre]) && $venta[$campoNombre] !== 'No asignado') {
+        return trim($venta[$campoNombre]);
+    }
+    return null;
+}
+
+// Roles de cada venta: [campo nombre manual, campo nombre del sistema, campo ganancia]
+$rolesVenta = [
+    'Liner'    => ['liner_nombre_manual', 'liner_nombre', 'ganancia_liner'],
+    'Closer 1' => ['closer1_nombre_manual', 'closer1_nombre', 'ganancia_closer1'],
+    'Closer 2' => ['closer2_nombre_manual', 'closer2_nombre', 'ganancia_closer2'],
+    'Front'    => ['full_stack_nombre_manual', 'front_nombre', 'ganancia_fullstack'],
+];
 
 // Conexión a base de datos
 
@@ -203,10 +221,6 @@ try {
         $venta['closer1_nombre_manual'] = limpiarTexto($venta['closer1_nombre_manual']);
         $venta['closer2_nombre_manual'] = limpiarTexto($venta['closer2_nombre_manual']);
         $venta['full_stack_nombre_manual'] = limpiarTexto($venta['full_stack_nombre_manual']);
-        $venta['cliente'] = limpiarTexto($venta['cliente']);
-        $venta['apepat'] = limpiarTexto($venta['apepat']);
-        $venta['apemat'] = limpiarTexto($venta['apemat']);
-        $venta['producto'] = limpiarTexto($venta['producto']);
     }
     unset($venta);
 } catch (PDOException $e) {
@@ -488,24 +502,20 @@ if (!empty($fechaInicio) && !empty($fechaFin)) {
 }
 
 // AGREGAR SALA AL TEXTO DEL FILTRO
-if ($salaId > 0) {
-    $filtroTexto .= empty($filtroTexto) ? "Sala: " . $salaNombre : " | Sala: " . $salaNombre;
-} else {
-    $filtroTexto .= empty($filtroTexto) ? "Todas las Salas" : " | Todas las Salas";
-}
+$filtroTexto .= $salaId > 0 ? " | Sala: " . $salaNombre : " | Todas las Salas";
 
 // Agregar tipo_venta al texto del filtro
 if (!empty($tipoVenta)) {
-    $tipoVentaTexto = $tipoVenta === 'nuevo' ? 'Nuevo' : 'Repack';
-    $filtroTexto .= empty($filtroTexto) ? "Tipo: " . $tipoVentaTexto : " | Tipo: " . $tipoVentaTexto;
+    $filtroTexto .= " | Tipo: " . ($tipoVenta === 'nuevo' ? 'Nuevo' : 'Repack');
 }
 
+// Texto plano en la celda del PDF (Cell no interpreta HTML)
 if (!empty($busqueda)) {
-    $filtroTexto .= empty($filtroTexto) ? "Búsqueda: " . htmlspecialchars($busqueda) : " | Búsqueda: " . htmlspecialchars($busqueda);
+    $filtroTexto .= " | Búsqueda: " . $busqueda;
 }
 
 if (!empty($plataformasNombres)) {
-    $filtroTexto .= empty($filtroTexto) ? "Plataformas: " . implode(', ', $plataformasNombres) : " | Plataformas: " . implode(', ', $plataformasNombres);
+    $filtroTexto .= " | Plataformas: " . implode(', ', $plataformasNombres);
 }
 
 $pdf->Cell(0, 8, 'Filtro aplicado: ' . $filtroTexto, 0, 1, 'C');
@@ -737,17 +747,10 @@ $pdf->SetFont('helvetica', 'B', 9);
 $pdf->SetTextColor(0, 0, 0);
 $pdf->SetFillColor(200, 200, 200);
 
-if ($salaId > 0) {
-    $pdf->Cell(50, 8, $overHeaders[0], 1, 0, 'C', true);
-    $pdf->Cell(40, 8, $overHeaders[1], 1, 0, 'C', true);
-    $pdf->Cell(30, 8, $overHeaders[2], 1, 0, 'C', true);
-    $pdf->Cell(40, 8, $overHeaders[3], 1, 1, 'C', true);
-} else {
-    $pdf->Cell(50, 8, $overHeaders[0], 1, 0, 'C', true);
-    $pdf->Cell(40, 8, $overHeaders[1], 1, 0, 'C', true);
-    $pdf->Cell(30, 8, $overHeaders[2], 1, 0, 'C', true);
-    $pdf->Cell(40, 8, $overHeaders[3], 1, 1, 'C', true);
-}
+$pdf->Cell(50, 8, $overHeaders[0], 1, 0, 'C', true);
+$pdf->Cell(40, 8, $overHeaders[1], 1, 0, 'C', true);
+$pdf->Cell(30, 8, $overHeaders[2], 1, 0, 'C', true);
+$pdf->Cell(40, 8, $overHeaders[3], 1, 1, 'C', true);
 
 // Datos de OVER
 $pdf->SetFont('helvetica', '', 9);
@@ -897,18 +900,17 @@ $pdf->Ln(10);
 // Procesar usuarios con ganancias
 $usuariosConGanancias = [];
 foreach ($ventas as $venta) {
-    // Procesar Liner
-    $nombreLiner = !empty($venta['liner_nombre_manual']) && trim($venta['liner_nombre_manual']) !== ''
-        ? trim($venta['liner_nombre_manual'])
-        : (!empty($venta['liner_nombre']) && $venta['liner_nombre'] !== 'No asignado'
-            ? trim($venta['liner_nombre'])
-            : null);
+    foreach ($rolesVenta as $rol => [$campoManual, $campoNombre, $campoGanancia]) {
+        $nombre = nombreEnRol($venta, $campoManual, $campoNombre);
+        $ganancia = (float)($venta[$campoGanancia] ?? 0);
+        if (!$nombre || $ganancia <= 0) {
+            continue;
+        }
 
-    if ($nombreLiner && (float)($venta['ganancia_liner'] ?? 0) > 0) {
-        $claveUsuario = normalizarNombre($nombreLiner);
+        $claveUsuario = normalizarNombre($nombre);
         if (!isset($usuariosConGanancias[$claveUsuario])) {
             $usuariosConGanancias[$claveUsuario] = [
-                'nombre' => $nombreLiner,
+                'nombre' => $nombre,
                 'ganancia_total' => 0,
                 'ventas_count' => 0,
                 'roles' => [],
@@ -917,95 +919,10 @@ foreach ($ventas as $venta) {
                 'over_por_sala' => []
             ];
         }
-        $ganancia = (float)($venta['ganancia_liner'] ?? 0);
         $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $ganancia;
         $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-        if (!in_array('Liner', $usuariosConGanancias[$claveUsuario]['roles'])) {
-            $usuariosConGanancias[$claveUsuario]['roles'][] = 'Liner';
-        }
-    }
-
-    // Procesar Closer 1
-    $nombreCloser1 = !empty($venta['closer1_nombre_manual']) && trim($venta['closer1_nombre_manual']) !== ''
-        ? trim($venta['closer1_nombre_manual'])
-        : (!empty($venta['closer1_nombre']) && $venta['closer1_nombre'] !== 'No asignado'
-            ? trim($venta['closer1_nombre'])
-            : null);
-
-    if ($nombreCloser1 && (float)($venta['ganancia_closer1'] ?? 0) > 0) {
-        $claveUsuario = normalizarNombre($nombreCloser1);
-        if (!isset($usuariosConGanancias[$claveUsuario])) {
-            $usuariosConGanancias[$claveUsuario] = [
-                'nombre' => $nombreCloser1,
-                'ganancia_total' => 0,
-                'ventas_count' => 0,
-                'roles' => [],
-                'tiene_over' => false,
-                'over_config' => null,
-                'over_por_sala' => []
-            ];
-        }
-        $ganancia = (float)($venta['ganancia_closer1'] ?? 0);
-        $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $ganancia;
-        $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-        if (!in_array('Closer 1', $usuariosConGanancias[$claveUsuario]['roles'])) {
-            $usuariosConGanancias[$claveUsuario]['roles'][] = 'Closer 1';
-        }
-    }
-
-    // Procesar Closer 2
-    $nombreCloser2 = !empty($venta['closer2_nombre_manual']) && trim($venta['closer2_nombre_manual']) !== ''
-        ? trim($venta['closer2_nombre_manual'])
-        : (!empty($venta['closer2_nombre']) && $venta['closer2_nombre'] !== 'No asignado'
-            ? trim($venta['closer2_nombre'])
-            : null);
-
-    if ($nombreCloser2 && (float)($venta['ganancia_closer2'] ?? 0) > 0) {
-        $claveUsuario = normalizarNombre($nombreCloser2);
-        if (!isset($usuariosConGanancias[$claveUsuario])) {
-            $usuariosConGanancias[$claveUsuario] = [
-                'nombre' => $nombreCloser2,
-                'ganancia_total' => 0,
-                'ventas_count' => 0,
-                'roles' => [],
-                'tiene_over' => false,
-                'over_config' => null,
-                'over_por_sala' => []
-            ];
-        }
-        $ganancia = (float)($venta['ganancia_closer2'] ?? 0);
-        $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $ganancia;
-        $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-        if (!in_array('Closer 2', $usuariosConGanancias[$claveUsuario]['roles'])) {
-            $usuariosConGanancias[$claveUsuario]['roles'][] = 'Closer 2';
-        }
-    }
-
-    // Procesar Front
-    $nombreFront = !empty($venta['full_stack_nombre_manual']) && trim($venta['full_stack_nombre_manual']) !== ''
-        ? trim($venta['full_stack_nombre_manual'])
-        : (!empty($venta['front_nombre']) && $venta['front_nombre'] !== 'No asignado'
-            ? trim($venta['front_nombre'])
-            : null);
-
-    if ($nombreFront && (float)($venta['ganancia_fullstack'] ?? 0) > 0) {
-        $claveUsuario = normalizarNombre($nombreFront);
-        if (!isset($usuariosConGanancias[$claveUsuario])) {
-            $usuariosConGanancias[$claveUsuario] = [
-                'nombre' => $nombreFront,
-                'ganancia_total' => 0,
-                'ventas_count' => 0,
-                'roles' => [],
-                'tiene_over' => false,
-                'over_config' => null,
-                'over_por_sala' => []
-            ];
-        }
-        $ganancia = (float)($venta['ganancia_fullstack'] ?? 0);
-        $usuariosConGanancias[$claveUsuario]['ganancia_total'] += $ganancia;
-        $usuariosConGanancias[$claveUsuario]['ventas_count']++;
-        if (!in_array('Front', $usuariosConGanancias[$claveUsuario]['roles'])) {
-            $usuariosConGanancias[$claveUsuario]['roles'][] = 'Front';
+        if (!in_array($rol, $usuariosConGanancias[$claveUsuario]['roles'])) {
+            $usuariosConGanancias[$claveUsuario]['roles'][] = $rol;
         }
     }
 }
@@ -1168,17 +1085,10 @@ if (!empty($usuariosConGanancias)) {
             $pdf->SetFont('helvetica', 'B', 8);
             $pdf->SetFillColor(220, 220, 220);
 
-            if ($salaId > 0) {
-                $pdf->Cell(60, 6, 'Sala', 1, 0, 'C', true);
-                $pdf->Cell(40, 6, 'Venta Neto Sala', 1, 0, 'C', true);
-                $pdf->Cell(30, 6, 'Porcentaje', 1, 0, 'C', true);
-                $pdf->Cell(40, 6, 'Over Sala', 1, 1, 'C', true);
-            } else {
-                $pdf->Cell(60, 6, 'Sala', 1, 0, 'C', true);
-                $pdf->Cell(40, 6, 'Venta Neto Sala', 1, 0, 'C', true);
-                $pdf->Cell(30, 6, 'Porcentaje', 1, 0, 'C', true);
-                $pdf->Cell(40, 6, 'Over Sala', 1, 1, 'C', true);
-            }
+            $pdf->Cell(60, 6, 'Sala', 1, 0, 'C', true);
+            $pdf->Cell(40, 6, 'Venta Neto Sala', 1, 0, 'C', true);
+            $pdf->Cell(30, 6, 'Porcentaje', 1, 0, 'C', true);
+            $pdf->Cell(40, 6, 'Over Sala', 1, 1, 'C', true);
 
             $pdf->SetFont('helvetica', '', 8);
             $fill = false;
@@ -1245,71 +1155,21 @@ if (!empty($usuariosConGanancias)) {
         ];
     }
 
-    // Procesar ganancia volumen
+    // Procesar ganancia volumen (Liner y Closer 1 = bruta/2, Closer 2 = bruta/3, Front = bruta)
+    $divisorVolumen = ['Liner' => 2, 'Closer 1' => 2, 'Closer 2' => 3, 'Front' => 1];
     foreach ($ventas as $venta) {
         $ventaBruta = (float)$venta['precio'];
 
-        // Liner
-        $nombreLiner = !empty($venta['liner_nombre_manual']) && trim($venta['liner_nombre_manual']) !== ''
-            ? trim($venta['liner_nombre_manual'])
-            : (!empty($venta['liner_nombre']) && $venta['liner_nombre'] !== 'No asignado'
-                ? trim($venta['liner_nombre'])
-                : null);
-
-        if ($nombreLiner) {
-            $claveUsuario = normalizarNombre($nombreLiner);
-            if (isset($gananciaVolumenUsuarios[$claveUsuario])) {
-                $gananciaVolumen = $ventaBruta / 2;
-                $gananciaVolumenUsuarios[$claveUsuario]['ganancia_volumen'] += $gananciaVolumen;
-                $gananciaVolumenUsuarios[$claveUsuario]['ganancia_por_rol']['Liner'] += $gananciaVolumen;
+        foreach ($rolesVenta as $rol => [$campoManual, $campoNombre]) {
+            $nombre = nombreEnRol($venta, $campoManual, $campoNombre);
+            if (!$nombre) {
+                continue;
             }
-        }
-
-        // Closer 1
-        $nombreCloser1 = !empty($venta['closer1_nombre_manual']) && trim($venta['closer1_nombre_manual']) !== ''
-            ? trim($venta['closer1_nombre_manual'])
-            : (!empty($venta['closer1_nombre']) && $venta['closer1_nombre'] !== 'No asignado'
-                ? trim($venta['closer1_nombre'])
-                : null);
-
-        if ($nombreCloser1) {
-            $claveUsuario = normalizarNombre($nombreCloser1);
+            $claveUsuario = normalizarNombre($nombre);
             if (isset($gananciaVolumenUsuarios[$claveUsuario])) {
-                $gananciaVolumen = $ventaBruta / 2;
+                $gananciaVolumen = $ventaBruta / $divisorVolumen[$rol];
                 $gananciaVolumenUsuarios[$claveUsuario]['ganancia_volumen'] += $gananciaVolumen;
-                $gananciaVolumenUsuarios[$claveUsuario]['ganancia_por_rol']['Closer 1'] += $gananciaVolumen;
-            }
-        }
-
-        // Closer 2
-        $nombreCloser2 = !empty($venta['closer2_nombre_manual']) && trim($venta['closer2_nombre_manual']) !== ''
-            ? trim($venta['closer2_nombre_manual'])
-            : (!empty($venta['closer2_nombre']) && $venta['closer2_nombre'] !== 'No asignado'
-                ? trim($venta['closer2_nombre'])
-                : null);
-
-        if ($nombreCloser2) {
-            $claveUsuario = normalizarNombre($nombreCloser2);
-            if (isset($gananciaVolumenUsuarios[$claveUsuario])) {
-                $gananciaVolumen = $ventaBruta / 3;
-                $gananciaVolumenUsuarios[$claveUsuario]['ganancia_volumen'] += $gananciaVolumen;
-                $gananciaVolumenUsuarios[$claveUsuario]['ganancia_por_rol']['Closer 2'] += $gananciaVolumen;
-            }
-        }
-
-        // Front
-        $nombreFront = !empty($venta['full_stack_nombre_manual']) && trim($venta['full_stack_nombre_manual']) !== ''
-            ? trim($venta['full_stack_nombre_manual'])
-            : (!empty($venta['front_nombre']) && $venta['front_nombre'] !== 'No asignado'
-                ? trim($venta['front_nombre'])
-                : null);
-
-        if ($nombreFront) {
-            $claveUsuario = normalizarNombre($nombreFront);
-            if (isset($gananciaVolumenUsuarios[$claveUsuario])) {
-                $gananciaVolumen = $ventaBruta;
-                $gananciaVolumenUsuarios[$claveUsuario]['ganancia_volumen'] += $gananciaVolumen;
-                $gananciaVolumenUsuarios[$claveUsuario]['ganancia_por_rol']['Front'] += $gananciaVolumen;
+                $gananciaVolumenUsuarios[$claveUsuario]['ganancia_por_rol'][$rol] += $gananciaVolumen;
             }
         }
     }
@@ -1491,7 +1351,6 @@ if (!empty($plataformaIds) && !empty($ventas)) {
             // Datos de ventas (limitar a 20)
             $pdf->SetFont('helvetica', '', 7);
             $fill = false;
-            $contador = 0;
 
             $ventasMostrar = array_slice($plataformaData['ventas'], 0, 20);
             foreach ($ventasMostrar as $venta) {
@@ -1519,7 +1378,6 @@ if (!empty($plataformaIds) && !empty($ventas)) {
                 $pdf->Cell($widths[5], 6, $sala, 1, 1, 'C', $fill);
 
                 $fill = !$fill;
-                $contador++;
             }
 
             if (count($plataformaData['ventas']) > 20) {

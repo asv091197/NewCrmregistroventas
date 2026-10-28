@@ -17,7 +17,8 @@ set_exception_handler(function($exception) {
 
 require_once __DIR__ . '/../../session_config.php'; session_start();
 require_once __DIR__ . '/../../includes/registro_acciones.php';
-if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin') {
+$rol = $_SESSION['rol'] ?? '';
+if (!isset($_SESSION['usuario_id']) || ($rol !== 'admin' && $rol !== 'superadmin')) {
     http_response_code(403);
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Acceso no autorizado']);
@@ -58,19 +59,19 @@ try {
     $stmt = $pdo->prepare("SELECT nombre, apepat, apemat FROM usuarios WHERE id = :id");
     $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     $stmt->execute();
-    
-    if ($stmt->rowCount() === 0) {
+    $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$usuario) {
         http_response_code(404);
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => 'Usuario no encontrado']);
         exit;
     }
-    
-    $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
-    $nombreCompleto = "{$usuario['nombre']} {$usuario['apepat']} {$usuario['apemat']}";
-    
+
+    $nombreCompleto = trim("{$usuario['nombre']} {$usuario['apepat']} {$usuario['apemat']}");
+
     // Prevenir que un usuario se elimine a sí mismo
-    if ($id == $_SESSION['usuario_id']) {
+    if ($id === (int)$_SESSION['usuario_id']) {
         http_response_code(400);
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => 'No puede eliminarse a sí mismo']);
@@ -82,8 +83,7 @@ try {
     $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     $stmt->execute();
     
-    error_log("Usuario eliminado: ID $id - $nombreCompleto por el usuario {$_SESSION['usuario_id']}");
-    registrarAccion($pdo, 'DELETE', 'usuarios', $id, ['nombre' => trim($nombreCompleto)]);
+    registrarAccion($pdo, 'DELETE', 'usuarios', $id, ['nombre' => $nombreCompleto]);
     
     header('Content-Type: application/json');
     echo json_encode(['success' => true, 'message' => "Usuario $nombreCompleto eliminado correctamente"]);

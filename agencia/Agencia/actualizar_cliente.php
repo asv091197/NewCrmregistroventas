@@ -5,7 +5,8 @@ require_once __DIR__ . '/../../includes/db.php';
 try {
     $pdo = conexionPDO();
 } catch (PDOException $e) {
-    echo "Error de conexión: " . $e->getMessage();
+    error_log("Error de conexión: " . $e->getMessage());
+    echo "Error de conexión a la base de datos";
     exit;
 }
 
@@ -15,7 +16,7 @@ if (empty($_POST['id'])) {
     exit;
 }
 
-$id              = $_POST['id'];
+$id              = intval($_POST['id']);
 $nombre          = $_POST['nombre'] ?? '';
 $apepat          = $_POST['apepat'] ?? '';
 $apemat          = $_POST['apemat'] ?? '';
@@ -25,16 +26,11 @@ $asunto          = $_POST['asunto'] ?? '';
 $descripcion     = $_POST['descripcion'] ?? '';
 $usuarios_id     = !empty($_POST['usuarios_id']) ? intval($_POST['usuarios_id']) : null;
 $usuario_closer  = !empty($_POST['usuario_closer']) ? intval($_POST['usuario_closer']) : null;
-$sala_id         = !empty($_POST['sala_id']) ? intval($_POST['sala_id']) : null; // Manejar 0 como NULL
-
-// Validar que sala_id no sea 0
-if ($sala_id === 0) {
-    $sala_id = null;
-}
+$sala_id         = !empty($_POST['sala_id']) ? intval($_POST['sala_id']) : null; // 0 o vacío se guarda como NULL
 
 // Actualizar cliente
 try {
-    $sql = "UPDATE cliente 
+    $sql = "UPDATE cliente
             SET nombre = :nombre,
                 apepat = :apepat,
                 apemat = :apemat,
@@ -64,7 +60,7 @@ try {
 
     echo "Cliente actualizado correctamente";
 } catch (PDOException $e) {
-    echo "Error al actualizar el cliente: " . $e->getMessage();
     error_log("Error actualizar cliente: " . $e->getMessage() . " - sala_id: " . ($sala_id ?? 'NULL'));
+    echo "Error al actualizar el cliente";
 }
 ?>

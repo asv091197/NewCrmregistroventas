@@ -6,11 +6,6 @@ while (ob_get_level()) {
 }
 ob_start();
 
-// Habilitar visualización de errores temporalmente para diagnóstico
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 // Verificar si ya se han enviado headers
 if (headers_sent()) {
     die('Error: Headers ya han sido enviados. Verifique que no haya espacios en blanco o caracteres antes de <?php.');
@@ -164,10 +159,6 @@ try {
         $venta['closer1_nombre'] = limpiarTexto($venta['closer1_nombre']);
         $venta['closer2_nombre'] = limpiarTexto($venta['closer2_nombre']);
         $venta['front_nombre'] = limpiarTexto($venta['front_nombre']);
-        $venta['cliente'] = limpiarTexto($venta['cliente']);
-        $venta['apepat'] = limpiarTexto($venta['apepat']);
-        $venta['apemat'] = limpiarTexto($venta['apemat']);
-        $venta['producto'] = limpiarTexto($venta['producto']);
     }
     unset($venta); // Romper la referencia
     
@@ -182,15 +173,12 @@ if (empty($ventas)) {
 
 // Obtener los nombres de las plataformas filtradas
 $plataformasNombres = [];
-$plataformasInfo = [];
 if (!empty($plataformaIds)) {
     try {
-        $placeholders = str_repeat('?,', count($plataformaIds) - 1) . '?';
         $stmtPlataformas = $pdo->prepare("SELECT id, nombre_ancronimo, plataformaspei FROM plataforma WHERE id IN ($placeholders)");
         $stmtPlataformas->execute($plataformaIds);
-        $plataformasInfo = $stmtPlataformas->fetchAll(PDO::FETCH_ASSOC);
-        
-        foreach ($plataformasInfo as $plataforma) {
+
+        foreach ($stmtPlataformas->fetchAll(PDO::FETCH_ASSOC) as $plataforma) {
             $plataformasNombres[] = $plataforma['nombre_ancronimo'] . ' (' . $plataforma['plataformaspei'] . ')';
         }
     } catch (PDOException $e) {
@@ -254,152 +242,34 @@ function applySafeStyle($sheet, $range, $styleType) {
 // PROCESAR USUARIOS CON GANANCIAS PARA GANANCIA VOLUMEN
 // ============================================================================
 
+// Roles de cada venta: [campo nombre (solo apellido materno), campo id de usuario, campo ganancia]
+$rolesVenta = [
+    'Liner'    => ['liner_nombre', 'liner_id', 'ganancia_liner'],
+    'Closer 1' => ['closer1_nombre', 'closer1_id', 'ganancia_closer1'],
+    'Closer 2' => ['closer2_nombre', 'closer2_id', 'ganancia_closer2'],
+    'Front'    => ['front_nombre', 'full_stack_id', 'ganancia_fullstack'],
+];
+
 $usuariosConGanancias = [];
 if ($tieneComisiones && !empty($ventas)) {
     foreach ($ventas as $venta) {
-        // Procesar Liner (solo apellido materno)
-        if (!empty($venta['liner_nombre']) && $venta['liner_nombre'] !== 'No asignado') {
-            $userId = $venta['liner_id'];
+        foreach ($rolesVenta as $rol => [$campoNombre, $campoId, $campoGanancia]) {
+            if (empty($venta[$campoNombre]) || $venta[$campoNombre] === 'No asignado') {
+                continue;
+            }
+            $userId = $venta[$campoId];
             if (!isset($usuariosConGanancias[$userId])) {
                 $usuariosConGanancias[$userId] = [
-                    'nombre' => $venta['liner_nombre'],
-                    'titulo_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $venta['liner_nombre']), 0, 25),
-                    'roles' => [], 
-                    'ventas_count' => 0, 
-                    'ganancia_total' => 0, 
-                    'ganancia_por_rol' => ['Liner' => 0, 'Closer 1' => 0, 'Closer 2' => 0, 'Front' => 0],
-                    'ventas' => [],
-                    'tiene_over' => false,
-                    'over_config' => null
+                    'nombre' => $venta[$campoNombre],
+                    'ventas_count' => 0,
+                    'ventas' => []
                 ];
             }
-            $gananciaLiner = (float)($venta['ganancia_liner'] ?? 0);
-            if ($gananciaLiner > 0) {
+            $ganancia = (float)($venta[$campoGanancia] ?? 0);
+            if ($ganancia > 0) {
                 $usuariosConGanancias[$userId]['ventas_count']++;
-                $usuariosConGanancias[$userId]['ganancia_total'] += $gananciaLiner;
-                $usuariosConGanancias[$userId]['ganancia_por_rol']['Liner'] += $gananciaLiner;
-                if (!in_array('Liner', $usuariosConGanancias[$userId]['roles'])) {
-                    $usuariosConGanancias[$userId]['roles'][] = 'Liner';
-                }
                 $usuariosConGanancias[$userId]['ventas'][] = [
-                    'id' => $venta['id'],
-                    'fecha' => $venta['fecha'], 
-                    'cliente_nombre' => $venta['cliente_nombre'],
-                    'rol_en_venta' => 'Liner', 
-                    'ganancia_en_venta' => $gananciaLiner,
-                    'plataforma_nombre_completo' => $venta['plataforma_nombre_completo'] ?? 'N/A',
-                    'precio_neto' => $venta['precio_neto'],
-                    'venta_bruto' => $venta['precio']
-                ];
-            }
-        }
-        
-        // Procesar Closer 1 (solo apellido materno)
-        if (!empty($venta['closer1_nombre']) && $venta['closer1_nombre'] !== 'No asignado') {
-            $userId = $venta['closer1_id'];
-            if (!isset($usuariosConGanancias[$userId])) {
-                $usuariosConGanancias[$userId] = [
-                    'nombre' => $venta['closer1_nombre'],
-                    'titulo_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $venta['closer1_nombre']), 0, 25),
-                    'roles' => [], 
-                    'ventas_count' => 0, 
-                    'ganancia_total' => 0, 
-                    'ganancia_por_rol' => ['Liner' => 0, 'Closer 1' => 0, 'Closer 2' => 0, 'Front' => 0],
-                    'ventas' => [],
-                    'tiene_over' => false,
-                    'over_config' => null
-                ];
-            }
-            $gananciaCloser1 = (float)($venta['ganancia_closer1'] ?? 0);
-            if ($gananciaCloser1 > 0) {
-                $usuariosConGanancias[$userId]['ventas_count']++;
-                $usuariosConGanancias[$userId]['ganancia_total'] += $gananciaCloser1;
-                $usuariosConGanancias[$userId]['ganancia_por_rol']['Closer 1'] += $gananciaCloser1;
-                if (!in_array('Closer 1', $usuariosConGanancias[$userId]['roles'])) {
-                    $usuariosConGanancias[$userId]['roles'][] = 'Closer 1';
-                }
-                $usuariosConGanancias[$userId]['ventas'][] = [
-                    'id' => $venta['id'],
-                    'fecha' => $venta['fecha'], 
-                    'cliente_nombre' => $venta['cliente_nombre'],
-                    'rol_en_venta' => 'Closer 1', 
-                    'ganancia_en_venta' => $gananciaCloser1,
-                    'plataforma_nombre_completo' => $venta['plataforma_nombre_completo'] ?? 'N/A',
-                    'precio_neto' => $venta['precio_neto'],
-                    'venta_bruto' => $venta['precio']
-                ];
-            }
-        }
-        
-        // Procesar Closer 2 (solo apellido materno)
-        if (!empty($venta['closer2_nombre']) && $venta['closer2_nombre'] !== 'No asignado') {
-            $userId = $venta['closer2_id'];
-            if (!isset($usuariosConGanancias[$userId])) {
-                $usuariosConGanancias[$userId] = [
-                    'nombre' => $venta['closer2_nombre'],
-                    'titulo_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $venta['closer2_nombre']), 0, 25),
-                    'roles' => [], 
-                    'ventas_count' => 0, 
-                    'ganancia_total' => 0, 
-                    'ganancia_por_rol' => ['Liner' => 0, 'Closer 1' => 0, 'Closer 2' => 0, 'Front' => 0],
-                    'ventas' => [],
-                    'tiene_over' => false,
-                    'over_config' => null
-                ];
-            }
-            $gananciaCloser2 = (float)($venta['ganancia_closer2'] ?? 0);
-            if ($gananciaCloser2 > 0) {
-                $usuariosConGanancias[$userId]['ventas_count']++;
-                $usuariosConGanancias[$userId]['ganancia_total'] += $gananciaCloser2;
-                $usuariosConGanancias[$userId]['ganancia_por_rol']['Closer 2'] += $gananciaCloser2;
-                if (!in_array('Closer 2', $usuariosConGanancias[$userId]['roles'])) {
-                    $usuariosConGanancias[$userId]['roles'][] = 'Closer 2';
-                }
-                $usuariosConGanancias[$userId]['ventas'][] = [
-                    'id' => $venta['id'],
-                    'fecha' => $venta['fecha'], 
-                    'cliente_nombre' => $venta['cliente_nombre'],
-                    'rol_en_venta' => 'Closer 2', 
-                    'ganancia_en_venta' => $gananciaCloser2,
-                    'plataforma_nombre_completo' => $venta['plataforma_nombre_completo'] ?? 'N/A',
-                    'precio_neto' => $venta['precio_neto'],
-                    'venta_bruto' => $venta['precio']
-                ];
-            }
-        }
-        
-        // Procesar Front (solo apellido materno)
-        if (!empty($venta['front_nombre']) && $venta['front_nombre'] !== 'No asignado') {
-            $userId = $venta['full_stack_id'];
-            if (!isset($usuariosConGanancias[$userId])) {
-                $usuariosConGanancias[$userId] = [
-                    'nombre' => $venta['front_nombre'],
-                    'titulo_limpio' => substr(preg_replace('/[^\w\sáéíóúÁÉÍÓÚñÑ]/u', '', $venta['front_nombre']), 0, 25),
-                    'roles' => [], 
-                    'ventas_count' => 0, 
-                    'ganancia_total' => 0, 
-                    'ganancia_por_rol' => ['Liner' => 0, 'Closer 1' => 0, 'Closer 2' => 0, 'Front' => 0],
-                    'ventas' => [],
-                    'tiene_over' => false,
-                    'over_config' => null
-                ];
-            }
-            $gananciaFront = (float)($venta['ganancia_fullstack'] ?? 0);
-            if ($gananciaFront > 0) {
-                $usuariosConGanancias[$userId]['ventas_count']++;
-                $usuariosConGanancias[$userId]['ganancia_total'] += $gananciaFront;
-                $usuariosConGanancias[$userId]['ganancia_por_rol']['Front'] += $gananciaFront;
-                if (!in_array('Front', $usuariosConGanancias[$userId]['roles'])) {
-                    $usuariosConGanancias[$userId]['roles'][] = 'Front';
-                }
-                $usuariosConGanancias[$userId]['ventas'][] = [
-                    'id' => $venta['id'],
-                    'fecha' => $venta['fecha'], 
-                    'cliente_nombre' => $venta['cliente_nombre'],
-                    'rol_en_venta' => 'Front', 
-                    'ganancia_en_venta' => $gananciaFront,
-                    'plataforma_nombre_completo' => $venta['plataforma_nombre_completo'] ?? 'N/A',
-                    'precio_neto' => $venta['precio_neto'],
+                    'rol_en_venta' => $rol,
                     'venta_bruto' => $venta['precio']
                 ];
             }
@@ -441,15 +311,9 @@ $sheet->getPageSetup()
 
 if (!empty($usuariosConGanancias)) {
     try {
-        $volumenSheet = $spreadsheet->getActiveSheet();
-        $volumenSheet->setTitle('Ganancia Volumen');
-        
-        $volumenSheet->getPageSetup()
-            ->setOrientation(PageSetup::ORIENTATION_LANDSCAPE)
-            ->setPaperSize(PageSetup::PAPERSIZE_A4)
-            ->setFitToWidth(1)
-            ->setFitToHeight(0);
-        
+        // Es la misma hoja principal (ya tiene título y configuración de página)
+        $volumenSheet = $sheet;
+
         // Título
         $volumenSheet->mergeCells('A1:G2');
         $volumenSheet->setCellValue('A1', 'RESUMEN DE GANANCIA VOLUMEN POR USUARIO Y ROL');
@@ -465,12 +329,13 @@ if (!empty($usuariosConGanancias)) {
             $filtroTexto = "Hasta: " . date('d/m/Y', strtotime($fechaFin));
         }
 
+        // Texto plano en la celda (Excel no interpreta HTML)
         if (!empty($busqueda)) {
-            $filtroTexto .= empty($filtroTexto) ? "Búsqueda: " . htmlspecialchars($busqueda) : " | Búsqueda: " . htmlspecialchars($busqueda);
+            $filtroTexto .= " | Búsqueda: " . $busqueda;
         }
 
         if (!empty($plataformasNombres)) {
-            $filtroTexto .= empty($filtroTexto) ? "Plataformas: " . implode(', ', $plataformasNombres) : " | Plataformas: " . implode(', ', $plataformasNombres);
+            $filtroTexto .= " | Plataformas: " . implode(', ', $plataformasNombres);
         }
 
         $volumenSheet->mergeCells('A3:G3');
@@ -610,26 +475,26 @@ if (!empty($usuariosConGanancias)) {
         $distribucionRow++;
         $volumenSheet->setCellValue('A' . $distribucionRow, 'Liner');
         $volumenSheet->setCellValue('B' . $distribucionRow, "=B" . $filaTotales);
-        $volumenSheet->setCellValue('C' . $distribucionRow, "=B" . $distribucionRow . "/$F$" . $filaTotales);
+        $volumenSheet->setCellValue('C' . $distribucionRow, "=B" . $distribucionRow . '/$F$' . $filaTotales);
         
         $distribucionRow++;
         $volumenSheet->setCellValue('A' . $distribucionRow, 'Closer 1');
         $volumenSheet->setCellValue('B' . $distribucionRow, "=C" . $filaTotales);
-        $volumenSheet->setCellValue('C' . $distribucionRow, "=B" . $distribucionRow . "/$F$" . $filaTotales);
+        $volumenSheet->setCellValue('C' . $distribucionRow, "=B" . $distribucionRow . '/$F$' . $filaTotales);
         
         $distribucionRow++;
         $volumenSheet->setCellValue('A' . $distribucionRow, 'Closer 2');
         $volumenSheet->setCellValue('B' . $distribucionRow, "=D" . $filaTotales);
-        $volumenSheet->setCellValue('C' . $distribucionRow, "=B" . $distribucionRow . "/$F$" . $filaTotales);
+        $volumenSheet->setCellValue('C' . $distribucionRow, "=B" . $distribucionRow . '/$F$' . $filaTotales);
         
         $distribucionRow++;
         $volumenSheet->setCellValue('A' . $distribucionRow, 'Front');
         $volumenSheet->setCellValue('B' . $distribucionRow, "=E" . $filaTotales);
-        $volumenSheet->setCellValue('C' . $distribucionRow, "=B" . $distribucionRow . "/$F$" . $filaTotales);
+        $volumenSheet->setCellValue('C' . $distribucionRow, "=B" . $distribucionRow . '/$F$' . $filaTotales);
         
         // Formato para la distribución
         $volumenSheet->getStyle('B' . ($distribucionRow-4) . ':B' . $distribucionRow)->getNumberFormat()->setFormatCode('"$"#,##0.00');
-        $volumenSheet->getStyle('C' . ($distribucionRow-4) . ':C' . $distribucionRow)->getNumberFormat()->setFormatCode('0.00%"');
+        $volumenSheet->getStyle('C' . ($distribucionRow-4) . ':C' . $distribucionRow)->getNumberFormat()->setFormatCode('0.00%');
         applySafeStyle($volumenSheet, 'B' . ($distribucionRow-4) . ':C' . $distribucionRow, 'formula');
         
         // Formato numérico para todas las celdas de montos

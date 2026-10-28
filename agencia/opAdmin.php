@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../includes/db.php';
 
 ini_set('session.gc_probability', 1);
@@ -31,19 +32,17 @@ if (!isset($_SESSION['usuario_id'])) {
 
 
 
-// Redirección según el rol
+// Redirección según el rol (admin y superadmin se quedan en esta página)
 
-if ($_SESSION['rol'] == 'usuario') {
+$rol = $_SESSION['rol'] ?? '';
+
+if ($rol === 'usuario') {
 
     header("Location: agencia.php");
 
     exit;
 
-} elseif ($_SESSION['rol'] == 'admin' || $_SESSION['rol'] === 'superadmin') {
-
-    // El admin se queda en esta página
-
-} else {
+} elseif ($rol !== 'admin' && $rol !== 'superadmin') {
 
     header("Location: ./login.php");
 
@@ -61,25 +60,29 @@ require_once __DIR__ . '/config/database.php';
 
 // Obtener permisos del admin desde la base de datos
 
-$admin_id = $_SESSION['usuario_id'];
+$stmt_permisos = $conn->prepare("SELECT acceso_todas_salas, salas_permitidas FROM usuarios WHERE id = ?");
 
-$query_permisos = "SELECT acceso_todas_salas, salas_permitidas FROM usuarios WHERE id = ?";
+$stmt_permisos->execute([$_SESSION['usuario_id']]);
 
-$stmt_permisos = $conn->prepare($query_permisos);
-
-$stmt_permisos->execute([$admin_id]);
-
-$permisos = $stmt_permisos->fetch(PDO::FETCH_ASSOC);
+$permisos = $stmt_permisos->fetch(PDO::FETCH_ASSOC) ?: [];
 
 
 
-$acceso_todas_salas = $permisos['acceso_todas_salas'];
+// Superadmin siempre tiene acceso a todas las salas
 
-$salas_permitidas = json_decode($permisos['salas_permitidas'] ?? '[]', true) ?: [];
+$acceso_todas_salas = $rol === 'superadmin' ? 1 : (int)($permisos['acceso_todas_salas'] ?? 0);
+
+$salas_permitidas = json_decode($permisos['salas_permitidas'] ?? '[]', true);
+
+if (!is_array($salas_permitidas)) {
+
+    $salas_permitidas = [];
+
+}
 
 
 
-// Determinar qué pestaña está activa y limpiar parámetros
+// Determinar qué pestaña está activa
 
 $tab_activa = 'diario';
 
@@ -87,7 +90,7 @@ $fecha_seleccionada = date('Y-m-d');
 
 $mes_seleccionado = date('Y-m');
 
-$sala_seleccionada = isset($_GET['sala']) ? $_GET['sala'] : 'todas';
+$sala_seleccionada = $_GET['sala'] ?? 'todas';
 
 
 
@@ -103,21 +106,13 @@ if ($acceso_todas_salas == 0 && !empty($salas_permitidas)) {
 
 
 
-// Si hay parámetro de fecha, mostrar solo fecha
+// Si hay parámetro de fecha se muestra la vista diaria; si solo hay mes, la mensual
 
 if (isset($_GET['fecha'])) {
 
-    $tab_activa = 'diario';
-
     $fecha_seleccionada = $_GET['fecha'];
 
-}
-
-
-
-// Si hay parámetro de mes (y no fecha), mostrar solo mes
-
-if (isset($_GET['mes']) && !isset($_GET['fecha'])) {
+} elseif (isset($_GET['mes'])) {
 
     $tab_activa = 'mensual';
 
@@ -129,13 +124,9 @@ if (isset($_GET['mes']) && !isset($_GET['fecha'])) {
 
 // Si hay parámetro de sala, validar que el admin tenga acceso
 
-if (isset($_GET['sala'])) {
+if (isset($_GET['sala']) && ($acceso_todas_salas == 1 || in_array($_GET['sala'], $salas_permitidas))) {
 
-    if ($acceso_todas_salas == 1 || in_array($_GET['sala'], $salas_permitidas)) {
-
-        $sala_seleccionada = $_GET['sala'];
-
-    }
+    $sala_seleccionada = $_GET['sala'];
 
 }
 
@@ -143,87 +134,59 @@ if (isset($_GET['sala'])) {
 
 // Obtener lista de salas disponibles según permisos
 
-if ($acceso_todas_salas == 1) {
-
-    $query_salas = "SELECT id, nombre FROM salas WHERE activo = 1 ORDER BY nombre";
-
-    $result_salas = $conn->query($query_salas);
-
-} else {
-
-    if (!empty($salas_permitidas)) {
-
-        $placeholders = implode(',', array_fill(0, count($salas_permitidas), '?'));
-
-        $query_salas = "SELECT id, nombre FROM salas WHERE activo = 1 AND id IN ($placeholders) ORDER BY nombre";
-
-        $stmt_salas = $conn->prepare($query_salas);
-
-
-
-        $stmt_salas->execute(array_values($salas_permitidas));
-
-        $result_salas = $stmt_salas;
-
-    } else {
-
-        // Si no tiene salas permitidas, mostrar solo una opción
-
-        $result_salas = false;
-
-    }
-
-}
-
-
-
 $salas = [];
 
-if ($result_salas) {
+if ($acceso_todas_salas == 1) {
 
-    while ($sala = $result_salas->fetch(PDO::FETCH_ASSOC)) {
+    $salas = $conn->query("SELECT id, nombre FROM salas WHERE activo = 1 ORDER BY nombre")->fetchAll(PDO::FETCH_ASSOC);
 
-        $salas[] = $sala;
+} elseif (!empty($salas_permitidas)) {
 
-    }
+    $placeholders = implode(',', array_fill(0, count($salas_permitidas), '?'));
+
+    $stmt_salas = $conn->prepare("SELECT id, nombre FROM salas WHERE activo = 1 AND id IN ($placeholders) ORDER BY nombre");
+
+    $stmt_salas->execute(array_values($salas_permitidas));
+
+    $salas = $stmt_salas->fetchAll(PDO::FETCH_ASSOC);
 
 }
 
 
 
-// Formatear fechas para mostrar
+// Formatear fechas para mostrar y para las consultas mensuales
 
 $fecha_mostrar = date('d M Y', strtotime($fecha_seleccionada));
 
-$anio_mes_mostrar = date('F Y', strtotime($mes_seleccionado . '-01'));
+$inicio_mes = strtotime($mes_seleccionado . '-01');
+
+$anio_mes_mostrar = date('F Y', $inicio_mes);
+
+$anio = date('Y', $inicio_mes);
+
+$mes = date('m', $inicio_mes);
 
 
 
-// Preparar condicionales para las consultas SQL
-
-$condicion_sala_diario = "";
-
-$condicion_sala_mensual = "";
-
-$condicion_sala_ventas_diario = "";
-
-$condicion_sala_ventas_mensual = "";
-
-
-
-// Obtener nombre de la sala seleccionada
+// Filtro por sala: condición SQL y parámetro extra para todas las consultas
 
 $nombre_sala_seleccionada = "Todas las salas";
 
-if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
+$filtra_sala = $sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada);
 
-    $sala_id = (int)$sala_seleccionada;
+$params_sala = $filtra_sala ? [(int)$sala_seleccionada] : [];
 
-    $query_nombre_sala = "SELECT nombre FROM salas WHERE id = ?";
+$condicion_sala_clientes = $filtra_sala ? " AND c.sala_id = ? " : "";
 
-    $stmt_nombre = $conn->prepare($query_nombre_sala);
+$condicion_sala_ventas = $filtra_sala ? " AND v.sala_id = ? " : "";
 
-    $stmt_nombre->execute([$sala_id]);
+
+
+if ($filtra_sala) {
+
+    $stmt_nombre = $conn->prepare("SELECT nombre FROM salas WHERE id = ?");
+
+    $stmt_nombre->execute($params_sala);
 
     if ($row = $stmt_nombre->fetch(PDO::FETCH_ASSOC)) {
 
@@ -231,33 +194,17 @@ if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
 
     }
 
-
-
-    // Agregar condiciones a las consultas
-
-    $condicion_sala_diario = " AND c.sala_id = ? ";
-
-    $condicion_sala_mensual = " AND c.sala_id = ? ";
-
-    $condicion_sala_ventas_diario = " AND v.sala_id = ? ";
-
-    $condicion_sala_ventas_mensual = " AND v.sala_id = ? ";
-
 }
 
 
 
 // ============================================================================
 
-// CONEXIÓN ADICIONAL PARA GANANCIA VOLUMEN
+// VENTA BRUTA (DIARIA, MENSUAL Y POR DÍA DEL MES)
 
 // ============================================================================
 
 
-
-$ganancia_volumen_diaria = 0;
-
-$ganancia_volumen_mensual = 0;
 
 $venta_bruta_diaria = 0;
 
@@ -267,308 +214,63 @@ $venta_bruta_mensual = 0;
 
 try {
 
-    $conn_ventas = conexionPDO();
+    // Venta bruta del día seleccionado
 
+    $stmt_ventas_dia = $conn->prepare("
 
-
-
-    // CALCULAR GANANCIA VOLUMEN DIARIA Y VENTA BRUTA
-
-    $query_ventas_dia = "
-
-        SELECT v.precio, 
-
-            v.liner_id, v.closer1_id, v.closer2_id, v.full_stack_id,
-
-            liner.apemat as liner_nombre,
-
-            c1.apemat as closer1_nombre, 
-
-            c2.apemat as closer2_nombre,
-
-            fs.apemat as front_nombre
+        SELECT COALESCE(SUM(v.precio), 0)
 
         FROM ventas_facturacion v
 
-        LEFT JOIN usuarios liner ON v.liner_id = liner.id
+        WHERE DATE(v.fecha) = ? {$condicion_sala_ventas}
 
-        LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
+    ");
 
-        LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
+    $stmt_ventas_dia->execute(array_merge([$fecha_seleccionada], $params_sala));
 
-        LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
+    $venta_bruta_diaria = (float)$stmt_ventas_dia->fetchColumn();
 
-        WHERE DATE(v.fecha) = ? 
 
-    ";
 
+    // Gráfica lineal: venta bruta por día del mes (todos los días inicializados en 0)
 
+    $dias_del_mes = range(1, (int)date('t', $inicio_mes));
 
-    // Agregar condición de sala si está seleccionada
+    $ventas_por_dia = array_fill_keys($dias_del_mes, 0);
 
-    if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
 
-        $query_ventas_dia .= " AND v.sala_id = ? ";
 
-    }
-
-
-
-    $stmt_ventas_dia = $conn_ventas->prepare($query_ventas_dia);
-
-    if ($stmt_ventas_dia) {
-
-        if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-
-            $stmt_ventas_dia->execute([$fecha_seleccionada, (int)$sala_seleccionada]);
-
-        } else {
-
-            $stmt_ventas_dia->execute([$fecha_seleccionada]);
-
-        }
-
-
-
-        while ($venta = $stmt_ventas_dia->fetch(PDO::FETCH_ASSOC)) {
-
-            $ventaBruta = (float)$venta['precio'];
-
-            $venta_bruta_diaria += $ventaBruta;
-
-
-
-            if (!empty($venta['liner_nombre'])) {
-
-                $ganancia_volumen_diaria += $ventaBruta / 2;
-
-            }
-
-            if (!empty($venta['closer1_nombre'])) {
-
-                $ganancia_volumen_diaria += $ventaBruta / 2;
-
-            }
-
-            if (!empty($venta['closer2_nombre'])) {
-
-                $ganancia_volumen_diaria += $ventaBruta / 3;
-
-            }
-
-            if (!empty($venta['front_nombre'])) {
-
-                $ganancia_volumen_diaria += $ventaBruta;
-
-            }
-
-        }
-
-    }
-
-
-
-    // CALCULAR GANANCIA VOLUMEN MENSUAL Y VENTA BRUTA
-
-    $anio = date('Y', strtotime($mes_seleccionado . '-01'));
-
-    $mes = date('m', strtotime($mes_seleccionado . '-01'));
-
-
-
-    $query_ventas_mes = "
-
-        SELECT v.precio, 
-
-            v.liner_id, v.closer1_id, v.closer2_id, v.full_stack_id,
-
-            liner.apemat as liner_nombre,
-
-            c1.apemat as closer1_nombre, 
-
-            c2.apemat as closer2_nombre,
-
-            fs.apemat as front_nombre
-
-        FROM ventas_facturacion v
-
-        LEFT JOIN usuarios liner ON v.liner_id = liner.id
-
-        LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
-
-        LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
-
-        LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
-
-        WHERE YEAR(v.fecha) = ? AND MONTH(v.fecha) = ?
-
-    ";
-
-
-
-    // Agregar condición de sala si está seleccionada
-
-    if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-
-        $query_ventas_mes .= " AND v.sala_id = ? ";
-
-    }
-
-
-
-    $stmt_ventas_mes = $conn_ventas->prepare($query_ventas_mes);
-
-    if ($stmt_ventas_mes) {
-
-        if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-
-            $stmt_ventas_mes->execute([$anio, $mes, (int)$sala_seleccionada]);
-
-        } else {
-
-            $stmt_ventas_mes->execute([$anio, $mes]);
-
-        }
-
-
-
-        while ($venta = $stmt_ventas_mes->fetch(PDO::FETCH_ASSOC)) {
-
-            $ventaBruta = (float)$venta['precio'];
-
-            $venta_bruta_mensual += $ventaBruta;
-
-
-
-            if (!empty($venta['liner_nombre'])) {
-
-                $ganancia_volumen_mensual += $ventaBruta / 2;
-
-            }
-
-            if (!empty($venta['closer1_nombre'])) {
-
-                $ganancia_volumen_mensual += $ventaBruta / 2;
-
-            }
-
-            if (!empty($venta['closer2_nombre'])) {
-
-                $ganancia_volumen_mensual += $ventaBruta / 3;
-
-            }
-
-            if (!empty($venta['front_nombre'])) {
-
-                $ganancia_volumen_mensual += $ventaBruta;
-
-            }
-
-        }
-
-    }
-
-
-
-    // ============================================================================
-
-    // CONSULTA PARA GRAFICA LINEAL - VENTA BRUTA POR DÍA DEL MES
-
-    // ============================================================================
-
-
-
-    $ventas_por_dia = array();
-
-    $dias_del_mes = array();
-
-
-
-    // Obtener número de días en el mes seleccionado
-
-    $ultimo_dia = date('t', strtotime($mes_seleccionado . '-01'));
-
-
-
-    // Inicializar array con todos los días del mes (1 al último día)
-
-    for ($dia = 1; $dia <= $ultimo_dia; $dia++) {
-
-        $fecha_dia = sprintf('%04d-%02d-%02d', $anio, $mes, $dia);
-
-        $dias_del_mes[] = $dia;
-
-        $ventas_por_dia[$dia] = 0; // Inicializar en 0
-
-    }
-
-
-
-    // Consultar ventas por día del mes
-
-    $query_ventas_por_dia = "
+    $stmt_ventas_mes = $conn->prepare("
 
         SELECT DAY(v.fecha) as dia, SUM(v.precio) as total_venta
 
         FROM ventas_facturacion v
 
-        WHERE YEAR(v.fecha) = ? AND MONTH(v.fecha) = ?
+        WHERE YEAR(v.fecha) = ? AND MONTH(v.fecha) = ? {$condicion_sala_ventas}
 
-    ";
+        GROUP BY DAY(v.fecha) ORDER BY dia
 
+    ");
 
+    $stmt_ventas_mes->execute(array_merge([$anio, $mes], $params_sala));
 
-    // Agregar condición de sala si está seleccionada
+    while ($row = $stmt_ventas_mes->fetch(PDO::FETCH_ASSOC)) {
 
-    if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-
-        $query_ventas_por_dia .= " AND v.sala_id = ? ";
-
-    }
-
-
-
-    $query_ventas_por_dia .= " GROUP BY DAY(v.fecha) ORDER BY dia";
-
-
-
-    $stmt_ventas_dia = $conn_ventas->prepare($query_ventas_por_dia);
-
-    if ($stmt_ventas_dia) {
-
-        if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-
-            $stmt_ventas_dia->execute([$anio, $mes, (int)$sala_seleccionada]);
-
-        } else {
-
-            $stmt_ventas_dia->execute([$anio, $mes]);
-
-        }
-
-
-
-        while ($row = $stmt_ventas_dia->fetch(PDO::FETCH_ASSOC)) {
-
-            $dia = (int)$row['dia'];
-
-            $ventas_por_dia[$dia] = (float)$row['total_venta'];
-
-        }
+        $ventas_por_dia[(int)$row['dia']] = (float)$row['total_venta'];
 
     }
 
 
 
-    // Convertir el array asociativo a array indexado para JavaScript
+    // Arreglo indexado para JavaScript; el total del mes es la suma de los días
 
     $ventas_por_dia_array = array_values($ventas_por_dia);
 
+    $venta_bruta_mensual = array_sum($ventas_por_dia_array);
+
 } catch (Exception $e) {
 
-    $ganancia_volumen_diaria = 0;
-
-    $ganancia_volumen_mensual = 0;
+    error_log("opAdmin venta bruta: " . $e->getMessage());
 
     $venta_bruta_diaria = 0;
 
@@ -584,215 +286,93 @@ try {
 
 // ============================================================================
 
-// CONSULTAS ORIGINALES PARA LLAMADAS (MODIFICADAS PARA INCLUIR SALA)
+// LLAMADAS POR AGENTE (FILTRADAS POR SALA)
 
 // ============================================================================
 
 
 
-// Consulta para obtener los 3 principales usuarios de la fecha seleccionada
+// Deja solo letras, números y espacios en el apellido
 
-$query_top3 = "
+function limpiarApemat($apemat)
 
-    SELECT 
+{
 
-        u.apemat,
+    $apemat_limpio = preg_replace('/[^\p{L}\p{N}\s]/u', '', $apemat ?? '');
 
-        COUNT(*) as cantidad
-
-    FROM cliente c
-
-    INNER JOIN usuarios u ON 
-
-        u.id = c.usuario_id OR u.id = c.usuario_closer
-
-    WHERE DATE(c.fecha_registro) = ? 
-
-    {$condicion_sala_diario}
-
-    GROUP BY u.apemat
-
-    ORDER BY cantidad DESC 
-
-    LIMIT 3
-
-";
-
-
-
-$stmt_top3 = $conn->prepare($query_top3);
-
-if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-
-    $stmt_top3->execute([$fecha_seleccionada, (int)$sala_seleccionada]);
-
-} else {
-
-    $stmt_top3->execute([$fecha_seleccionada]);
+    return trim(preg_replace('/\s+/', ' ', $apemat_limpio));
 
 }
 
 
 
-$top_usuarios = [];
+// Clientes registrados por agente (liner o closer), de mayor a menor
 
-while ($row = $stmt_top3->fetch(PDO::FETCH_ASSOC)) {
+function llamadasPorAgente(PDO $conn, string $condicion_fecha, string $condicion_sala, array $params)
 
-    $apemat_limpio = preg_replace('/[^\p{L}\p{N}\s]/u', '', $row['apemat']);
+{
 
-    $apemat_limpio = trim(preg_replace('/\s+/', ' ', $apemat_limpio));
+    $stmt = $conn->prepare("
 
-    $top_usuarios[] = [
+        SELECT
 
-        'apemat' => $apemat_limpio,
+            u.apemat,
 
-        'cantidad' => $row['cantidad']
+            COUNT(*) as cantidad
 
-    ];
+        FROM cliente c
 
-}
+        INNER JOIN usuarios u ON
 
+            u.id = c.usuario_id OR u.id = c.usuario_closer
 
+        WHERE {$condicion_fecha}
 
-// Consulta para obtener TODOS los usuarios de la fecha seleccionada
+        {$condicion_sala}
 
-$query_todos = "
+        GROUP BY u.apemat
 
-    SELECT 
+        ORDER BY cantidad DESC
 
-        u.apemat,
+    ");
 
-        COUNT(*) as cantidad
+    $stmt->execute($params);
 
-    FROM cliente c
+    $usuarios = [];
 
-    INNER JOIN usuarios u ON 
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
-        u.id = c.usuario_id OR u.id = c.usuario_closer
+        $usuarios[] = [
 
-    WHERE DATE(c.fecha_registro) = ? 
+            'apemat' => limpiarApemat($row['apemat']),
 
-    {$condicion_sala_diario}
+            'cantidad' => $row['cantidad']
 
-    GROUP BY u.apemat
+        ];
 
-    ORDER BY cantidad DESC
+    }
 
-";
-
-
-
-$stmt_todos = $conn->prepare($query_todos);
-
-if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-
-    $stmt_todos->execute([$fecha_seleccionada, (int)$sala_seleccionada]);
-
-} else {
-
-    $stmt_todos->execute([$fecha_seleccionada]);
+    return $usuarios;
 
 }
 
 
 
-$todos_usuarios = [];
+// Todos los usuarios de la fecha seleccionada y su top 3
 
-while ($row = $stmt_todos->fetch(PDO::FETCH_ASSOC)) {
+$todos_usuarios = llamadasPorAgente($conn, "DATE(c.fecha_registro) = ?", $condicion_sala_clientes, array_merge([$fecha_seleccionada], $params_sala));
 
-    $apemat_limpio = preg_replace('/[^\p{L}\p{N}\s]/u', '', $row['apemat']);
-
-    $apemat_limpio = trim(preg_replace('/\s+/', ' ', $apemat_limpio));
-
-    $todos_usuarios[] = [
-
-        'apemat' => $apemat_limpio,
-
-        'cantidad' => $row['cantidad']
-
-    ];
-
-}
+$top_usuarios = array_slice($todos_usuarios, 0, 3);
 
 
 
-// Consulta para volumen mensual
+// Volumen mensual y su top 3
 
-$query_mensual = "
-
-    SELECT 
-
-        u.apemat,
-
-        COUNT(*) as cantidad
-
-    FROM cliente c
-
-    INNER JOIN usuarios u ON 
-
-        u.id = c.usuario_id OR u.id = c.usuario_closer
-
-    WHERE YEAR(c.fecha_registro) = ? 
-
-        AND MONTH(c.fecha_registro) = ?
-
-    {$condicion_sala_mensual}
-
-    GROUP BY u.apemat
-
-    ORDER BY cantidad DESC
-
-";
-
-
-
-$anio = date('Y', strtotime($mes_seleccionado . '-01'));
-
-$mes = date('m', strtotime($mes_seleccionado . '-01'));
-
-
-
-$stmt_mensual = $conn->prepare($query_mensual);
-
-if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-
-    $stmt_mensual->execute([$anio, $mes, (int)$sala_seleccionada]);
-
-} else {
-
-    $stmt_mensual->execute([$anio, $mes]);
-
-}
-
-
-
-$usuarios_mensual = [];
-
-$total_mensual = 0;
-
-while ($row = $stmt_mensual->fetch(PDO::FETCH_ASSOC)) {
-
-    $apemat_limpio = preg_replace('/[^\p{L}\p{N}\s]/u', '', $row['apemat']);
-
-    $apemat_limpio = trim(preg_replace('/\s+/', ' ', $apemat_limpio));
-
-    $usuarios_mensual[] = [
-
-        'apemat' => $apemat_limpio,
-
-        'cantidad' => $row['cantidad']
-
-    ];
-
-    $total_mensual += $row['cantidad'];
-
-}
-
-
-
-// Top 3 mensual
+$usuarios_mensual = llamadasPorAgente($conn, "YEAR(c.fecha_registro) = ? AND MONTH(c.fecha_registro) = ?", $condicion_sala_clientes, array_merge([$anio, $mes], $params_sala));
 
 $top3_mensual = array_slice($usuarios_mensual, 0, 3);
+
+$total_mensual = array_sum(array_column($usuarios_mensual, 'cantidad'));
 
 
 
@@ -811,6 +391,24 @@ $promedio_llamadas = $total_agentes > 0 ? round($total_llamadas / $total_agentes
 $total_agentes_mensual = count($usuarios_mensual);
 
 $promedio_mensual = $total_agentes_mensual > 0 ? round($total_mensual / $total_agentes_mensual, 1) : 0;
+
+
+
+// Nombre a mostrar en la barra y en la bienvenida
+
+$nombre_mostrar = 'Usuario';
+
+foreach (['apemat', 'nombre', 'usuario'] as $clave) {
+
+    if (!empty($_SESSION[$clave])) {
+
+        $nombre_mostrar = $_SESSION[$clave];
+
+        break;
+
+    }
+
+}
 
 
 
@@ -1154,27 +752,7 @@ function formatoDinero($cantidad)
 
                 <span class="navbar-text text-muted me-3 d-none d-md-block">
 
-                    <?php
-
-                    if (isset($_SESSION['apemat']) && !empty($_SESSION['apemat'])) {
-
-                        echo htmlspecialchars($_SESSION['apemat']);
-
-                    } elseif (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
-
-                        echo htmlspecialchars($_SESSION['nombre']);
-
-                    } elseif (isset($_SESSION['usuario']) && !empty($_SESSION['usuario'])) {
-
-                        echo htmlspecialchars($_SESSION['usuario']);
-
-                    } else {
-
-                        echo 'Usuario';
-
-                    }
-
-                    ?>
+                    <?= htmlspecialchars($nombre_mostrar) ?>
 
                 </span>
 
@@ -1204,27 +782,7 @@ function formatoDinero($cantidad)
 
                     <div class="col-md-6">
 
-                        <h1 class="display-6 fw-bold">Bienvenido, <?php
-
-                                                                    if (isset($_SESSION['apemat']) && !empty($_SESSION['apemat'])) {
-
-                                                                        echo htmlspecialchars($_SESSION['apemat']);
-
-                                                                    } elseif (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
-
-                                                                        echo htmlspecialchars($_SESSION['nombre']);
-
-                                                                    } elseif (isset($_SESSION['usuario']) && !empty($_SESSION['usuario'])) {
-
-                                                                        echo htmlspecialchars($_SESSION['usuario']);
-
-                                                                    } else {
-
-                                                                        echo 'Usuario';
-
-                                                                    }
-
-                                                                    ?>!</h1>
+                        <h1 class="display-6 fw-bold">Bienvenido, <?= htmlspecialchars($nombre_mostrar) ?>!</h1>
 
                         <p class="lead mb-0">Panel de control y estadísticas de rendimiento</p>
 
@@ -1304,7 +862,7 @@ function formatoDinero($cantidad)
 
                                                 name="fecha"
 
-                                                value="<?= $fecha_seleccionada ?>"
+                                                value="<?= htmlspecialchars($fecha_seleccionada) ?>"
 
                                                 max="<?= date('Y-m-d') ?>">
 
@@ -1400,7 +958,7 @@ function formatoDinero($cantidad)
 
                                                     <li>
 
-                                                        <a class="dropdown-item" href="reporte_ganancia_volumen.php?fecha=<?= $fecha_seleccionada ?>&sala=<?= $sala_seleccionada ?>" target="_blank">
+                                                        <a class="dropdown-item" href="reporte_ganancia_volumen.php?<?= htmlspecialchars(http_build_query(['fecha' => $fecha_seleccionada, 'sala' => $sala_seleccionada])) ?>" target="_blank">
 
                                                             <i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel Diario
 
@@ -1410,7 +968,7 @@ function formatoDinero($cantidad)
 
                                                     <li>
 
-                                                        <a class="dropdown-item" href="reporte_pdf_ganancia_volumen.php?fecha=<?= $fecha_seleccionada ?>&sala=<?= $sala_seleccionada ?>" target="_blank">
+                                                        <a class="dropdown-item" href="reporte_pdf_ganancia_volumen.php?<?= htmlspecialchars(http_build_query(['fecha' => $fecha_seleccionada, 'sala' => $sala_seleccionada])) ?>" target="_blank">
 
                                                             <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF Diario
 
@@ -1628,7 +1186,7 @@ function formatoDinero($cantidad)
 
                                                 <h6 class="card-title text-muted mb-2">Top Performance</h6>
 
-                                                <h3 class="fw-bold text-info"><?= !empty($top_usuarios) ? $top_usuarios[0]['apemat'] : 'N/A' ?></h3>
+                                                <h3 class="fw-bold text-info"><?= !empty($top_usuarios) ? htmlspecialchars($top_usuarios[0]['apemat']) : 'N/A' ?></h3>
 
                                                 <small class="text-muted">Líder del día</small>
 
@@ -1868,7 +1426,7 @@ function formatoDinero($cantidad)
 
                                                 name="mes"
 
-                                                value="<?= $mes_seleccionado ?>"
+                                                value="<?= htmlspecialchars($mes_seleccionado) ?>"
 
                                                 max="<?= date('Y-m') ?>">
 
@@ -1964,7 +1522,7 @@ function formatoDinero($cantidad)
 
                                                     <li>
 
-                                                        <a class="dropdown-item" href="reporte_ganancia_volumen_mensual.php?mes=<?= $mes_seleccionado ?>&sala=<?= $sala_seleccionada ?>" target="_blank">
+                                                        <a class="dropdown-item" href="reporte_ganancia_volumen_mensual.php?<?= htmlspecialchars(http_build_query(['mes' => $mes_seleccionado, 'sala' => $sala_seleccionada])) ?>" target="_blank">
 
                                                             <i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel Mensual
 
@@ -1974,7 +1532,7 @@ function formatoDinero($cantidad)
 
                                                     <li>
 
-                                                        <a class="dropdown-item" href="reporte_pdf_ganancia_volumen_mensual.php?mes=<?= $mes_seleccionado ?>&sala=<?= $sala_seleccionada ?>" target="_blank">
+                                                        <a class="dropdown-item" href="reporte_pdf_ganancia_volumen_mensual.php?<?= htmlspecialchars(http_build_query(['mes' => $mes_seleccionado, 'sala' => $sala_seleccionada])) ?>" target="_blank">
 
                                                             <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF Mensual
 
@@ -2192,7 +1750,7 @@ function formatoDinero($cantidad)
 
                                                 <h6 class="card-title text-muted mb-2">Top Performance Mes</h6>
 
-                                                <h3 class="fw-bold text-primary"><?= !empty($top3_mensual) ? $top3_mensual[0]['apemat'] : 'N/A' ?></h3>
+                                                <h3 class="fw-bold text-primary"><?= !empty($top3_mensual) ? htmlspecialchars($top3_mensual[0]['apemat']) : 'N/A' ?></h3>
 
                                                 <small class="text-muted">Líder del mes</small>
 
@@ -2584,6 +2142,114 @@ function formatoDinero($cantidad)
 
 
 
+            // Gráfica de barras de llamadas por agente (diaria y mensual comparten formato)
+
+            function crearGraficaBarras(canvas, etiquetas, cantidades, luz, luzBorde) {
+
+                const colores = cantidades.map((cantidad, index) => {
+
+                    const hue = (index * 137.508) % 360;
+
+                    return `hsl(${hue}, 70%, ${luz})`;
+
+                });
+
+
+
+                new Chart(canvas, {
+
+                    type: 'bar',
+
+                    data: {
+
+                        labels: etiquetas,
+
+                        datasets: [{
+
+                            label: 'Llamadas Realizadas',
+
+                            data: cantidades,
+
+                            backgroundColor: colores,
+
+                            borderColor: colores.map(color => color.replace(luz, luzBorde)),
+
+                            borderWidth: 2,
+
+                            borderRadius: 8,
+
+                            borderSkipped: false,
+
+                        }]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        plugins: {
+
+                            legend: {
+
+                                display: true,
+
+                                position: 'top'
+
+                            },
+
+                            tooltip: {
+
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+
+                                displayColors: false,
+
+                                callbacks: {
+
+                                    label: function(context) {
+
+                                        return `Llamadas: ${context.parsed.y}`;
+
+                                    }
+
+                                }
+
+                            }
+
+                        },
+
+                        scales: {
+
+                            y: {
+
+                                beginAtZero: true
+
+                            },
+
+                            x: {
+
+                                ticks: {
+
+                                    maxRotation: 45,
+
+                                    minRotation: 45
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                });
+
+            }
+
+
+
             function inicializarGraficas() {
 
                 <?php if (!empty($todos_usuarios)): ?>
@@ -2592,111 +2258,13 @@ function formatoDinero($cantidad)
 
                     if (ctx) {
 
-                        const apellidos = <?= json_encode(array_column($todos_usuarios, 'apemat')) ?>;
+                        crearGraficaBarras(ctx,
 
-                        const cantidades = <?= json_encode(array_column($todos_usuarios, 'cantidad')) ?>;
+                            <?= json_encode(array_column($todos_usuarios, 'apemat')) ?>,
 
+                            <?= json_encode(array_column($todos_usuarios, 'cantidad')) ?>,
 
-
-                        const colores = cantidades.map((cantidad, index) => {
-
-                            const hue = (index * 137.508) % 360;
-
-                            return `hsl(${hue}, 70%, 65%)`;
-
-                        });
-
-
-
-                        new Chart(ctx, {
-
-                            type: 'bar',
-
-                            data: {
-
-                                labels: apellidos,
-
-                                datasets: [{
-
-                                    label: 'Llamadas Realizadas',
-
-                                    data: cantidades,
-
-                                    backgroundColor: colores,
-
-                                    borderColor: colores.map(color => color.replace('65%', '50%')),
-
-                                    borderWidth: 2,
-
-                                    borderRadius: 8,
-
-                                    borderSkipped: false,
-
-                                }]
-
-                            },
-
-                            options: {
-
-                                responsive: true,
-
-                                maintainAspectRatio: false,
-
-                                plugins: {
-
-                                    legend: {
-
-                                        display: true,
-
-                                        position: 'top'
-
-                                    },
-
-                                    tooltip: {
-
-                                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-
-                                        displayColors: false,
-
-                                        callbacks: {
-
-                                            label: function(context) {
-
-                                                return `Llamadas: ${context.parsed.y}`;
-
-                                            }
-
-                                        }
-
-                                    }
-
-                                },
-
-                                scales: {
-
-                                    y: {
-
-                                        beginAtZero: true
-
-                                    },
-
-                                    x: {
-
-                                        ticks: {
-
-                                            maxRotation: 45,
-
-                                            minRotation: 45
-
-                                        }
-
-                                    }
-
-                                }
-
-                            }
-
-                        });
+                            '65%', '50%');
 
                     }
 
@@ -2714,111 +2282,13 @@ function formatoDinero($cantidad)
 
                     if (ctxMensual) {
 
-                        const apellidosMensual = <?= json_encode(array_column($usuarios_mensual, 'apemat')) ?>;
+                        crearGraficaBarras(ctxMensual,
 
-                        const cantidadesMensual = <?= json_encode(array_column($usuarios_mensual, 'cantidad')) ?>;
+                            <?= json_encode(array_column($usuarios_mensual, 'apemat')) ?>,
 
+                            <?= json_encode(array_column($usuarios_mensual, 'cantidad')) ?>,
 
-
-                        const coloresMensual = cantidadesMensual.map((cantidad, index) => {
-
-                            const hue = (index * 137.508) % 360;
-
-                            return `hsl(${hue}, 70%, 55%)`;
-
-                        });
-
-
-
-                        new Chart(ctxMensual, {
-
-                            type: 'bar',
-
-                            data: {
-
-                                labels: apellidosMensual,
-
-                                datasets: [{
-
-                                    label: 'Llamadas Realizadas',
-
-                                    data: cantidadesMensual,
-
-                                    backgroundColor: coloresMensual,
-
-                                    borderColor: coloresMensual.map(color => color.replace('55%', '40%')),
-
-                                    borderWidth: 2,
-
-                                    borderRadius: 8,
-
-                                    borderSkipped: false,
-
-                                }]
-
-                            },
-
-                            options: {
-
-                                responsive: true,
-
-                                maintainAspectRatio: false,
-
-                                plugins: {
-
-                                    legend: {
-
-                                        display: true,
-
-                                        position: 'top'
-
-                                    },
-
-                                    tooltip: {
-
-                                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-
-                                        displayColors: false,
-
-                                        callbacks: {
-
-                                            label: function(context) {
-
-                                                return `Llamadas: ${context.parsed.y}`;
-
-                                            }
-
-                                        }
-
-                                    }
-
-                                },
-
-                                scales: {
-
-                                    y: {
-
-                                        beginAtZero: true
-
-                                    },
-
-                                    x: {
-
-                                        ticks: {
-
-                                            maxRotation: 45,
-
-                                            minRotation: 45
-
-                                        }
-
-                                    }
-
-                                }
-
-                            }
-
-                        });
+                            '55%', '40%');
 
                     }
 
@@ -2839,24 +2309,6 @@ function formatoDinero($cantidad)
                         const dias = <?= json_encode($dias_del_mes) ?>;
 
                         const ventas = <?= json_encode($ventas_por_dia_array) ?>;
-
-
-
-                        // Formatear ventas como dinero
-
-                        const ventasFormateadas = ventas.map(valor => {
-
-                            return new Intl.NumberFormat('es-MX', {
-
-                                style: 'currency',
-
-                                currency: 'MXN',
-
-                                minimumFractionDigits: 2
-
-                            }).format(valor);
-
-                        });
 
 
 

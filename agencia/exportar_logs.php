@@ -41,10 +41,6 @@ require_once __DIR__ . '/logs_reporte.php';
 
 [$logs, $accionesPorLogin] = cargarLogsConAcciones($conn, $where, $params);
 
-$etiquetaAccion = 'etiquetaAccion';
-$soloAcciones   = 'soloAcciones';
-$fmt            = 'fechaLog';
-
 $rango = rangoTexto($filtroFechaInicio, $filtroFechaFin);
 $nombreArchivo = 'Logs_Login_' . $filtroFechaInicio . ($filtroFechaInicio !== $filtroFechaFin ? '_a_' . $filtroFechaFin : '');
 
@@ -71,11 +67,11 @@ if ($formato === 'excel') {
     $fila = 4;
     foreach ($logs as $log) {
         $lista   = $accionesPorLogin[$log['id']] ?? [];
-        $propias = $soloAcciones($lista);
+        $propias = soloAcciones($lista);
         $ultima  = end($propias) ?: null;
         $cerro   = (bool)array_filter($lista, fn($a) => $a['accion'] === 'LOGOUT');
         $hoja->fromArray([
-            $fmt($log['fecha_intento']),
+            fechaLog($log['fecha_intento']),
             ucfirst($log['origen']),
             $log['exito'] ? 'OK' : 'Fallo',
             $log['correo'],
@@ -86,8 +82,8 @@ if ($formato === 'excel') {
             $log['motivo_fallo'] ?? '',
             $log['exito'] ? count($propias) : '',
             $log['exito'] ? ($cerro ? 'Sí' : 'No') : '',
-            $ultima ? $etiquetaAccion($ultima['accion']) . ' ' . ($ultima['tabla'] ?? '') : ($log['exito'] ? 'No hay acciones' : ''),
-            $ultima ? $fmt($ultima['fecha']) : '',
+            $ultima ? etiquetaAccion($ultima['accion']) . ' ' . ($ultima['tabla'] ?? '') : ($log['exito'] ? 'No hay acciones' : ''),
+            $ultima ? fechaLog($ultima['fecha']) : '',
         ], null, "A$fila");
         if (!$log['exito']) {
             $hoja->getStyle("C$fila")->getFont()->getColor()->setRGB('DC3545');
@@ -117,9 +113,9 @@ if ($formato === 'excel') {
             $hoja2->fromArray([
                 $log['correo'],
                 ucfirst($log['origen']),
-                $fmt($log['fecha_intento']),
-                $fmt($a['fecha']),
-                $etiquetaAccion($a['accion']),
+                fechaLog($log['fecha_intento']),
+                fechaLog($a['fecha']),
+                etiquetaAccion($a['accion']),
                 $a['tabla'] ?? '',
                 $a['registro_id'] ?? '',
                 $a['accion'] === 'LOGOUT' ? '' : detalleTextoPlano($a['detalle']),

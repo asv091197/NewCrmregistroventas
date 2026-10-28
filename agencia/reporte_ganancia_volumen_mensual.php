@@ -26,7 +26,6 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 date_default_timezone_set('America/Mexico_City');
 
@@ -60,6 +59,10 @@ try {
 // Parámetros requeridos: mes y sala
 $mes_seleccionado = isset($_GET['mes']) ? $_GET['mes'] : date('Y-m');
 $sala_id = isset($_GET['sala_id']) ? intval($_GET['sala_id']) : 0;
+// Compatibilidad: los enlaces de opAdmin/opcionesAdmin envían "sala" (id o 'todas'), igual que el PDF mensual
+if ($sala_id === 0 && isset($_GET['sala']) && is_numeric($_GET['sala'])) {
+    $sala_id = intval($_GET['sala']);
+}
 
 // Validar formato de mes
 if (!preg_match('/^\d{4}-\d{2}$/', $mes_seleccionado)) {
@@ -172,7 +175,7 @@ try {
 
 // Validar que hay datos
 if (empty($ventas)) {
-    die('No hay datos para el mes ' . $mes_nombre . ' ' . $anio . ' en ' . ($sala_id > 0 ? 'la sala ' . $nombre_sala : 'ninguna sala'));
+    die('No hay datos para el mes ' . $mes_nombre . ' ' . $anio . ' en ' . ($sala_id > 0 ? 'la sala ' . htmlspecialchars($nombre_sala) : 'ninguna sala'));
 }
 
 // ============================================================================
@@ -269,23 +272,23 @@ $configOver = [
     ]
 ];
 
-// Función para calcular OVER
+// Función para calcular OVER (las metas que no existen en la configuración cuentan como 0%)
 function calcularOver($ventaNetoTotal, $config)
 {
     $porcentaje = 0;
     $totalOver = 0;
 
     if ($ventaNetoTotal <= 300000) {
-        $porcentaje = $config['metas'][0]['porcentaje'];
+        $porcentaje = $config['metas'][0]['porcentaje'] ?? 0;
         $totalOver = $ventaNetoTotal * $porcentaje / 100;
     } elseif ($ventaNetoTotal <= 350000) {
-        $porcentaje = $config['metas'][1]['porcentaje'];
-        $totalOver = (300000 * $config['metas'][0]['porcentaje'] / 100) +
+        $porcentaje = $config['metas'][1]['porcentaje'] ?? 0;
+        $totalOver = (300000 * ($config['metas'][0]['porcentaje'] ?? 0) / 100) +
             (($ventaNetoTotal - 300000) * $porcentaje / 100);
     } else {
-        $porcentaje = $config['metas'][2]['porcentaje'];
-        $totalOver = (300000 * $config['metas'][0]['porcentaje'] / 100) +
-            (50000 * $config['metas'][1]['porcentaje'] / 100) +
+        $porcentaje = $config['metas'][2]['porcentaje'] ?? 0;
+        $totalOver = (300000 * ($config['metas'][0]['porcentaje'] ?? 0) / 100) +
+            (50000 * ($config['metas'][1]['porcentaje'] ?? 0) / 100) +
             (($ventaNetoTotal - 350000) * $porcentaje / 100);
     }
 
@@ -323,50 +326,18 @@ $totalesGenerales['suma_comisiones'] =
     $totalesGenerales['comision_closer2'] +
     $totalesGenerales['comision_front'];
 
-// Calcular ventas por sala para OVER correcto
+// Calcular venta neta por sala para OVER correcto
 $ventasPorSalaDetalle = [];
 foreach ($ventas as $venta) {
     $salaIdVenta = $venta['sala_id'] ?? 0;
-    $salaNombreVenta = $venta['sala_nombre'] ?? 'Sin Sala';
-
     if (!isset($ventasPorSalaDetalle[$salaIdVenta])) {
         $ventasPorSalaDetalle[$salaIdVenta] = [
-            'nombre' => $salaNombreVenta,
-            'ventas' => [],
-            'totales' => [
-                'venta_bruto' => 0,
-                'venta_neto' => 0,
-                'comision_liner' => 0,
-                'comision_closer1' => 0,
-                'comision_closer2' => 0,
-                'comision_front' => 0,
-                'suma_comisiones' => 0,
-                'ventas_count' => 0
-            ]
+            'nombre' => $venta['sala_nombre'] ?? 'Sin Sala',
+            'venta_neto' => 0
         ];
     }
-
-    $ventasPorSalaDetalle[$salaIdVenta]['ventas'][] = $venta;
-
-    // Sumar totales
-    $ventasPorSalaDetalle[$salaIdVenta]['totales']['venta_bruto'] += (float)$venta['precio'];
-    $ventasPorSalaDetalle[$salaIdVenta]['totales']['venta_neto'] += (float)$venta['precio_neto'];
-    $ventasPorSalaDetalle[$salaIdVenta]['totales']['comision_liner'] += (float)($venta['ganancia_liner'] ?? 0);
-    $ventasPorSalaDetalle[$salaIdVenta]['totales']['comision_closer1'] += (float)($venta['ganancia_closer1'] ?? 0);
-    $ventasPorSalaDetalle[$salaIdVenta]['totales']['comision_closer2'] += (float)($venta['ganancia_closer2'] ?? 0);
-    $ventasPorSalaDetalle[$salaIdVenta]['totales']['comision_front'] += (float)($venta['ganancia_fullstack'] ?? 0);
-    $ventasPorSalaDetalle[$salaIdVenta]['totales']['ventas_count']++;
+    $ventasPorSalaDetalle[$salaIdVenta]['venta_neto'] += (float)$venta['precio_neto'];
 }
-
-// Calcular suma de comisiones para cada sala
-foreach ($ventasPorSalaDetalle as $idSala => &$datosSala) {
-    $datosSala['totales']['suma_comisiones'] =
-        $datosSala['totales']['comision_liner'] +
-        $datosSala['totales']['comision_closer1'] +
-        $datosSala['totales']['comision_closer2'] +
-        $datosSala['totales']['comision_front'];
-}
-unset($datosSala);
 
 // ============================================================================
 // CREAR EXCEL
@@ -625,14 +596,13 @@ if ($sala_id > 0) {
         $overPorPersona[$persona] = [
             'nombre' => $config['nombre'],
             'total_over' => 0,
-            'volumen_total' => 0,
-            'detalle_salas' => []
+            'volumen_total' => 0
         ];
 
         foreach ($config['salas'] as $salaIdConfig) {
             if (isset($ventasPorSalaDetalle[$salaIdConfig])) {
                 $datosSalaConfig = $ventasPorSalaDetalle[$salaIdConfig];
-                $ventaNetoSala = $datosSalaConfig['totales']['venta_neto'];
+                $ventaNetoSala = $datosSalaConfig['venta_neto'];
                 $calculos = calcularOver($ventaNetoSala, $config);
                 $totalOverPersonaSala = $calculos['totalOver'];
 
@@ -723,82 +693,38 @@ $sheetVolumen->getStyle('A5:F5')->getFill()->setFillType(Fill::FILL_SOLID)->getS
 $sheetVolumen->getStyle('A5:F5')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 $sheetVolumen->getStyle('A5:F5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-// Obtener lista de todos los usuarios únicos
-$usuariosUnicos = [];
-foreach ($ventas as $venta) {
-    // Liner
-    if (!empty($venta['liner_nombre']) && $venta['liner_nombre'] !== 'No asignado') {
-        $usuariosUnicos[$venta['liner_nombre']] = true;
-    }
-
-    // Closer 1
-    if (!empty($venta['closer1_nombre']) && $venta['closer1_nombre'] !== 'No asignado') {
-        $usuariosUnicos[$venta['closer1_nombre']] = true;
-    }
-
-    // Closer 2
-    if (!empty($venta['closer2_nombre']) && $venta['closer2_nombre'] !== 'No asignado') {
-        $usuariosUnicos[$venta['closer2_nombre']] = true;
-    }
-
-    // Front
-    if (!empty($venta['front_nombre']) && $venta['front_nombre'] !== 'No asignado') {
-        $usuariosUnicos[$venta['front_nombre']] = true;
-    }
-}
-
-// Calcular ganancia volumen por usuario
+// Calcular ganancia volumen por usuario: [campo del nombre => [rol, divisor sobre la venta bruta]]
+// (el nombre se usa sin espacios sobrantes como clave, para no perder ventas al buscarlo)
+$rolesVolumen = [
+    'liner_nombre' => ['Liner', 2],
+    'closer1_nombre' => ['Closer 1', 2],
+    'closer2_nombre' => ['Closer 2', 3],
+    'front_nombre' => ['Front', 1],
+];
 $gananciaVolumenUsuarios = [];
-foreach (array_keys($usuariosUnicos) as $nombreUsuario) {
-    $gananciaVolumenUsuarios[$nombreUsuario] = [
-        'nombre' => $nombreUsuario,
-        'ganancia_por_rol' => [
-            'Liner' => 0,
-            'Closer 1' => 0,
-            'Closer 2' => 0,
-            'Front' => 0
-        ]
-    ];
-}
-
-// Procesar ganancia volumen
 foreach ($ventas as $venta) {
     $ventaBruta = (float)$venta['precio'];
 
-    // Liner
-    if (!empty($venta['liner_nombre']) && $venta['liner_nombre'] !== 'No asignado') {
-        $nombreLiner = trim($venta['liner_nombre']);
-        if (isset($gananciaVolumenUsuarios[$nombreLiner])) {
-            $gananciaVolumen = $ventaBruta / 2;
-            $gananciaVolumenUsuarios[$nombreLiner]['ganancia_por_rol']['Liner'] += $gananciaVolumen;
+    foreach ($rolesVolumen as $campoNombre => [$rol, $divisor]) {
+        if (empty($venta[$campoNombre]) || $venta[$campoNombre] === 'No asignado') {
+            continue;
         }
-    }
-
-    // Closer 1
-    if (!empty($venta['closer1_nombre']) && $venta['closer1_nombre'] !== 'No asignado') {
-        $nombreCloser1 = trim($venta['closer1_nombre']);
-        if (isset($gananciaVolumenUsuarios[$nombreCloser1])) {
-            $gananciaVolumen = $ventaBruta / 2;
-            $gananciaVolumenUsuarios[$nombreCloser1]['ganancia_por_rol']['Closer 1'] += $gananciaVolumen;
+        $nombreUsuario = trim($venta[$campoNombre]);
+        if ($nombreUsuario === '') {
+            continue;
         }
-    }
-
-    // Closer 2
-    if (!empty($venta['closer2_nombre']) && $venta['closer2_nombre'] !== 'No asignado') {
-        $nombreCloser2 = trim($venta['closer2_nombre']);
-        if (isset($gananciaVolumenUsuarios[$nombreCloser2])) {
-            $gananciaVolumen = $ventaBruta / 3;
-            $gananciaVolumenUsuarios[$nombreCloser2]['ganancia_por_rol']['Closer 2'] += $gananciaVolumen;
+        if (!isset($gananciaVolumenUsuarios[$nombreUsuario])) {
+            $gananciaVolumenUsuarios[$nombreUsuario] = [
+                'nombre' => $nombreUsuario,
+                'ganancia_por_rol' => [
+                    'Liner' => 0,
+                    'Closer 1' => 0,
+                    'Closer 2' => 0,
+                    'Front' => 0
+                ]
+            ];
         }
-    }
-
-    // Front
-    if (!empty($venta['front_nombre']) && $venta['front_nombre'] !== 'No asignado') {
-        $nombreFront = trim($venta['front_nombre']);
-        if (isset($gananciaVolumenUsuarios[$nombreFront])) {
-            $gananciaVolumen = $ventaBruta;
-            $gananciaVolumenUsuarios[$nombreFront]['ganancia_por_rol']['Front'] += $gananciaVolumen;
-        }
+        $gananciaVolumenUsuarios[$nombreUsuario]['ganancia_por_rol'][$rol] += $ventaBruta / $divisor;
     }
 }
 

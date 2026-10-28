@@ -5,23 +5,20 @@ require_once __DIR__ . '/../../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
 require_once __DIR__ . '/../../includes/registro_acciones.php';
 
-// Restaurar datos del formulario si existen
+// Restaurar datos del formulario si existen (tras cambiar de sala)
 if (isset($_SESSION['form_data'])) {
-    foreach ($_SESSION['form_data'] as $key => $value) {
-        if ($key !== 'actualizar_closers') {
-            $_POST[$key] = $value;
-        }
-    }
+    unset($_SESSION['form_data']['actualizar_closers']);
+    $_POST = $_SESSION['form_data'] + $_POST;
     unset($_SESSION['form_data']);
 }
 
 // Validación de sesión y rol
-if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin' && $_SESSION['rol'] !== 'usuario')) {
+$rol = $_SESSION['rol'] ?? '';
+if (!isset($_SESSION['usuario_id']) || !in_array($rol, ['admin', 'superadmin', 'usuario'], true)) {
   header("Location: ../login.php");
   exit;
 }
-
-// Conexión a la base de datos
+$esAdmin = $rol === 'admin' || $rol === 'superadmin';
 
 try {
   $pdo = conexionPDO();
@@ -29,181 +26,88 @@ try {
   die("Error de conexión: " . $e->getMessage());
 }
 
-// Obtener información completa del usuario actual
-$usuario_actual = [];
-try {
-    $sql_usuario_actual = "SELECT id, acceso_todas_salas, salas_permitidas FROM usuarios WHERE id = :id";
-    $stmt_usuario_actual = $pdo->prepare($sql_usuario_actual);
-    $stmt_usuario_actual->execute([':id' => $_SESSION['usuario_id']]);
-    $usuario_actual = $stmt_usuario_actual->fetch(PDO::FETCH_ASSOC) ?: [];
-} catch (PDOException $e) {
-    error_log("Error al obtener datos del usuario actual: " . $e->getMessage());
-}
-
-// Superadmin tiene los mismos permisos que admin y siempre acceso a todas las salas
-$esAdmin = $_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin';
-if ($_SESSION['rol'] === 'superadmin') {
-    $usuario_actual['acceso_todas_salas'] = 1;
-}
-
-// Obtener lista de salas solo para administradores con acceso_todas_salas = 1
-$salas = [];
-if ($esAdmin && isset($usuario_actual['acceso_todas_salas']) && $usuario_actual['acceso_todas_salas'] == 1) {
+// Superadmin siempre tiene acceso a todas las salas; admin según su registro
+$accesoTodasSalas = $rol === 'superadmin';
+if ($rol === 'admin') {
     try {
-        $sql_salas = "SELECT id, nombre FROM salas WHERE activo = 1 ORDER BY nombre";
-        $stmt_salas = $pdo->query($sql_salas);
-        $salas = $stmt_salas->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $pdo->prepare("SELECT acceso_todas_salas FROM usuarios WHERE id = :id");
+        $stmt->execute([':id' => $_SESSION['usuario_id']]);
+        $accesoTodasSalas = (int)$stmt->fetchColumn() === 1;
+    } catch (PDOException $e) {
+        error_log("Error al obtener datos del usuario actual: " . $e->getMessage());
+    }
+}
+$puedeElegirSala = $esAdmin && $accesoTodasSalas;
+
+// Lista de salas solo para quien puede elegir sala
+$salas = [];
+if ($puedeElegirSala) {
+    try {
+        $salas = $pdo->query("SELECT id, nombre FROM salas WHERE activo = 1 ORDER BY nombre")->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         error_log("Error al obtener salas: " . $e->getMessage());
     }
 }
 
-// Obtener lista de usuarios para el selector de closer FILTRADO POR SALA
-$usuarios = [];
-$sala_id_filtro = null;
+// Sala del cliente (y filtro de closers): la elegida si puede elegir, si no la de sesión
+$salaSesion = intval($_SESSION['sala_id'] ?? 0) ?: null;
+$sala_id = ($puedeElegirSala && !empty($_POST['sala_id_admin'])) ? intval($_POST['sala_id_admin']) : $salaSesion;
 
-// Determinar la sala para filtro de usuarios (closers)
-if ($esAdmin) {
-    if (isset($usuario_actual['acceso_todas_salas']) && $usuario_actual['acceso_todas_salas'] == 1) {
-        // Administradores con acceso a todas las salas pueden seleccionar sala
-        if (isset($_POST['sala_id_admin']) && !empty($_POST['sala_id_admin'])) {
-            $sala_id_filtro = intval($_POST['sala_id_admin']);
-        } elseif (isset($_SESSION['sala_id']) && intval($_SESSION['sala_id']) > 0) {
-            $sala_id_filtro = intval($_SESSION['sala_id']);
-        }
-    } else {
-        // Administradores con acceso limitado usan solo la sala de sesión
-        if (isset($_SESSION['sala_id']) && intval($_SESSION['sala_id']) > 0) {
-            $sala_id_filtro = intval($_SESSION['sala_id']);
-        }
+// ¿El usuario tiene acceso a la sala? salas_permitidas puede ser JSON ([1,3]) o texto ("1,3")
+function usuarioTieneSala(array $usuario, int $salaId): bool {
+    if ($usuario['acceso_todas_salas'] == 1) {
+        return true;
     }
-} else {
-    // Usuarios normales usan la sala de sesión
-    if (isset($_SESSION['sala_id']) && intval($_SESSION['sala_id']) > 0) {
-        $sala_id_filtro = intval($_SESSION['sala_id']);
+    $salas = json_decode($usuario['salas_permitidas'] ?? '', true);
+    if (!is_array($salas)) {
+        preg_match_all('/\d+/', (string)($usuario['salas_permitidas'] ?? ''), $m);
+        $salas = $m[0];
     }
+    return in_array($salaId, array_map('intval', $salas), true);
 }
 
+// Closers disponibles, filtrados por sala si hay una
+$usuarios = [];
 try {
-    if ($sala_id_filtro) {
-        // Primero, obtener todos los usuarios activos
-        $sql_usuarios = "SELECT id, nombre, apepat, apemat, salas_permitidas, acceso_todas_salas 
-                         FROM usuarios 
-                         WHERE rol = 'usuario' 
-                         AND activo = 1 
-                         ORDER BY nombre, apepat";
-        
-        $stmt_usuarios = $pdo->query($sql_usuarios);
-        $todos_usuarios = $stmt_usuarios->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Filtrar manualmente en PHP basado en salas_permitidas
-        $usuarios = array_filter($todos_usuarios, function($usuario) use ($sala_id_filtro) {
-            // Si tiene acceso a todas las salas
-            if ($usuario['acceso_todas_salas'] == 1) {
-                return true;
-            }
-            
-            // Si salas_permitidas está vacío o nulo, no tiene acceso a ninguna sala específica
-            if (empty($usuario['salas_permitidas']) || $usuario['salas_permitidas'] === 'null') {
-                return false;
-            }
-            
-            // Intentar interpretar salas_permitidas como JSON
-            $salas_permitidas = json_decode($usuario['salas_permitidas'], true);
-            
-            if (json_last_error() === JSON_ERROR_NONE) {
-                // Es un JSON válido, buscar el ID en el array
-                if (is_array($salas_permitidas)) {
-                    return in_array($sala_id_filtro, $salas_permitidas);
-                } elseif (is_string($salas_permitidas) && strpos($salas_permitidas, (string)$sala_id_filtro) !== false) {
-                    // En caso de que sea string que contiene el ID
-                    return true;
-                }
-            } else {
-                // No es JSON válido, verificar si es una cadena que contiene el ID
-                if (strpos($usuario['salas_permitidas'], (string)$sala_id_filtro) !== false) {
-                    return true;
-                }
-            }
-            
-            return false;
-        });
-        
-        // Reiniciar índices del array
-        $usuarios = array_values($usuarios);
-        
-        error_log("Sala filtro: " . $sala_id_filtro . " | Usuarios encontrados: " . count($usuarios));
-    } else {
-        // Si no hay sala, mostrar todos los usuarios activos
-        $sql_usuarios = "SELECT id, nombre, apepat, apemat 
-                         FROM usuarios 
-                         WHERE rol = 'usuario' AND activo = 1 
-                         ORDER BY nombre, apepat";
-        $stmt_usuarios = $pdo->query($sql_usuarios);
-        $usuarios = $stmt_usuarios->fetchAll(PDO::FETCH_ASSOC);
-        error_log("Sin filtro de sala | Usuarios: " . count($usuarios));
+    $usuarios = $pdo->query("SELECT id, nombre, apepat, apemat, salas_permitidas, acceso_todas_salas
+                             FROM usuarios
+                             WHERE rol = 'usuario' AND activo = 1
+                             ORDER BY nombre, apepat")->fetchAll(PDO::FETCH_ASSOC);
+    if ($sala_id) {
+        $usuarios = array_values(array_filter($usuarios, fn($u) => usuarioTieneSala($u, $sala_id)));
     }
 } catch (PDOException $e) {
     error_log("Error al obtener usuarios: " . $e->getMessage());
-    // Mostrar usuarios sin filtrar si hay error
-    $sql_usuarios = "SELECT id, nombre, apepat, apemat 
-                     FROM usuarios 
-                     WHERE rol = 'usuario' AND activo = 1 
-                     ORDER BY nombre, apepat";
-    $stmt_usuarios = $pdo->query($sql_usuarios);
-    $usuarios = $stmt_usuarios->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $mensaje = "";
 
 // Procesamiento del formulario
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Si es solo para actualizar closers, no insertar cliente
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Si es solo para actualizar closers, guardar el formulario y recargar
     if (isset($_POST['actualizar_closers'])) {
-        // Mantener los valores del formulario en sesión para no perderlos
         $_SESSION['form_data'] = $_POST;
-        
-        // Redirigir de nuevo al formulario
         header("Location: " . $_SERVER['PHP_SELF']);
         exit;
     }
-    
-    $nombre = trim($_POST['nombre']);
-    $apepat = trim($_POST['apepat']);
+
+    $nombre = trim($_POST['nombre'] ?? '');
+    $apepat = trim($_POST['apepat'] ?? '');
     $apemat = trim($_POST['apemat'] ?? '');
-    $numero1 = trim($_POST['numero1']);
+    $numero1 = trim($_POST['numero1'] ?? '');
     $numero2 = trim($_POST['numero2'] ?? '');
-    $asunto = trim($_POST['asunto']);
+    $asunto = trim($_POST['asunto'] ?? '');
     $descripcion = trim($_POST['descripcion'] ?? '');
     $usuario_closer = !empty($_POST['usuario_closer']) ? intval($_POST['usuario_closer']) : null;
-    
-    // Determinar sala_id basado en rol y permisos
-    if ($esAdmin) {
-        // Si es admin con acceso a todas las salas, usa el selector
-        if (isset($usuario_actual['acceso_todas_salas']) && $usuario_actual['acceso_todas_salas'] == 1) {
-            $sala_id = !empty($_POST['sala_id_admin']) ? intval($_POST['sala_id_admin']) : 
-                       (isset($_SESSION['sala_id']) && intval($_SESSION['sala_id']) > 0 ? intval($_SESSION['sala_id']) : null);
-        } else {
-            // Si es admin con acceso limitado, usa solo la sala de sesión
-            $sala_id = isset($_SESSION['sala_id']) && intval($_SESSION['sala_id']) > 0 ? intval($_SESSION['sala_id']) : null;
-        }
-    } else {
-        // Si es usuario normal, usa solo el valor de sesión
-        $sala_id = isset($_SESSION['sala_id']) && intval($_SESSION['sala_id']) > 0 ? intval($_SESSION['sala_id']) : null;
-    }
-
-    // Insertar cliente con usuario_id, usuario_closer y sala_id
-    $sql = "INSERT INTO cliente (
-        nombre, apepat, apemat, numero1, numero2, asunto, descripcion, 
-        fecha_registro, usuario_id, usuario_closer, sala_id
-    ) VALUES (
-        :nombre, :apepat, :apemat, :numero1, :numero2, :asunto, :descripcion, 
-        :fecha_registro, :usuario_id, :usuario_closer, :sala_id
-    )";
-
-    $stmt = $pdo->prepare($sql);
 
     try {
+        $stmt = $pdo->prepare("INSERT INTO cliente (
+            nombre, apepat, apemat, numero1, numero2, asunto, descripcion,
+            fecha_registro, usuario_id, usuario_closer, sala_id
+        ) VALUES (
+            :nombre, :apepat, :apemat, :numero1, :numero2, :asunto, :descripcion,
+            :fecha_registro, :usuario_id, :usuario_closer, :sala_id
+        )");
         $stmt->execute([
             ':nombre' => $nombre,
             ':apepat' => $apepat,
@@ -233,6 +137,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         error_log("Error en nuevo cliente: " . $e->getMessage() . " - sala_id: " . ($sala_id ?? 'NULL'));
     }
 }
+
+// Valor previo de un campo del formulario, escapado para HTML
+$old = fn($campo) => htmlspecialchars($_POST[$campo] ?? '');
 ?>
 
 <!DOCTYPE html>
@@ -259,10 +166,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       border-radius: 3px;
       margin-top: 5px;
     }
-    .badge-usuarios {
-      font-size: 0.7rem;
-      margin-left: 5px;
-    }
   </style>
 </head>
 
@@ -277,25 +180,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                Dashboard
             </a>
           </li>
-          <?php endif; ?> 
-          <?php if ($esAdmin): ?>
           <li class="nav-item">
             <a class="nav-link text-dark" href="../Usuarios/usuarios.php" style="text-decoration: none;">
               👤 Usuarios
             </a>
           </li>
           <?php endif; ?>
-          <ul class="navbar-nav me-3">
-            <li class="nav-item">
-              <a class="nav-link text-dark" href="agencia.php" style="text-decoration: none;">
-                🕵️ Agentes
-              </a>
-            </li>
-          </ul>
+          <li class="nav-item">
+            <a class="nav-link text-dark" href="agencia.php" style="text-decoration: none;">
+              🕵️ Agentes
+            </a>
+          </li>
         </ul>
 
         <span class="navbar-text text-muted me-3">
-          <?= htmlspecialchars($_SESSION['apemat']) ?>
+          <?= htmlspecialchars($_SESSION['apemat'] ?? '') ?>
         </span>
 
         <a href="../logout.php" class="btn btn-sm btn-outline-danger">
@@ -314,114 +213,92 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           </div>
           <div class="card-body p-3">
             <?php if ($mensaje): ?>
-              <div class="alert alert-info text-center p-2"><?= $mensaje ?></div>
+              <div class="alert alert-info text-center p-2"><?= htmlspecialchars($mensaje) ?></div>
             <?php endif; ?>
-            
+
             <!-- Información de depuración -->
             <div class="debug-info mb-2">
               <small>
-                Sala actual para filtro: <?= $sala_id_filtro ?? 'No especificada' ?> | 
+                Sala actual para filtro: <?= $sala_id ?? 'No especificada' ?> |
                 Usuarios encontrados: <?= count($usuarios) ?>
               </small>
             </div>
-            
+
             <form method="POST" id="clienteForm">
               <div class="row g-2">
                 <div class="col-6">
-                  <input type="text" class="form-control form-control-sm" name="nombre" placeholder="Nombre(s)" 
-                         value="<?= isset($_POST['nombre']) ? htmlspecialchars($_POST['nombre']) : '' ?>" required>
+                  <input type="text" class="form-control form-control-sm" name="nombre" placeholder="Nombre(s)" value="<?= $old('nombre') ?>" required>
                 </div>
                 <div class="col-6">
-                  <input type="text" class="form-control form-control-sm" name="apepat" placeholder="Apellido Paterno" 
-                         value="<?= isset($_POST['apepat']) ? htmlspecialchars($_POST['apepat']) : '' ?>" required>
+                  <input type="text" class="form-control form-control-sm" name="apepat" placeholder="Apellido Paterno" value="<?= $old('apepat') ?>" required>
                 </div>
                 <div class="col-6">
-                  <input type="text" class="form-control form-control-sm" name="apemat" placeholder="Apellido Materno"
-                         value="<?= isset($_POST['apemat']) ? htmlspecialchars($_POST['apemat']) : '' ?>">
+                  <input type="text" class="form-control form-control-sm" name="apemat" placeholder="Apellido Materno" value="<?= $old('apemat') ?>">
                 </div>
                 <div class="col-6">
-                  <input type="text" class="form-control form-control-sm" name="numero1" placeholder="Número 1" maxlength="12"
-                         value="<?= isset($_POST['numero1']) ? htmlspecialchars($_POST['numero1']) : '' ?>" required>
+                  <input type="text" class="form-control form-control-sm" name="numero1" placeholder="Número 1" maxlength="12" value="<?= $old('numero1') ?>" required>
                 </div>
                 <div class="col-6">
-                  <input type="text" class="form-control form-control-sm" name="numero2" placeholder="Número 2" maxlength="12"
-                         value="<?= isset($_POST['numero2']) ? htmlspecialchars($_POST['numero2']) : '' ?>">
+                  <input type="text" class="form-control form-control-sm" name="numero2" placeholder="Número 2" maxlength="12" value="<?= $old('numero2') ?>">
                 </div>
                 <div class="col-12">
-                  <input type="text" class="form-control form-control-sm" name="asunto" placeholder="Asunto" maxlength="50"
-                         value="<?= isset($_POST['asunto']) ? htmlspecialchars($_POST['asunto']) : '' ?>" required>
+                  <input type="text" class="form-control form-control-sm" name="asunto" placeholder="Asunto" maxlength="50" value="<?= $old('asunto') ?>" required>
                 </div>
                 <div class="col-12">
-                  <textarea class="form-control form-control-sm" name="descripcion" rows="3" placeholder="Descripción" maxlength="2000"><?= isset($_POST['descripcion']) ? htmlspecialchars($_POST['descripcion']) : '' ?></textarea>
+                  <textarea class="form-control form-control-sm" name="descripcion" rows="3" placeholder="Descripción" maxlength="2000"><?= $old('descripcion') ?></textarea>
                 </div>
-                
+
                 <!-- Sección para administradores con acceso a todas las salas: seleccionar sala -->
-                <?php if ($esAdmin && isset($usuario_actual['acceso_todas_salas']) && $usuario_actual['acceso_todas_salas'] == 1): ?>
+                <?php if ($puedeElegirSala): ?>
                 <div class="col-12 mt-2">
                   <button type="button" id="btnSeleccionarSala" class="btn btn-sm btn-outline-info">
                     <i class="bi bi-building"></i> Asignar Sala
                   </button>
                 </div>
-                
+
                 <div id="salaAdminSection" class="sala-admin-section col-12 mt-2">
                   <label class="form-label small mb-1">Seleccionar Sala:</label>
                   <select class="form-select form-select-sm" name="sala_id_admin" id="salaSelectAdmin">
-                    <option value="">-- Usar sala de sesión (<?= isset($_SESSION['sala_id']) ? $_SESSION['sala_id'] : 'Sin sala' ?>) --</option>
-                    <?php foreach ($salas as $sala): 
-                      // Contar usuarios para esta sala (opcional)
-                      $usuarios_sala = 0;
-                      if ($sala_id_filtro == $sala['id']) {
-                        $usuarios_sala = count($usuarios);
-                      }
-                    ?>
-                      <option value="<?= $sala['id'] ?>" 
-                        <?= (isset($sala_id_filtro) && $sala_id_filtro == $sala['id']) ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($sala['nombre']) ?> (ID: <?= $sala['id'] ?>)
-                        <?php if ($usuarios_sala > 0): ?>
-                          <span class="badge bg-success badge-usuarios"><?= $usuarios_sala ?> users</span>
-                        <?php endif; ?>
+                    <option value="">-- Usar sala de sesión (<?= $salaSesion ?? 'Sin sala' ?>) --</option>
+                    <?php foreach ($salas as $sala): $seleccionada = $sala_id == $sala['id']; ?>
+                      <option value="<?= $sala['id'] ?>" <?= $seleccionada ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($sala['nombre']) ?> (ID: <?= $sala['id'] ?>)<?= $seleccionada && $usuarios ? ' — ' . count($usuarios) . ' users' : '' ?>
                       </option>
                     <?php endforeach; ?>
                   </select>
-                  <small class="text-muted">Seleccione una sala específica o deje en blanco para usar la sala de su sesión. 
+                  <small class="text-muted">Seleccione una sala específica o deje en blanco para usar la sala de su sesión.
                   Al cambiar la sala se actualizarán los closers disponibles.</small>
                 </div>
                 <?php endif; ?>
-                
+
                 <!-- Sección para agregar closer -->
                 <div class="col-12 mt-2">
+                  <?php if ($usuarios): ?>
                   <button type="button" id="btnAgregarCloser" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-plus-circle"></i> Agregar Closer
                   </button>
+                  <?php else: ?>
+                  <button type="button" class="btn btn-sm btn-outline-secondary text-muted" disabled title="No hay closers disponibles para esta sala">
+                    <i class="bi bi-plus-circle"></i> Agregar Closer
+                  </button>
+                  <?php endif; ?>
                 </div>
-                
+
                 <div id="closerSection" class="closer-section col-12 mt-2">
                   <label class="form-label small mb-1">Seleccionar Closer:</label>
                   <select class="form-select form-select-sm" name="usuario_closer" id="selectCloser">
                     <option value="">-- Seleccione un closer --</option>
-                    <?php 
-                    if (!empty($usuarios)): 
-                      foreach ($usuarios as $usuario): 
-                        // Aplicar preg_replace para limpiar símbolos del apellido materno
-                        $apematLimpio = $usuario['apemat'] ? preg_replace('/[^\p{L}\p{N}\s]/u', '', $usuario['apemat']) : '';
-                        $nombreCompleto = trim($usuario['nombre'] . ' ' . $usuario['apepat'] . ' ' . $usuario['apemat']);
-                    ?>
-                      <option value="<?= $usuario['id'] ?>" 
-                        <?= (isset($_POST['usuario_closer']) && $_POST['usuario_closer'] == $usuario['id']) ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($nombreCompleto) ?>
+                    <?php foreach ($usuarios as $usuario): ?>
+                      <option value="<?= $usuario['id'] ?>" <?= ($_POST['usuario_closer'] ?? '') == $usuario['id'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars(trim("{$usuario['nombre']} {$usuario['apepat']} {$usuario['apemat']}")) ?>
                       </option>
-                    <?php 
-                      endforeach;
-                    else: 
-                    ?>
-                      <option value="">-- No hay closers disponibles para esta sala --</option>
-                    <?php endif; ?>
+                    <?php endforeach; ?>
                   </select>
-                  <?php if (empty($usuarios) && $sala_id_filtro): ?>
-                    <small class="text-danger">No se encontraron usuarios con acceso a la sala <?= $sala_id_filtro ?></small>
+                  <?php if (!$usuarios && $sala_id): ?>
+                    <small class="text-danger">No se encontraron usuarios con acceso a la sala <?= $sala_id ?></small>
                   <?php endif; ?>
                 </div>
-                
+
                 <div class="col-12 mt-3">
                   <button type="submit" class="btn btn-sm btn-primary w-100">Enviar</button>
                 </div>
@@ -435,90 +312,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Botón para agregar closer
-      const btnAgregarCloser = document.getElementById('btnAgregarCloser');
-      const closerSection = document.getElementById('closerSection');
+      // Enlaza un botón con su sección plegable; la abre si su select ya tiene un valor
+      function plegable(idBoton, idSeccion, idSelect, textoMostrar, textoOcultar) {
+        const boton = document.getElementById(idBoton);
+        const seccion = document.getElementById(idSeccion);
+        const select = document.getElementById(idSelect);
+        if (!boton || !seccion) return;
+
+        const actualizarTexto = () => {
+          boton.innerHTML = seccion.classList.contains('show') ? textoOcultar : textoMostrar;
+        };
+        if (select && select.value !== '') seccion.classList.add('show');
+        actualizarTexto();
+        boton.addEventListener('click', () => {
+          seccion.classList.toggle('show');
+          actualizarTexto();
+        });
+      }
+
+      plegable('btnAgregarCloser', 'closerSection', 'selectCloser',
+        '<i class="bi bi-plus-circle"></i> Agregar Closer', '<i class="bi bi-dash-circle"></i> Ocultar Closer');
+      plegable('btnSeleccionarSala', 'salaAdminSection', 'salaSelectAdmin',
+        '<i class="bi bi-building"></i> Asignar Sala', '<i class="bi bi-building-slash"></i> Ocultar Sala');
+
+      // Al cambiar la sala, recargar el formulario para actualizar los closers
       const salaSelectAdmin = document.getElementById('salaSelectAdmin');
-      const clienteForm = document.getElementById('clienteForm');
-      const selectCloser = document.getElementById('selectCloser');
-      
-      // Mostrar sección de closers si ya hay un closer seleccionado
-      if (selectCloser && selectCloser.value !== '') {
-        if (closerSection) {
-          closerSection.classList.add('show');
-        }
-        if (btnAgregarCloser) {
-          btnAgregarCloser.innerHTML = '<i class="bi bi-dash-circle"></i> Ocultar Closer';
-        }
-      }
-      
-      // Mostrar sección de sala si ya hay una sala seleccionada
-      if (salaSelectAdmin && salaSelectAdmin.value !== '') {
-        const salaAdminSection = document.getElementById('salaAdminSection');
-        const btnSeleccionarSala = document.getElementById('btnSeleccionarSala');
-        if (salaAdminSection) {
-          salaAdminSection.classList.add('show');
-        }
-        if (btnSeleccionarSala) {
-          btnSeleccionarSala.innerHTML = '<i class="bi bi-building-slash"></i> Ocultar Sala';
-        }
-      }
-      
-      if (btnAgregarCloser) {
-        btnAgregarCloser.addEventListener('click', function() {
-          closerSection.classList.toggle('show');
-          
-          // Cambiar el texto del botón
-          if (closerSection.classList.contains('show')) {
-            this.innerHTML = '<i class="bi bi-dash-circle"></i> Ocultar Closer';
-          } else {
-            this.innerHTML = '<i class="bi bi-plus-circle"></i> Agregar Closer';
-          }
-        });
-      }
-      
-      // Botón para seleccionar sala (solo para admin con acceso a todas salas)
-      const btnSeleccionarSala = document.getElementById('btnSeleccionarSala');
-      const salaAdminSection = document.getElementById('salaAdminSection');
-      
-      if (btnSeleccionarSala) {
-        btnSeleccionarSala.addEventListener('click', function() {
-          salaAdminSection.classList.toggle('show');
-          
-          // Cambiar el texto del botón
-          if (salaAdminSection.classList.contains('show')) {
-            this.innerHTML = '<i class="bi bi-building-slash"></i> Ocultar Sala';
-          } else {
-            this.innerHTML = '<i class="bi bi-building"></i> Asignar Sala';
-          }
-        });
-      }
-      
-      // Si cambia la selección de sala, enviar el formulario para actualizar los closers
       if (salaSelectAdmin) {
         salaSelectAdmin.addEventListener('change', function() {
-          // Crear un input oculto para indicar que es solo para actualizar closers
-          let updateInput = document.createElement('input');
+          const clienteForm = document.getElementById('clienteForm');
+          const updateInput = document.createElement('input');
           updateInput.type = 'hidden';
           updateInput.name = 'actualizar_closers';
           updateInput.value = '1';
           clienteForm.appendChild(updateInput);
-          
-          // Enviar el formulario
           clienteForm.submit();
         });
-      }
-      
-      // Actualizar automáticamente los closers si no hay ninguno disponible
-      if (selectCloser && selectCloser.options.length === 1 && selectCloser.options[0].value === '') {
-        // Si solo hay la opción por defecto, ocultar la sección
-        closerSection.classList.remove('show');
-        if (btnAgregarCloser) {
-          btnAgregarCloser.innerHTML = '<i class="bi bi-plus-circle"></i> Agregar Closer';
-          btnAgregarCloser.disabled = true;
-          btnAgregarCloser.title = 'No hay closers disponibles para esta sala';
-          btnAgregarCloser.classList.add('text-muted');
-        }
       }
     });
   </script>

@@ -139,7 +139,7 @@ function formatearNombreCampo($campo) {
         'ganancia_fullstack' => '💸 Ganancia Full Stack'
     ];
     
-    return $nombres[$campo] ?? ucfirst(str_replace('_', ' ', $campo));
+    return $nombres[$campo] ?? htmlspecialchars(ucfirst(str_replace('_', ' ', $campo)));
 }
 
 // Función para formatear valores
@@ -153,6 +153,16 @@ function formatearValor($campo, $valor, $usuarios_info = [], $plataformas_info =
         return '$' . number_format(floatval($valor), 2);
     }
     
+    // Formatear plataforma_id - mostrar nombre de plataforma
+    // (debe ir antes del caso genérico '_id', que de otro modo lo capturaba siempre)
+    if ($campo === 'plataforma_id') {
+        if (isset($plataformas_info[$valor])) {
+            return htmlspecialchars($plataformas_info[$valor]);
+        } else {
+            return '<em class="text-muted">Plataforma no encontrada</em> <small class="text-muted">(ID: ' . htmlspecialchars($valor) . ')</small>';
+        }
+    }
+
     // Formatear IDs de usuarios - mostrar nombres completos
     if (strpos($campo, '_id') !== false && is_numeric($valor)) {
         $user_id = intval($valor);
@@ -169,16 +179,7 @@ function formatearValor($campo, $valor, $usuarios_info = [], $plataformas_info =
         // Para otros IDs, mostrar solo el ID
         return 'ID: ' . $user_id;
     }
-    
-    // Formatear plataforma_id - mostrar nombre de plataforma
-    if ($campo === 'plataforma_id' && !empty($valor)) {
-        if (isset($plataformas_info[$valor])) {
-            return htmlspecialchars($plataformas_info[$valor]);
-        } else {
-            return '<em class="text-muted">Plataforma no encontrada</em> <small class="text-muted">(ID: ' . htmlspecialchars($valor) . ')</small>';
-        }
-    }
-    
+
     // Formatear fechas
     if ($campo === 'fecha' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $valor)) {
         return date('d/m/Y', strtotime($valor));

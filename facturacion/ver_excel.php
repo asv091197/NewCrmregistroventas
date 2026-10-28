@@ -6,11 +6,6 @@ while (ob_get_level()) {
 }
 ob_start();
 
-// Habilitar visualización de errores temporalmente para diagnóstico
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 // Verificar si ya se han enviado headers
 if (headers_sent()) {
     die('Error: Headers ya han sido enviados. Verifique que no haya espacios en blanco o caracteres antes de <?php.');
@@ -45,57 +40,12 @@ try {
     die("Error de conexión a la base de datos: " . $e->getMessage());
 }
 
-// ============================================================================
-// VERIFICACIÓN DE PERMISOS Y RESTRICCIONES POR ROL
-// ============================================================================
-
-// Determinar si es admin
-$esAdmin = isset($_SESSION['rol']) && in_array($_SESSION['rol'], ['admin', 'superadmin'], true);
-
-// Determinar el rango de fechas del mes en curso para usuarios no admin
-$fechaInicioMes = '';
-$fechaFinMes = '';
-
-if (!$esAdmin) {
-    $fechaInicioMes = date('Y-m-01'); // Primer día del mes
-    $fechaFinMes = date('Y-m-t'); // Último día del mes
-}
-
 // Obtener parámetros de filtrado
+// (solo admin/superadmin llegan aquí, así que no aplica la restricción al mes en curso de usuarios normales)
 $fechaInicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : '';
 $fechaFin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : '';
 $busqueda = isset($_GET['busqueda']) ? $_GET['busqueda'] : '';
 $plataformaIds = isset($_GET['plataforma_id']) ? (array)$_GET['plataforma_id'] : [];
-
-// Para usuarios no admin, aplicar restricciones de fecha
-if (!$esAdmin) {
-    // Si no hay fechas seleccionadas, usar el mes actual
-    if (empty($fechaInicio)) {
-        $fechaInicio = $fechaInicioMes;
-    }
-    if (empty($fechaFin)) {
-        $fechaFin = $fechaFinMes;
-    }
-    
-    // Validar y ajustar fechas si están fuera del mes actual
-    if (!empty($fechaInicio) && $fechaInicio < $fechaInicioMes) {
-        $fechaInicio = $fechaInicioMes;
-    }
-    if (!empty($fechaInicio) && $fechaInicio > $fechaFinMes) {
-        $fechaInicio = $fechaInicioMes;
-    }
-    if (!empty($fechaFin) && $fechaFin > $fechaFinMes) {
-        $fechaFin = $fechaFinMes;
-    }
-    if (!empty($fechaFin) && $fechaFin < $fechaInicioMes) {
-        $fechaFin = $fechaFinMes;
-    }
-    // Validar que fecha inicio no sea mayor que fecha fin
-    if (!empty($fechaInicio) && !empty($fechaFin) && $fechaInicio > $fechaFin) {
-        $fechaInicio = $fechaInicioMes;
-        $fechaFin = $fechaFinMes;
-    }
-}
 
 // Construir consulta base - MODIFICADO PARA INCLUIR FRONT
 $sql = "SELECT v.*, 
@@ -121,15 +71,6 @@ $sql = "SELECT v.*,
 $conditions = [];
 $params = [];
 
-// Si el usuario no es admin, forzar el filtro del mes en curso
-if (!$esAdmin) {
-    $conditions[] = "v.fecha >= ?";
-    $conditions[] = "v.fecha <= ?";
-    $params[] = $fechaInicioMes . ' 00:00:00';
-    $params[] = $fechaFinMes . ' 23:59:59';
-}
-
-// Los filtros normales se aplican además del filtro del mes
 if (!empty($fechaInicio)) {
     $conditions[] = "v.fecha >= ?";
     $params[] = $fechaInicio . ' 00:00:00';
@@ -348,11 +289,6 @@ $sheet->getPageSetup()
 $sheet->mergeCells('A1:' . $ultimaColumna . '2');
 $tituloReporte = 'REPORTE DE VENTAS - GRUPO IDEAS - RESUMEN GENERAL (EDITABLE)';
 
-// Agregar información sobre restricciones para usuarios no admin
-if (!$esAdmin) {
-    $tituloReporte .= ' - MES ACTUAL: ' . date('F Y');
-}
-
 if (!empty($plataformasNombres)) {
     if ($multiplesPlataformas) {
         $tituloReporte .= ' - PLATAFORMAS SEPARADAS: ' . implode(', ', $plataformasNombres);
@@ -374,17 +310,13 @@ if (!empty($fechaInicio) && !empty($fechaFin)) {
     $filtroTexto = "Hasta: " . date('d/m/Y', strtotime($fechaFin));
 }
 
+// Texto plano en la celda (Excel no interpreta HTML)
 if (!empty($busqueda)) {
-    $filtroTexto .= empty($filtroTexto) ? "Búsqueda: " . htmlspecialchars($busqueda) : " | Búsqueda: " . htmlspecialchars($busqueda);
+    $filtroTexto .= " | Búsqueda: " . $busqueda;
 }
 
 if (!empty($plataformasNombres)) {
-    $filtroTexto .= empty($filtroTexto) ? "Plataformas: " . implode(', ', $plataformasNombres) : " | Plataformas: " . implode(', ', $plataformasNombres);
-}
-
-// Agregar información sobre restricciones para usuarios no admin
-if (!$esAdmin) {
-    $filtroTexto .= " | Rango del mes: " . date('d/m/Y', strtotime($fechaInicioMes)) . " al " . date('d/m/Y', strtotime($fechaFinMes));
+    $filtroTexto .= " | Plataformas: " . implode(', ', $plataformasNombres);
 }
 
 $sheet->mergeCells('A3:' . $ultimaColumna . '3');
@@ -394,14 +326,7 @@ $sheet->getStyle('A3:' . $ultimaColumna . '3')->getAlignment()->setHorizontal(Al
 
 // Nota sobre permisos y restricciones
 $sheet->mergeCells('A4:' . $ultimaColumna . '4');
-$instrucciones = 'INSTRUCCIONES: ';
-
-// Agregar información de permisos
-if (!$esAdmin) {
-    $instrucciones .= '[MODO RESTRINGIDO: Solo datos del mes actual] | ';
-} else {
-    $instrucciones .= '[MODO ADMIN: Acceso completo] | ';
-}
+$instrucciones = 'INSTRUCCIONES: [MODO ADMIN: Acceso completo] | ';
 
 if (!$esFiltroPlataforma) {
     $instrucciones .= '1) Campos amarillos = editables | ';
@@ -419,14 +344,9 @@ if (!$esFiltroPlataforma) {
 $sheet->setCellValue('A4', $instrucciones);
 $sheet->getStyle('A4:' . $ultimaColumna . '4')->getFont()->setBold(true)->setSize(10);
 
-// Cambiar color según el tipo de usuario
-if (!$esAdmin) {
-    $sheet->getStyle('A4:' . $ultimaColumna . '4')->getFont()->getColor()->setRGB('E74C3C');
-    $sheet->getStyle('A4:' . $ultimaColumna . '4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FDEBD0');
-} else {
-    $sheet->getStyle('A4:' . $ultimaColumna . '4')->getFont()->getColor()->setRGB('0C63E4');
-    $sheet->getStyle('A4:' . $ultimaColumna . '4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('E8F4FD');
-}
+// Colores del modo admin
+$sheet->getStyle('A4:' . $ultimaColumna . '4')->getFont()->getColor()->setRGB('0C63E4');
+$sheet->getStyle('A4:' . $ultimaColumna . '4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('E8F4FD');
 
 $sheet->getStyle('A4:' . $ultimaColumna . '4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -515,7 +435,6 @@ if ($esFiltroPlataforma) {
             if ($filaFinPlataforma >= $filaInicioPlataforma) {
                 $sheet->setCellValue('A' . $row, 'TOTAL ' . $plataformaNombre . ':');
                 $sheet->setCellValue('B' . $row, $totalPlataforma);
-                $sheet->mergeCells('A' . $row . ':A' . $row);
                 applySafeStyle($sheet, 'A' . $row . ':C' . $row, 'total');
                 $sheet->getStyle('B' . $row)->getNumberFormat()->setFormatCode('"$"#,##0.00');
                 
@@ -539,7 +458,6 @@ if ($esFiltroPlataforma) {
             
             $sheet->setCellValue('A' . $row, 'TOTAL GENERAL:');
             $sheet->setCellValue('B' . $row, $granTotal);
-            $sheet->mergeCells('A' . $row . ':A' . $row);
             applySafeStyle($sheet, 'A' . $row . ':C' . $row, 'granTotal');
             $sheet->getStyle('B' . $row)->getNumberFormat()->setFormatCode('"$"#,##0.00');
         }
@@ -582,7 +500,6 @@ if ($esFiltroPlataforma) {
         
         // Fila de totales para una sola plataforma
         if ($row > 6) {
-            $sheet->mergeCells('A' . $row . ':A' . $row);
             $sheet->setCellValue('A' . $row, 'TOTALES (automáticos):');
             
             // Solo Venta Bruto para plataforma

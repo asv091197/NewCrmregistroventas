@@ -32,10 +32,11 @@ $conteoAcciones = [];
 $idsExitosos = array_map('intval', array_column(array_filter($logs, fn($l) => $l['exito']), 'id'));
 if ($idsExitosos) {
     try {
+        $listaIds = implode(',', $idsExitosos);
         $res = $conn->query("
             SELECT login_id, SUM(accion <> 'LOGOUT') AS acciones, MAX(accion = 'LOGOUT') AS cerro
             FROM logs_acciones
-            WHERE login_id IN (" . implode(',', $idsExitosos) . ")
+            WHERE login_id IN ($listaIds)
             GROUP BY login_id
         ");
         while ($r = $res->fetch(PDO::FETCH_ASSOC)) {
@@ -48,7 +49,7 @@ if ($idsExitosos) {
             JOIN (
                 SELECT login_id, MAX(id) AS id
                 FROM logs_acciones
-                WHERE login_id IN (" . implode(',', $idsExitosos) . ") AND accion <> 'LOGOUT'
+                WHERE login_id IN ($listaIds) AND accion <> 'LOGOUT'
                 GROUP BY login_id
             ) u ON u.id = la.id
         ");
@@ -82,6 +83,9 @@ $porPagina     = 10;
 $totalPaginas  = max(1, (int)ceil(count($acciones) / $porPagina));
 $pagina        = min(max(1, (int)($_GET['pagina'] ?? 1)), $totalPaginas);
 $accionesPagina = array_slice($acciones, ($pagina - 1) * $porPagina, $porPagina);
+
+// Colores hex por clase Bootstrap (los usan la lista y la línea de tiempo)
+$hexes = ['success' => '#22c55e', 'primary' => '#6366f1', 'danger' => '#ef4444', 'secondary' => '#64748b', 'info' => '#0ea5e9', 'warning' => '#f59e0b'];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -380,7 +384,6 @@ $accionesPagina = array_slice($acciones, ($pagina - 1) * $porPagina, $porPagina)
         </div></div>
     <?php else: ?>
         <?php
-        $hexes  = ['success' => '#22c55e', 'primary' => '#6366f1', 'danger' => '#ef4444', 'secondary' => '#64748b', 'info' => '#0ea5e9', 'warning' => '#f59e0b'];
         $ultima  = end($acciones) ?: null;
         $cerro   = $ultima && $ultima['accion'] === 'LOGOUT';
         $fin     = $ultima ? strtotime($ultima['fecha']) : strtotime($sesion['fecha_intento']);
@@ -671,7 +674,7 @@ $accionesPagina = array_slice($acciones, ($pagina - 1) * $porPagina, $porPagina)
                                         default => 'bi-question-circle'
                                     };
                                     ?>
-                                    <span class="text-muted-sm"><i class="bi <?= $icono ?>"></i> <?= htmlspecialchars($log['dispositivo']) ?></span>
+                                    <span class="text-muted-sm"><i class="bi <?= $icono ?>"></i> <?= htmlspecialchars($log['dispositivo'] ?? '') ?></span>
                                 </td>
                                 <td class="d-none d-lg-table-cell"><span class="text-muted-sm"><?= htmlspecialchars($log['navegador'] ?? '—') ?></span></td>
                                 <td class="d-none d-md-table-cell">

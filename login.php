@@ -20,29 +20,8 @@ if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/session_config.php'; session_start();
 }
 
-// Función de depuración
-function debugLog($message, $data = null) {
-    $logFile = __DIR__ . '/debug_login.log';
-    $timestamp = date('Y-m-d H:i:s');
-    $logMessage = "[$timestamp] $message";
-    
-    if ($data !== null) {
-        $logMessage .= " - " . (is_array($data) || is_object($data) ? print_r($data, true) : $data);
-    }
-    
-    $logMessage .= "\n";
-    file_put_contents($logFile, $logMessage, FILE_APPEND);
-}
-
-debugLog('=== INICIO DE PROCESO LOGIN ===');
-
 // Verificar si el usuario ya está logueado
 if (isset($_SESSION['usuario_id']) && isset($_SESSION['rol'])) {
-    debugLog('Usuario ya tiene sesión activa', [
-        'usuario_id' => $_SESSION['usuario_id'],
-        'rol' => $_SESSION['rol']
-    ]);
-    
     if ($_SESSION['rol'] === 'admin') {
         header("Location: opcionesAdmin.php");
     } else {
@@ -54,26 +33,21 @@ if (isset($_SESSION['usuario_id']) && isset($_SESSION['rol'])) {
 // Inicializar variables
 $mensaje = "";
 $mensaje_tipo = ""; // success, danger, warning
-$conexion = null;
 
 // Verificar si hay datos POST
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    debugLog('Método POST recibido', $_POST);
-    
     // Validar que existan los campos
     if (!isset($_POST['correo']) || !isset($_POST['contraseña'])) {
         $mensaje = "Por favor complete todos los campos";
         $mensaje_tipo = "danger";
-        debugLog('Campos POST incompletos', $_POST);
     } else {
         $correo = trim($_POST['correo']);
         $contraseña = $_POST['contraseña'];
-        
+
         // Validaciones básicas
         if (empty($correo) || empty($contraseña)) {
             $mensaje = "Por favor complete todos los campos";
             $mensaje_tipo = "danger";
-            debugLog('Campos vacíos', ['correo' => $correo, 'password_length' => strlen($contraseña)]);
         } else {
             // Conectar a la base de datos
             try {
@@ -81,31 +55,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                 // Consulta para obtener datos del usuario
                 $stmt = $conexion->prepare("
-                    SELECT 
-                        u.id, 
+                    SELECT
+                        u.id,
                         u.nombre,
                         u.apemat,
-                        u.contrasena, 
+                        u.contrasena,
                         u.rol,
                         u.acceso_todas_salas,
                         u.salas_permitidas
-                    FROM usuarios u 
+                    FROM usuarios u
                     WHERE u.correo = ? AND u.activo = 1
                 ");
-                
+
                 $stmt->execute([$correo]);
                 $filas = $stmt->fetchAll(PDO::FETCH_NUM);
 
                 if (count($filas) === 1) {
                     [$id, $nombre, $apemat, $hash, $rol, $acceso_todas_salas, $salas_permitidas_json] = $filas[0];
 
-                    debugLog('Usuario encontrado', [
-                        'id' => $id,
-                        'nombre' => $nombre,
-                        'apemat' => $apemat,
-                        'rol' => $rol
-                    ]);
-                    
                     if (password_verify($contraseña, $hash)) {
                         session_regenerate_id(true);
                         $_SESSION['usuario_id'] = $id;
@@ -113,87 +80,48 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         $_SESSION['apemat'] = $apemat;
                         $_SESSION['rol'] = $rol;
                         $_SESSION['correo'] = $correo;
-                        
+
                         // Lógica para determinar sala_id
                         if ($acceso_todas_salas == 1) {
                             // Si tiene acceso a todas las salas, no establecer sala específica
                             unset($_SESSION['sala_id']);
                             $_SESSION['acceso_todas_salas'] = true;
-                            debugLog('Usuario con acceso a todas las salas');
                         } else {
-                            // Si tiene salas permitidas específicas
-                            if (!empty($salas_permitidas_json) && $salas_permitidas_json !== 'null') {
-                                $salas_permitidas = json_decode($salas_permitidas_json, true);
-                                if (is_array($salas_permitidas) && count($salas_permitidas) > 0) {
-                                    // Tomar la primera sala del array
-                                    $_SESSION['sala_id'] = intval($salas_permitidas[0]);
-                                    // Opcional: guardar todas las salas permitidas si se necesitan
-                                    $_SESSION['todas_salas_permitidas'] = $salas_permitidas;
-                                    debugLog('Salas permitidas asignadas', $salas_permitidas);
-                                } else {
-                                    unset($_SESSION['sala_id']);
-                                    debugLog('Array de salas vacío o inválido');
-                                }
+                            // Si tiene salas permitidas específicas, tomar la primera
+                            $salas_permitidas = (!empty($salas_permitidas_json) && $salas_permitidas_json !== 'null')
+                                ? json_decode($salas_permitidas_json, true)
+                                : null;
+                            if (is_array($salas_permitidas) && count($salas_permitidas) > 0) {
+                                $_SESSION['sala_id'] = intval($salas_permitidas[0]);
+                                // Guardar todas las salas permitidas (las usa salaPermitida() de auth.php)
+                                $_SESSION['todas_salas_permitidas'] = $salas_permitidas;
                             } else {
                                 unset($_SESSION['sala_id']);
-                                debugLog('No hay salas permitidas definidas');
                             }
                             $_SESSION['acceso_todas_salas'] = false;
                         }
-                        
-                        $_SESSION['ultimo_acceso'] = time();
-                        
-                        debugLog('Login exitoso', [
-                            'usuario' => $correo,
-                            'rol' => $rol,
-                            'apemat' => $apemat,
-                            'session_id' => session_id()
-                        ]);
-                        
-                        // Cerrar conexión y redirigir
-                        $stmt = null;
-                        $conexion = null;
 
-                        // Determinar URL de redirección
-                        if ($rol === 'admin') {
-                            $redirect_url = "opcionesAdmin.php";
-                        } else {
-                            $redirect_url = "Agencia/agencia.php";
-                        }
-                        
-                        debugLog('Redirigiendo a', $redirect_url);
-                        
-                        header("Location: " . $redirect_url);
+                        $_SESSION['ultimo_acceso'] = time();
+
+                        // Redirigir según el rol
+                        header("Location: " . ($rol === 'admin' ? "opcionesAdmin.php" : "Agencia/agencia.php"));
                         exit();
-                        
                     } else {
                         $mensaje = "Contraseña incorrecta.";
                         $mensaje_tipo = "danger";
-                        debugLog('Contraseña incorrecta para usuario', $correo);
                     }
                 } else {
                     $mensaje = "Correo no registrado o usuario inactivo.";
                     $mensaje_tipo = "danger";
-                    debugLog('Usuario no encontrado o inactivo', $correo);
                 }
-                
-                $stmt = null;
-                $conexion = null;
-
             } catch (Exception $e) {
                 $mensaje = "Error en el sistema. Por favor intente más tarde.";
                 $mensaje_tipo = "danger";
-                debugLog('Excepción en login', $e->getMessage());
-
-                $conexion = null;
+                error_log('Excepción en login: ' . $e->getMessage());
             }
         }
     }
-} else {
-    debugLog('Método no POST', $_SERVER['REQUEST_METHOD']);
 }
-
-debugLog('=== FIN DE PROCESO LOGIN ===');
 ?>
 
 <!DOCTYPE html>
@@ -849,13 +777,8 @@ debugLog('=== FIN DE PROCESO LOGIN ===');
             
             bgImage.onerror = function() {
                 document.body.classList.add('no-bg-image');
-                console.log('La imagen de fondo no pudo cargar, usando gradiente alternativo');
             };
-            
-            bgImage.onload = function() {
-                console.log('Imagen de fondo cargada correctamente');
-            };
-            
+
             // Si hay un error de redirección (por ejemplo, si JavaScript bloqueó la redirección automática)
             // podemos agregar un botón de redirección manual
             setTimeout(() => {
@@ -904,39 +827,6 @@ debugLog('=== FIN DE PROCESO LOGIN ===');
                 }, 5000);
             }
         }
-        
-        // Prevenir doble clic en el botón
-        document.getElementById('btnLogin').addEventListener('click', function(e) {
-            if (formSubmitting) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
-        });
-        
-        // Permitir enviar el formulario con Enter (solo si no está en estado de envío)
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.target.matches('button') && !formSubmitting) {
-                const btnLogin = document.getElementById('btnLogin');
-                if (!btnLogin.disabled) {
-                    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-                }
-            }
-        });
-        
-        // Agregar efecto visual al hacer hover en el botón
-        const btnLogin = document.getElementById('btnLogin');
-        btnLogin.addEventListener('mouseenter', function() {
-            if (!this.disabled) {
-                this.style.transform = 'translateY(-2px)';
-            }
-        });
-        
-        btnLogin.addEventListener('mouseleave', function() {
-            if (!this.disabled && !this.classList.contains('loading')) {
-                this.style.transform = 'translateY(0)';
-            }
-        });
     </script>
 </body>
 </html>

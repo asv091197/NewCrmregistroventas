@@ -14,24 +14,30 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 }
 
+$rol = $_SESSION['rol'] ?? '';
+
+// Conexión única para toda la página
+$error = null;
+try {
+    $conn = conexionPDO();
+} catch (PDOException $e) {
+    $conn = null;
+    $error = "Error de conexión: " . $e->getMessage();
+}
+
 // Verificar si es admin y tiene permiso_plataforma
-$es_admin = (($_SESSION['rol'] ?? '') === 'admin') || (($_SESSION['rol'] ?? '') === 'superadmin');
+$es_admin = $rol === 'admin' || $rol === 'superadmin';
 $tiene_permiso_plataforma = false;
 
-if ($es_admin) {
+if ($es_admin && $conn) {
     try {
-        $pdo = conexionPDO();
-
-        $stmt = $pdo->prepare("SELECT permiso_plataforma FROM usuarios_facturacion WHERE id = ?");
+        $stmt = $conn->prepare("SELECT permiso_plataforma FROM usuarios_facturacion WHERE id = ?");
         $stmt->execute([$_SESSION['usuario_id']]);
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($usuario && $usuario['permiso_plataforma'] == 1) {
-            $tiene_permiso_plataforma = true;
-        }
+        $tiene_permiso_plataforma = $usuario && $usuario['permiso_plataforma'] == 1;
     } catch (PDOException $e) {
         error_log("Error al obtener permiso plataforma: " . $e->getMessage());
-        $tiene_permiso_plataforma = false;
     }
 }
 
@@ -60,16 +66,8 @@ $plataformas = [];
 $total_registros = 0;
 $total_paginas = 0;
 $mostrar_paginacion = false;
-$error = null;
 
-// Conexión y consulta
-try {
-    $conn = conexionPDO();
-} catch (PDOException $e) {
-    $conn = null;
-    $error = "Error de conexión: " . $e->getMessage();
-}
-
+// Consulta
 if ($conn) {
     try {
         // Construir WHERE conditions
@@ -129,11 +127,6 @@ if ($conn) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        .table-actions {
-            white-space: nowrap;
-            width: 140px;
-        }
-
         .badge-spei {
             background-color: #198754;
         }
@@ -224,7 +217,7 @@ if ($conn) {
             <a class="navbar-brand" href="#"></a>
             <div class="d-flex align-items-center ms-auto">
                 <ul class="navbar-nav me-3">
-                    <?php if ($_SESSION['rol'] === 'superadmin'): ?>
+                    <?php if ($rol === 'superadmin'): ?>
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="../agencia/opcionesAdmin.php" style="text-decoration: none;">
                                 Dashboard Agentes
@@ -247,7 +240,7 @@ if ($conn) {
                         </a>
                     </li>
                 </ul>
-                <span class="navbar-text text-muted me-3"><?= htmlspecialchars($_SESSION['nombre']) ?></span>
+                <span class="navbar-text text-muted me-3"><?= htmlspecialchars($_SESSION['nombre'] ?? '') ?></span>
                 <a href="logout.php" class="btn btn-sm btn-outline-danger">
                     <i class="bi bi-box-arrow-right"></i> Salir
                 </a>
@@ -569,7 +562,7 @@ if ($conn) {
         class PlataformaManager {
             constructor() {
                 this.searchTimeout = null;
-                this.currentSearch = '<?= $busqueda ?>';
+                this.currentSearch = <?= json_encode($busqueda, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
                 this.currentPage = <?= $pagina_actual ?>;
                 this.showInactive = <?= $mostrar_inactivos ? 'true' : 'false' ?>;
                 this.plataformaAProcesar = null;
@@ -739,7 +732,7 @@ if ($conn) {
 
             resetForm() {
                 $('#formPlataforma')[0].reset();
-                $('#plataformaId, #actionType').val('');
+                $('#plataformaId').val('');
                 $('#actionType').val('create');
                 $('#modalTitle').text('Agregar Nueva Plataforma');
 

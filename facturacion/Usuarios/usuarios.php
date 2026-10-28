@@ -16,11 +16,9 @@ set_exception_handler(function ($exception) {
 
 require_once __DIR__ . '/../../session_config.php'; session_start();
 
-// Verificación de sesión mejorada
-if (
-  !isset($_SESSION['usuario_id']) || empty($_SESSION['rol']) ||
-   ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin')
-) {
+// Verificación de sesión
+$rolSesion = $_SESSION['rol'] ?? '';
+if (!isset($_SESSION['usuario_id']) || ($rolSesion !== 'admin' && $rolSesion !== 'superadmin')) {
   header("Location: ../login.php");
   exit;
 }
@@ -47,23 +45,25 @@ try {
   $stmtAdmin->execute([$admin_id]);
   $adminData = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
   
-  $admin_acceso_todas = $adminData['acceso_todas_salas'] ?? 0;
-  $admin_salas_permitidas = $adminData['salas_permitidas'] ?? '[]';
-  
+  // Superadmin siempre tiene acceso a todas las salas
+  $admin_acceso_todas = $rolSesion === 'superadmin' ? 1 : (int)($adminData['acceso_todas_salas'] ?? 0);
+
   // Convertir salas permitidas a array
-  $admin_salas_array = json_decode($admin_salas_permitidas, true) ?? [];
-  
+  $admin_salas_array = json_decode($adminData['salas_permitidas'] ?? '[]', true);
+  if (!is_array($admin_salas_array)) {
+    $admin_salas_array = [];
+  }
 } catch (PDOException $e) {
   error_log("Error al obtener datos del admin: " . $e->getMessage());
   die("Error al cargar permisos del administrador.");
 }
 
 // Obtener parámetros de filtrado
-$fechaInicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : '';
-$fechaFin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : '';
-$salaFiltro = isset($_GET['sala']) ? $_GET['sala'] : '';
-$mostrar_inactivos = isset($_GET['mostrar_inactivos']) ? (bool)$_GET['mostrar_inactivos'] : false;
-$filtro_aplicado = isset($_GET['filtrar']) ? true : false; // Bandera para saber si se hizo clic en "Filtrar"
+$fechaInicio = (string)($_GET['fecha_inicio'] ?? '');
+$fechaFin = (string)($_GET['fecha_fin'] ?? '');
+$salaFiltro = (string)($_GET['sala'] ?? '');
+$mostrar_inactivos = !empty($_GET['mostrar_inactivos']);
+$filtro_aplicado = isset($_GET['filtrar']); // Bandera para saber si se hizo clic en "Filtrar"
 
 // Configuración de paginación
 $usuariosPorPagina = 10;
@@ -86,11 +86,11 @@ if ($mostrar_inactivos) {
 // LÓGICA DE VISUALIZACIÓN SEGÚN PERMISOS DEL ADMIN
 // SOLO admin con acceso_todas_salas = 1 ve TODOS los usuarios
 // Otros (admin limitado o usuarios) solo ven usuarios de sus salas
-if ($admin_acceso_todas == 0 && !empty($admin_salas_array)) {
+if ($admin_acceso_todas == 0) {
   // Crear condición para las salas del admin
   $salaConditions = [];
-  
-  foreach ($admin_salas_array as $index => $salaId) {
+
+  foreach (array_values($admin_salas_array) as $index => $salaId) {
     $paramName = ":admin_sala_" . $index;
     $salaConditions[] = "JSON_CONTAINS(u.salas_permitidas, $paramName)";
     $params[$paramName] = json_encode($salaId);
@@ -418,14 +418,14 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
   </style>
 </head>
 
-<body class="bg-light" data-rol="<?= htmlspecialchars($_SESSION['rol']) ?>" data-admin-acceso="<?= $admin_acceso_todas ?>">
+<body class="bg-light" data-rol="<?= htmlspecialchars($rolSesion) ?>" data-admin-acceso="<?= (int)$admin_acceso_todas ?>">
   <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
     <div class="container-fluid">
       <div class="d-flex align-items-center ms-auto">
         <ul class="navbar-nav me-3">
-           <?php if ($_SESSION['rol'] === 'superadmin'): ?>
+           <?php if ($rolSesion === 'superadmin'): ?>
           <li class="nav-item">
-            <a class="nav-link text-dark" href="../../../agencia/opcionesAdmin.php" style="text-decoration: none;">
+            <a class="nav-link text-dark" href="../../agencia/opcionesAdmin.php" style="text-decoration: none;">
              Dashboard Agentes
             </a>
           </li>
@@ -437,7 +437,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
               </a>
             </li>
             <li class="nav-item">
-            <a class="nav-link text-dark" href="./gestionar_plataformas.php" style="text-decoration: none;">
+            <a class="nav-link text-dark" href="../gestionar_plataformas.php" style="text-decoration: none;">
               💳 Plataformas
             </a>
           </li>
@@ -450,7 +450,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
         </ul>
 
         <span class="navbar-text text-muted me-3">
-          <?= htmlspecialchars($_SESSION['nombre']) ?>
+          <?= htmlspecialchars($_SESSION['nombre'] ?? '') ?>
         </span>
 
         <a href="../logout.php" class="btn btn-sm btn-outline-danger">
@@ -514,7 +514,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
                   <?php
                   foreach ($salasFiltro as $sala) {
                     $selected = $salaFiltro == $sala['id'] ? 'selected' : '';
-                    echo "<option value='{$sala['id']}' $selected>{$sala['nombre']}</option>";
+                    echo "<option value='" . (int)$sala['id'] . "' $selected>" . htmlspecialchars($sala['nombre']) . "</option>";
                   }
                   ?>
                 </select>
@@ -632,10 +632,16 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
                   // Clase para estado inactivo
                   $estadoClass = $usuario['activo'] == 1 ? '' : 'inactive-row';
 
-                  echo "<tr data-id='{$usuario['id']}' class='{$estadoClass}'>";
-                  echo "<td style='cursor: pointer;'>{$usuario['nombre']} {$usuario['apepat']} {$usuario['apemat']}</td>";
-                  echo "<td style='cursor: pointer;'>{$usuario['correo']}</td>";
-                  echo "<td class='text-center' style='cursor: pointer;'><span class='badge {$badgeClass} rol-badge'>{$usuario['rol']}</span></td>";
+                  // Valores escapados para HTML
+                  $uid = (int)$usuario['id'];
+                  $nombre = htmlspecialchars($usuario['nombre'] ?? '');
+                  $apepat = htmlspecialchars($usuario['apepat'] ?? '');
+                  $apemat = htmlspecialchars($usuario['apemat'] ?? '');
+
+                  echo "<tr data-id='{$uid}' class='{$estadoClass}'>";
+                  echo "<td style='cursor: pointer;'>{$nombre} {$apepat} {$apemat}</td>";
+                  echo "<td style='cursor: pointer;'>" . htmlspecialchars($usuario['correo'] ?? '') . "</td>";
+                  echo "<td class='text-center' style='cursor: pointer;'><span class='badge {$badgeClass} rol-badge'>" . htmlspecialchars($usuario['rol'] ?? '') . "</span></td>";
 
                   // Columna de salas - MEJORADA
                   echo "<td class='text-center' style='cursor: pointer;'>";
@@ -649,27 +655,24 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
                     $salasIds = json_decode($usuario['salas_permitidas'], true);
                     $nombresSalas = [];
 
-                    foreach ($salasIds as $salaId) {
+                    foreach (is_array($salasIds) ? $salasIds : [] as $salaId) {
                       if (isset($salasMap[$salaId])) {
                         $nombresSalas[] = $salasMap[$salaId];
                       }
                     }
 
-                    if (count($nombresSalas) > 0) {
-                      if (count($nombresSalas) > 2) {
-                        echo "<div class='multi-salas-container'>";
-                        for ($i = 0; $i < min(2, count($nombresSalas)); $i++) {
-                          echo "<span class='sala-mini-badge' title='{$nombresSalas[$i]}'>" . substr($nombresSalas[$i], 0, 12) . "</span>";
-                        }
-                        echo "<span class='sala-mini-badge'>+ " . (count($nombresSalas) - 2) . " más</span>";
-                        echo "</div>";
-                      } else {
-                        echo "<div class='multi-salas-container'>";
-                        foreach ($nombresSalas as $nombreSala) {
-                          echo "<span class='sala-mini-badge' title='{$nombreSala}'>" . substr($nombreSala, 0, 15) . "</span>";
-                        }
-                        echo "</div>";
+                    $totalSalas = count($nombresSalas);
+                    if ($totalSalas > 0) {
+                      // Más de 2 salas: mostrar las 2 primeras (recortadas a 12) y el resto como contador
+                      $largo = $totalSalas > 2 ? 12 : 15;
+                      echo "<div class='multi-salas-container'>";
+                      foreach (array_slice($nombresSalas, 0, 2) as $nombreSala) {
+                        echo "<span class='sala-mini-badge' title='" . htmlspecialchars($nombreSala) . "'>" . htmlspecialchars(mb_substr($nombreSala, 0, $largo)) . "</span>";
                       }
+                      if ($totalSalas > 2) {
+                        echo "<span class='sala-mini-badge'>+ " . ($totalSalas - 2) . " más</span>";
+                      }
+                      echo "</div>";
                     } else {
                       echo "<span class='badge bg-secondary salas-badge'>Sin salas</span>";
                     }
@@ -688,22 +691,16 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
 
                   // COLUMNA ACCIONES
                   echo "<td class='text-center'>";
-                  // Verificar si el admin puede editar este usuario
-                  $puedeEditar = true;
                   if ($admin_acceso_todas == 0 && $usuario['acceso_todas_salas'] == 1) {
                     // Admin limitado NO puede editar usuarios con acceso a todas las salas
-                    $puedeEditar = false;
                     echo "<span class='badge bg-secondary'>Sin permiso</span>";
                   } else {
-                    if ($usuario['activo'] == 1) {
-                      echo "<button class='btn btn-sm btn-warning btn-cambiar-estado' data-id='{$usuario['id']}' data-nombre='{$usuario['nombre']} {$usuario['apepat']} {$usuario['apemat']}' data-accion='desactivar'>";
-                      echo "<i class='bi bi-pause-circle'></i> Desactivar";
-                      echo "</button>";
-                    } else {
-                      echo "<button class='btn btn-sm btn-success btn-cambiar-estado' data-id='{$usuario['id']}' data-nombre='{$usuario['nombre']} {$usuario['apepat']} {$usuario['apemat']}' data-accion='activar'>";
-                      echo "<i class=\"bi bi-play-circle\"></i> Activar";
-                      echo "</button>";
-                    }
+                    [$btnClass, $btnAccion, $btnIcono, $btnTexto] = $usuario['activo'] == 1
+                      ? ['btn-warning', 'desactivar', 'bi-pause-circle', 'Desactivar']
+                      : ['btn-success', 'activar', 'bi-play-circle', 'Activar'];
+                    echo "<button class='btn btn-sm {$btnClass} btn-cambiar-estado' data-id='{$uid}' data-nombre='{$nombre} {$apepat} {$apemat}' data-accion='{$btnAccion}'>";
+                    echo "<i class='bi {$btnIcono}'></i> {$btnTexto}";
+                    echo "</button>";
                   }
                   echo "</td>";
                   echo "</tr>";
@@ -830,7 +827,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
               <div class="col-md-6">
                 <label for="editar_rol" class="form-label">Rol de usuario <span class="text-danger">*</span></label>
                 <select class="form-select" id="editar_rol" name="rol" required>
-                  <?php if ($_SESSION['rol'] === 'superadmin'): ?>
+                  <?php if ($rolSesion === 'superadmin'): ?>
                   <option value="superadmin">Superadministrador</option>
                   <?php endif; ?>
                   <option value="admin">Administrador</option>
@@ -877,24 +874,13 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
                   <div id="editar_selector_salas" style="<?= $admin_acceso_todas == 1 ? 'display: none;' : '' ?> margin-top: 15px;">
                     <div class="salas-list">
                       <?php
-                      // Mostrar solo las salas permitidas según el tipo de admin
-                      if ($admin_acceso_todas == 1) {
-                        $stmtSalas = $pdo->query("SELECT id, nombre FROM salas WHERE activo = 1 ORDER BY nombre");
-                      } else {
-                        if (!empty($admin_salas_array)) {
-                          $placeholders = implode(',', array_fill(0, count($admin_salas_array), '?'));
-                          $stmtSalas = $pdo->prepare("SELECT id, nombre FROM salas WHERE id IN ($placeholders) AND activo = 1 ORDER BY nombre");
-                          $stmtSalas->execute($admin_salas_array);
-                        } else {
-                          $stmtSalas = $pdo->query("SELECT id, nombre FROM salas WHERE 1=0");
-                        }
-                      }
-                      $salas = $stmtSalas->fetchAll(PDO::FETCH_ASSOC);
-                      if (count($salas) > 0) {
-                        foreach ($salas as $sala) {
+                      // Salas asignables según el tipo de admin (mismas que las del filtro)
+                      if (count($salasFiltro) > 0) {
+                        foreach ($salasFiltro as $sala) {
+                          $salaId = (int)$sala['id'];
                           echo "<div class='form-check'>";
-                          echo "<input class='form-check-input' type='radio' name='salas_seleccionadas' value='{$sala['id']}' id='editar_sala_{$sala['id']}'>";
-                          echo "<label class='form-check-label' for='editar_sala_{$sala['id']}'>{$sala['nombre']}</label>";
+                          echo "<input class='form-check-input' type='radio' name='salas_seleccionadas' value='{$salaId}' id='editar_sala_{$salaId}'>";
+                          echo "<label class='form-check-label' for='editar_sala_{$salaId}'>" . htmlspecialchars($sala['nombre']) . "</label>";
                           echo "</div>";
                         }
                       } else {
@@ -954,12 +940,11 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     // usuarios.js - Gestión de usuarios con paginación y filtros
-    const rolUsuario = document.body.getAttribute('data-rol');
     const adminAcceso = parseInt(document.body.getAttribute('data-admin-acceso'));
-    let paginaActual = <?= $paginaActual ?>;
-    const totalPaginas = <?= $totalPaginas ?>;
-    const totalUsuariosInicial = <?= $totalUsuarios ?>;
+    const totalUsuariosInicial = <?= (int)$totalUsuarios ?>;
     const mostrarInactivos = <?= $mostrar_inactivos ? 'true' : 'false' ?>;
+    // Filtros aplicados (para la búsqueda y para recargar la página tras guardar)
+    const filtrosAplicados = <?= json_encode($filtro_aplicado ? array_filter(['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin, 'sala' => $salaFiltro], 'strlen') : new stdClass(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
     // Variables para almacenar los valores originales
     let valoresOriginales = {};
@@ -1049,11 +1034,20 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
       window.location.href = url;
     }
 
+    // URL para recargar la página manteniendo inactivos y los filtros aplicados
+    function urlRecarga() {
+      const params = new URLSearchParams();
+      if (mostrarInactivos) params.append('mostrar_inactivos', '1');
+      <?php if ($filtros_activos): ?>
+        Object.entries(filtrosAplicados).forEach(([k, v]) => params.append(k, v));
+        params.append('filtrar', '1');
+      <?php endif; ?>
+      const query = params.toString();
+      return 'usuarios.php' + (query ? '?' + query : '');
+    }
+
     // Función para alternar entre mostrar activos/inactivos SIN enviar filtros
     function toggleInactivos(checkbox) {
-      const form = checkbox.closest('form');
-      const formData = new FormData(form);
-
       // Crear nueva URL solo con el parámetro mostrar_inactivos
       const params = new URLSearchParams();
       params.append('mostrar_inactivos', checkbox.checked ? '1' : '0');
@@ -1126,19 +1120,19 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
         // Verificar si el usuario tiene acceso a todas las salas y el admin es limitado
         const salasCell = fila.querySelector('td:nth-child(4)');
         const tieneTodasSalas = salasCell && salasCell.textContent.includes('Todas las salas');
-        
+
         // Evento para hacer clic en la fila (excepto en botones)
         fila.querySelectorAll('td:not(:last-child)').forEach(td => {
           td.style.cursor = 'pointer';
           td.addEventListener('click', function(e) {
             if (e.target.closest('button')) return;
-            
+
             // Si el admin es limitado y el usuario tiene todas las salas, no permitir edición
             if (adminAcceso === 0 && tieneTodasSalas) {
               showToast('Permiso denegado', 'No tienes permiso para editar usuarios con acceso a todas las salas', 'warning');
               return;
             }
-            
+
             const id = fila.getAttribute('data-id');
             if (id) abrirModalEditar(id);
           });
@@ -1149,13 +1143,13 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
         if (btnEstado) {
           btnEstado.addEventListener('click', function(e) {
             e.stopPropagation(); // Prevenir que se active el evento de la fila
-            
+
             // Si el admin es limitado y el usuario tiene todas las salas, no permitir cambio de estado
             if (adminAcceso === 0 && tieneTodasSalas) {
               showToast('Permiso denegado', 'No tienes permiso para cambiar el estado de usuarios con acceso a todas las salas', 'warning');
               return;
             }
-            
+
             const id = this.getAttribute('data-id');
             const nombre = this.getAttribute('data-nombre');
             const accion = this.getAttribute('data-accion');
@@ -1172,58 +1166,34 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
         buscarInput.addEventListener('input', function() {
           const query = this.value.trim();
           if (query.length >= 1) {
-            // Mostrar indicador de carga
-            const mensaje = getElement('mensaje');
-            if (mensaje) mensaje.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div> Buscando...';
-
             // Agregar filtros de fecha y sala a la búsqueda si existen
-            const params = new URLSearchParams();
-            params.append('buscar', query);
-            <?php if (!empty($fechaInicio) && $filtro_aplicado): ?>params.append('fecha_inicio', '<?= $fechaInicio ?>');
-          <?php endif; ?>
-          <?php if (!empty($fechaFin) && $filtro_aplicado): ?>params.append('fecha_fin', '<?= $fechaFin ?>');
-          <?php endif; ?>
-          <?php if (!empty($salaFiltro) && $filtro_aplicado): ?>params.append('sala', '<?= $salaFiltro ?>');
-          <?php endif; ?>
-          <?php if ($mostrar_inactivos): ?>params.append('mostrar_inactivos', '1');
-          <?php endif; ?>
+            const params = new URLSearchParams(filtrosAplicados);
+            params.set('buscar', query);
+            if (mostrarInactivos) params.append('mostrar_inactivos', '1');
 
-          fetch(`buscar_usuario.php?${params.toString()}`)
-            .then(response => response.text())
-            .then(data => {
-              const tablaUsuarios = getElement('tabla-usuarios');
-              const mensaje = getElement('mensaje');
-              const paginacion = document.querySelector('.pagination');
+            fetch(`buscar_usuario.php?${params.toString()}`)
+              .then(response => response.text())
+              .then(data => {
+                const tablaUsuarios = getElement('tabla-usuarios');
+                const paginacion = document.querySelector('.pagination');
+                if (!tablaUsuarios) return;
 
-              if (tablaUsuarios) tablaUsuarios.innerHTML = data;
+                tablaUsuarios.innerHTML = data;
 
-              // Extraer el contador de resultados
-              const contadorDiv = tablaUsuarios.querySelector('#resultado-contador');
-              if (contadorDiv) {
-                const totalResultados = contadorDiv.getAttribute('data-total');
-                actualizarContadorUsuarios(totalResultados, 'Resultados');
-                // Eliminar el div contador para no afectar la visualización
-                contadorDiv.remove();
-              }
-
-              if (mensaje) {
-                if (data.includes('No se encontraron')) {
-                  mensaje.textContent = 'No se encontraron resultados.';
-                } else if (data.includes('Ingrese un término')) {
-                  mensaje.textContent = 'Ingrese un término de búsqueda o use los filtros';
-                } else {
-                  mensaje.textContent = '';
+                // Extraer el contador de resultados
+                const contadorDiv = tablaUsuarios.querySelector('#resultado-contador');
+                if (contadorDiv) {
+                  actualizarContadorUsuarios(contadorDiv.getAttribute('data-total'), 'Resultados');
+                  // Eliminar el div contador para no afectar la visualización
+                  contadorDiv.remove();
                 }
-              }
 
-              if (paginacion) paginacion.style.display = 'none';
-              agregarEventosFila();
-            })
-            .catch(error => {
-              console.error('Error en la búsqueda:', error);
-              const mensaje = getElement('mensaje');
-              if (mensaje) mensaje.textContent = 'Error al realizar la búsqueda';
-            });
+                if (paginacion) paginacion.style.display = 'none';
+                agregarEventosFila();
+              })
+              .catch(error => {
+                console.error('Error en la búsqueda:', error);
+              });
           } else {
             // Si la búsqueda está vacía, volver a usuarios.php
             actualizarContadorUsuarios(totalUsuariosInicial, 'Total');
@@ -1233,16 +1203,20 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
       }
     }
 
-    // Configurar eventos para salas en el modal de edición - MODIFICADO para radio buttons
+    // Configurar eventos para salas en el modal de edición (una sola vez, al iniciar)
     function configurarSalasModal() {
       const todasSalas = getElement('editar_todas_salas');
       const salasEspecificas = getElement('editar_salas_especificas');
       const selectorSalas = getElement('editar_selector_salas');
-      
-      // Solo configurar si el admin tiene acceso total
-      if (adminAcceso === 1 && todasSalas && salasEspecificas) {
-        const radioSalas = document.querySelectorAll('#editar_selector_salas input[type="radio"]');
+      const radioSalas = document.querySelectorAll('#editar_selector_salas input[type="radio"]');
 
+      // Validar cuando cambien los radio buttons (admin total y limitado)
+      radioSalas.forEach(radio => {
+        radio.addEventListener('change', validarCamposEditar);
+      });
+
+      // Alternar selector solo si el admin tiene acceso total
+      if (adminAcceso === 1 && todasSalas && salasEspecificas) {
         function toggleSalasSelector() {
           if (salasEspecificas.checked) {
             selectorSalas.style.display = 'block';
@@ -1256,17 +1230,39 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
           validarCamposEditar();
         }
 
-        // Event listeners
         todasSalas.addEventListener('change', toggleSalasSelector);
         salasEspecificas.addEventListener('change', toggleSalasSelector);
+      }
+    }
 
-        // Validar cuando cambien los radio buttons
-        radioSalas.forEach(radio => {
-          radio.addEventListener('change', validarCamposEditar);
+    // Configurar validación de los campos del modal (una sola vez, al iniciar)
+    function configurarCamposModal() {
+      // Solo letras y espacios en nombre/apellidos
+      ['editar_nombre', 'editar_apepat', 'editar_apemat'].forEach(id => {
+        const input = getElement(id);
+        if (input) {
+          input.addEventListener('input', function() {
+            this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '');
+          });
+        }
+      });
+
+      // Revalidar el formulario al cambiar cualquier campo (incluida la contraseña)
+      ['editar_nombre', 'editar_apepat', 'editar_apemat', 'editar_correo', 'editar_rol', 'editar_password'].forEach(id => {
+        const input = getElement(id);
+        if (input) input.addEventListener('input', validarCamposEditar);
+      });
+
+      // Feedback visual de la contraseña al salir del campo
+      const passwordInput = getElement('editar_password');
+      if (passwordInput) {
+        passwordInput.addEventListener('blur', function() {
+          this.classList.toggle('is-invalid', this.value.length > 0 && this.value.length < 6);
         });
       }
     }
 
+    // FUNCIÓN PRINCIPAL DE VALIDACIÓN - MODIFICADA PARA INCLUIR CONTRASEÑA
     function validarCamposEditar() {
       // Solo si el modal existe
       if (!elementExists('formEditar')) return;
@@ -1286,7 +1282,26 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
         return valor.length > 0;
       });
 
-      // Verificar salas - MODIFICADO según tipo de admin
+      // Validar contraseña (opcional pero debe tener 6+ caracteres si se ingresa)
+      const passwordInput = getElement('editar_password');
+      let passwordValida = true;
+
+      if (passwordInput && passwordInput.value.length > 0) {
+        passwordValida = passwordInput.value.length >= 6;
+        // Opcional: mostrar feedback visual
+        if (!passwordValida) {
+          passwordInput.classList.add('is-invalid');
+        } else {
+          passwordInput.classList.remove('is-invalid');
+        }
+      } else {
+        // Si está vacío, es válido (opcional)
+        if (passwordInput) {
+          passwordInput.classList.remove('is-invalid');
+        }
+      }
+
+      // Verificar salas según tipo de admin
       let salasValidas = false;
       let estadoActualSalas = {
         acceso_todas: false,
@@ -1297,7 +1312,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
         // Admin total: verificar radio buttons
         const todasSalas = getElement('editar_todas_salas');
         const salasEspecificas = getElement('editar_salas_especificas');
-        
+
         if (todasSalas && salasEspecificas) {
           if (todasSalas.checked) {
             salasValidas = true;
@@ -1318,7 +1333,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
       }
 
       // Verificar si hay cambios en los campos (comparar con valores originales)
-      // EXCLUIR el campo de contraseña de la validación de cambios
+      // Excluimos 'editar_password' de esta validación porque es un caso especial
       const camposParaValidarCambios = Object.keys(valoresOriginales).filter(key => key !== 'editar_password');
 
       const hayCambiosEnCampos = camposParaValidarCambios.some(key => {
@@ -1326,18 +1341,25 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
         return campo && campo.value !== valoresOriginales[key];
       });
 
+      // Verificar si hay cambios en la contraseña (si se ingresó algo)
+      const hayCambiosEnPassword = passwordInput && passwordInput.value.length > 0;
+
       // Verificar si hay cambios en las salas
       const hayCambiosEnSalas =
         estadoActualSalas.acceso_todas !== estadoOriginalSalas.acceso_todas ||
         JSON.stringify(estadoActualSalas.salas_seleccionadas.sort()) !==
         JSON.stringify(estadoOriginalSalas.salas_seleccionadas.sort());
 
-      const hayCambiosTotales = hayCambiosEnCampos || hayCambiosEnSalas;
+      const hayCambiosTotales = hayCambiosEnCampos || hayCambiosEnSalas || hayCambiosEnPassword;
 
-      // Habilitar el botón solo si todos los campos obligatorios están llenos y hay cambios y las salas son válidas
+      // Habilitar el botón solo si:
+      // 1. Todos los campos obligatorios están llenos
+      // 2. Hay cambios (en campos obligatorios, salas O contraseña)
+      // 3. Las salas son válidas
+      // 4. La contraseña es válida (si se ingresó)
       const submitButton = document.querySelector('#formEditar button[type="submit"]');
       if (submitButton) {
-        submitButton.disabled = !(todosLlenos && hayCambiosTotales && salasValidas);
+        submitButton.disabled = !(todosLlenos && hayCambiosTotales && salasValidas && passwordValida);
       }
     }
 
@@ -1358,30 +1380,46 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
             return;
           }
 
-          // Almacenar valores originales (EXCLUYENDO la contraseña ya que no la obtenemos del servidor)
+          // Almacenar valores originales
           valoresOriginales = {
             'editar_nombre': data.nombre,
-            'editar_apepat': data.apepat,
-            'editar_apemat': data.apemat || '', // Asegurar que sea string vacío si es null
+            'editar_apepat': data.apepat || '',
+            'editar_apemat': data.apemat || '',
             'editar_correo': data.correo,
             'editar_rol': data.rol
           };
 
           // Almacenar estado original de salas
+          let salasPermitidas = [];
+          if (data.salas_permitidas) {
+            try {
+              salasPermitidas = JSON.parse(data.salas_permitidas);
+              if (!Array.isArray(salasPermitidas)) {
+                salasPermitidas = [salasPermitidas];
+              }
+            } catch (e) {
+              console.error('Error al parsear salas_permitidas:', e);
+              salasPermitidas = [];
+            }
+          }
+
+          // Como texto, igual que el value de los radio buttons
+          salasPermitidas = salasPermitidas.map(String);
+
           estadoOriginalSalas = {
             acceso_todas: data.acceso_todas_salas == 1,
-            salas_seleccionadas: data.salas_permitidas ? JSON.parse(data.salas_permitidas) : []
+            salas_seleccionadas: salasPermitidas
           };
 
-          // Establecer valores en los campos de forma segura
+          // Establecer valores en los campos
           const campos = {
             'editar_id': id,
             'editar_nombre': data.nombre,
-            'editar_apepat': data.apepat,
-            'editar_apemat': data.apemat || '', // Manejar valores null
+            'editar_apepat': data.apepat || '',
+            'editar_apemat': data.apemat || '',
             'editar_correo': data.correo,
             'editar_rol': data.rol,
-            'editar_password': '' // Siempre vacío para nueva contraseña
+            'editar_password': ''
           };
 
           Object.keys(campos).forEach(key => {
@@ -1389,91 +1427,29 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
             if (element) element.value = campos[key];
           });
 
+          getElement('editar_password').classList.remove('is-invalid');
+
           // Configurar salas según tipo de admin
-          if (adminAcceso === 1) {
-            // Admin total: puede asignar todas las salas o específicas
-            const todasSalas = getElement('editar_todas_salas');
-            const salasEspecificas = getElement('editar_salas_especificas');
-            const selectorSalas = getElement('editar_selector_salas');
-            const radioSalas = document.querySelectorAll('#editar_selector_salas input[type="radio"]');
-
-            if (data.acceso_todas_salas == 1) {
-              todasSalas.checked = true;
-              selectorSalas.style.display = 'none';
-            } else {
-              salasEspecificas.checked = true;
-              selectorSalas.style.display = 'block';
-
-              // Marcar la sala permitida
-              if (data.salas_permitidas) {
-                const salasIds = JSON.parse(data.salas_permitidas);
-                if (salasIds.length > 0) {
-                  const salaId = salasIds[0];
-                  const radio = document.getElementById(`editar_sala_${salaId}`);
-                  if (radio) {
-                    radio.checked = true;
-                  }
-                }
-              }
-            }
-          } else {
-            // Admin limitado: solo puede asignar salas específicas de sus permisos
-            const selectorSalas = getElement('editar_selector_salas');
-            selectorSalas.style.display = 'block';
-            
-            // Marcar la sala permitida si existe
-            if (data.salas_permitidas) {
-              const salasIds = JSON.parse(data.salas_permitidas);
-              if (salasIds.length > 0) {
-                const salaId = salasIds[0];
-                const radio = document.getElementById(`editar_sala_${salaId}`);
-                if (radio) {
-                  radio.checked = true;
-                }
-              }
-            }
-          }
-
-          // Validaciones de formato (solo para campos obligatorios)
-          ['editar_nombre', 'editar_apepat'].forEach(id => {
-            const input = getElement(id);
-            if (input) {
-              input.oninput = function() {
-                this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '');
-                validarCamposEditar();
-              };
-            }
+          const selectorSalas = getElement('editar_selector_salas');
+          // Limpiar la selección del usuario editado anteriormente
+          document.querySelectorAll('#editar_selector_salas input[type="radio"]').forEach(radio => {
+            radio.checked = false;
           });
 
-          // Validación opcional para apemat (sin requerido)
-          const apematInput = getElement('editar_apemat');
-          if (apematInput) {
-            apematInput.oninput = function() {
-              this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '');
-              validarCamposEditar();
-            };
-          }
+          if (adminAcceso === 1 && data.acceso_todas_salas == 1) {
+            // Admin total: usuario con todas las salas
+            getElement('editar_todas_salas').checked = true;
+            selectorSalas.style.display = 'none';
+          } else {
+            // Admin total con salas específicas, o admin limitado (solo sus salas)
+            if (adminAcceso === 1) getElement('editar_salas_especificas').checked = true;
+            selectorSalas.style.display = 'block';
 
-          // Validación de email
-          const emailInput = getElement('editar_correo');
-          if (emailInput) {
-            emailInput.oninput = function() {
-              validarCamposEditar();
-            };
-          }
-
-          // Validación opcional para contraseña (sin requerido)
-          const passwordInput = getElement('editar_password');
-          if (passwordInput) {
-            passwordInput.oninput = function() {
-              // La contraseña es opcional, pero si se ingresa, validamos longitud mínima
-              if (this.value.length > 0 && this.value.length < 6) {
-                this.classList.add('is-invalid');
-              } else {
-                this.classList.remove('is-invalid');
-              }
-              // No llamamos a validarCamposEditar() porque la contraseña no afecta el estado del botón
-            };
+            // Marcar la sala permitida si existe
+            if (salasPermitidas.length > 0) {
+              const radio = document.getElementById(`editar_sala_${salasPermitidas[0]}`);
+              if (radio) radio.checked = true;
+            }
           }
 
           // Deshabilitar el botón inicialmente
@@ -1482,23 +1458,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
             submitButton.disabled = true;
           }
 
-          // Agregar eventos de validación a todos los campos (EXCLUYENDO la contraseña)
-          const camposParaValidar = [
-            'editar_nombre', 'editar_apepat', 'editar_apemat',
-            'editar_correo', 'editar_rol'
-          ];
-
-          camposParaValidar.forEach(id => {
-            const input = getElement(id);
-            if (input) {
-              input.addEventListener('input', validarCamposEditar);
-            }
-          });
-
-          // Configurar eventos de salas
-          configurarSalasModal();
-
-          const modal = new bootstrap.Modal(getElement('modalEditar'));
+          const modal = bootstrap.Modal.getOrCreateInstance(getElement('modalEditar'));
           modal.show();
 
           // Enfocar el primer campo cuando el modal esté completamente visible
@@ -1519,17 +1479,17 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
 
     // Función para confirmar cambio de estado
     function confirmarCambioEstado(id, nombre, accion) {
-      const modal = new bootstrap.Modal(getElement('modalConfirmarEstado'));
+      const modal = bootstrap.Modal.getOrCreateInstance(getElement('modalConfirmarEstado'));
       const nombreElement = getElement('nombre-usuario-estado');
       const accionElement = getElement('accion-texto');
       const btnConfirmar = getElement('btn-confirmar-estado');
-      const mensaje = getElement('mensaje-cambio-estado');
 
       if (nombreElement) nombreElement.textContent = nombre;
       if (accionElement) accionElement.textContent = accion === 'activar' ? 'activar' : 'desactivar';
 
       // Configurar el botón según la acción
       if (btnConfirmar) {
+        btnConfirmar.disabled = false; // Puede quedar deshabilitado de un cambio anterior
         if (accion === 'activar') {
           btnConfirmar.classList.remove('btn-warning');
           btnConfirmar.classList.add('btn-success');
@@ -1543,7 +1503,6 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
 
       // Configurar evento para el botón de confirmar
       if (btnConfirmar) {
-        // Remover event listeners previos para evitar duplicados
         const newBtnConfirmar = btnConfirmar.cloneNode(true);
         btnConfirmar.parentNode.replaceChild(newBtnConfirmar, btnConfirmar);
 
@@ -1557,14 +1516,12 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
 
     // Función para cambiar estado del usuario
     function cambiarEstadoUsuario(id, accion) {
-      // Mostrar indicador de carga
       const btnConfirmar = getElement('btn-confirmar-estado');
       if (btnConfirmar) {
         btnConfirmar.disabled = true;
         btnConfirmar.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
       }
 
-      // CORRECCIÓN: Enviar datos por POST en lugar de GET
       const formData = new FormData();
       formData.append('id', id);
       formData.append('accion', accion);
@@ -1575,29 +1532,17 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
         })
         .then(response => response.json())
         .then(data => {
-          // Cerrar el modal de confirmación
           const modal = bootstrap.Modal.getInstance(getElement('modalConfirmarEstado'));
           if (modal) modal.hide();
 
           if (data.success) {
-            // Mostrar mensaje de éxito
             showToast('Éxito', data.message, 'success');
 
-            // Recargar la página o actualizar la tabla
-            if (getElement('buscar').value.trim() !== '') {
-              // Si hay una búsqueda activa, volver a ejecutarla
-              getElement('buscar').dispatchEvent(new Event('input'));
+            const buscarInput = getElement('buscar');
+            if (buscarInput.value.trim() !== '') {
+              buscarInput.dispatchEvent(new Event('input'));
             } else {
-              // Si no hay búsqueda, recargar la página manteniendo los filtros
-              let url = 'usuarios.php';
-              if (mostrarInactivos) {
-                url += '?mostrar_inactivos=1';
-              }
-              // Mantener filtros aplicados
-              <?php if ($filtro_aplicado && $filtros_activos): ?>
-                url += '&<?= http_build_query(['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin, 'sala' => $salaFiltro, 'filtrar' => 1]) ?>';
-              <?php endif; ?>
-              window.location.href = url;
+              window.location.href = urlRecarga();
             }
           } else {
             showToast('Error', data.message || 'No se pudo cambiar el estado del usuario', 'error');
@@ -1607,7 +1552,6 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
           console.error('Error al cambiar estado:', error);
           showToast('Error', 'Error al cambiar el estado del usuario', 'error');
 
-          // Restablecer el botón de confirmar
           if (btnConfirmar) {
             btnConfirmar.disabled = false;
             btnConfirmar.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar';
@@ -1615,7 +1559,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
         });
     }
 
-    // Configurar envío del formulario (solo si existe)
+    // Configurar envío del formulario
     function configurarFormulario() {
       if (!elementExists('formEditar')) return;
 
@@ -1624,7 +1568,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
         formEditar.addEventListener('submit', function(e) {
           e.preventDefault();
 
-          // Validar longitud de contraseña si se ingresó alguna
+          // Validación adicional antes de enviar
           const passwordInput = getElement('editar_password');
           if (passwordInput && passwordInput.value.length > 0 && passwordInput.value.length < 6) {
             showToast('Error', 'La contraseña debe tener al menos 6 caracteres', 'error');
@@ -1632,7 +1576,6 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
             return;
           }
 
-          // Mostrar indicador de carga
           const submitButton = this.querySelector('button[type="submit"]');
           const originalText = submitButton.innerHTML;
           submitButton.disabled = true;
@@ -1646,33 +1589,21 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
             })
             .then(response => response.json())
             .then(data => {
-              // Restaurar el botón
               submitButton.disabled = false;
               submitButton.innerHTML = originalText;
 
-              // Mostrar mensaje basado en la respuesta JSON
               if (data.success) {
                 showToast('Éxito', data.message, 'success');
-                // Cerrar el modal y recargar
                 const modal = bootstrap.Modal.getInstance(getElement('modalEditar'));
                 if (modal) modal.hide();
 
-                // Recargar manteniendo el filtro de inactivos si está activo
-                let url = 'usuarios.php';
-                if (mostrarInactivos) {
-                  url += '?mostrar_inactivos=1';
-                }
-                <?php if ($filtro_aplicado && $filtros_activos): ?>
-                  url += '&<?= http_build_query(['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin, 'sala' => $salaFiltro, 'filtrar' => 1]) ?>';
-                <?php endif; ?>
-                window.location.href = url;
+                window.location.href = urlRecarga();
               } else {
                 showToast('Error', data.message, 'error');
               }
             })
             .catch(error => {
               console.error('Error al actualizar:', error);
-              // Restaurar el botón
               submitButton.disabled = false;
               submitButton.innerHTML = originalText;
               showToast('Error', 'Error al actualizar el usuario', 'error');
@@ -1681,7 +1612,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
       }
     }
 
-    // Gestionar el foco cuando se cierra el modal (solo si existe)
+    // Gestionar el foco cuando se cierra el modal
     function configurarCierreModal() {
       if (!elementExists('modalEditar')) return;
 
@@ -1694,7 +1625,6 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
             salas_seleccionadas: []
           };
 
-          // También forzar el foco a otro elemento fuera del modal
           setTimeout(() => {
             const buscarInput = getElement('buscar');
             if (buscarInput) buscarInput.focus();
@@ -1708,13 +1638,13 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
       configurarBotonLimpiar();
       configurarBusqueda();
 
-      // Solo configurar funciones relacionadas con el modal si existe
       if (elementExists('modalEditar')) {
         configurarFormulario();
         configurarCierreModal();
+        configurarCamposModal();
+        configurarSalasModal();
       }
 
-      // Agregar eventos a las filas de la tabla inicial
       agregarEventosFila();
     }
 
