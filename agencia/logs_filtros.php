@@ -4,7 +4,7 @@
 // Deja listos: $filtro*, $fechaDesde, $fechaHasta, $where, $params, $types, $colores, $etiquetas
 
 $colores   = ['INSERT' => 'success', 'UPDATE' => 'primary', 'DELETE' => 'danger', 'LOGOUT' => 'secondary', 'EXPORT_EXCEL' => 'info', 'EXPORT_PDF' => 'warning'];
-$etiquetas = ['INSERT' => 'NUEVO', 'UPDATE' => 'ACTUALIZAR', 'DELETE' => 'ELIMINAR', 'EXPORT_EXCEL' => 'DESCARGA EXCEL', 'EXPORT_PDF' => 'DESCARGA PDF'];
+$etiquetas = ['INSERT' => 'NUEVO', 'UPDATE' => 'ACTUALIZAR', 'DELETE' => 'ELIMINAR', 'EXPORT_EXCEL' => 'DESCARGA EXCEL VOLUMEN', 'EXPORT_PDF' => 'DESCARGA PDF VOLUMEN'];
 
 $filtroExito  = $_GET['exito'] ?? '';
 $filtroOrigen = $_GET['origen'] ?? '';
