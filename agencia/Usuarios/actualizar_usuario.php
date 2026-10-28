@@ -53,8 +53,13 @@ if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
     responder(false, 'Correo electrónico no válido');
 }
 
-if (!in_array($rol, ['admin', 'usuario'], true)) {
+if (!in_array($rol, ['superadmin', 'admin', 'usuario'], true)) {
     responder(false, 'Rol de usuario no válido');
+}
+
+// Solo un superadmin puede asignar el rol superadmin
+if ($rol === 'superadmin' && $rolSesion !== 'superadmin') {
+    responder(false, 'Solo un superadmin puede asignar el rol superadmin');
 }
 
 // Validar longitud de contraseña si se proporciona
@@ -69,10 +74,16 @@ if ($acceso_salas === 'especificas' && empty($salas_seleccionadas)) {
 
 try {
     // Verificar si el usuario existe
-    $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE id = :id");
+    $stmt = $pdo->prepare("SELECT id, rol FROM usuarios WHERE id = :id");
     $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     $stmt->execute();
-    if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+    $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$usuario) {
+        responder(false, 'Usuario no encontrado');
+    }
+
+    // Un admin no puede modificar a un superadmin
+    if ($usuario['rol'] === 'superadmin' && $rolSesion !== 'superadmin') {
         responder(false, 'Usuario no encontrado');
     }
 

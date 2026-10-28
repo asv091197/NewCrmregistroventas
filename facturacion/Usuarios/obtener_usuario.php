@@ -16,4 +16,9 @@ $stmt = $pdo->prepare("SELECT nombre, apepat, apemat, correo, rol, acceso_todas_
 $stmt->execute([$id]);
 $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
+// Solo un superadmin puede ver superadmins
+if ($result && $result['rol'] === 'superadmin' && $rol !== 'superadmin') {
+    $result = false;
+}
+
 echo json_encode($result ?: ['error' => 'Usuario no encontrado']);

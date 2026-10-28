@@ -43,6 +43,11 @@ try {
     $whereConditions = ["(u.nombre LIKE :buscar1 OR u.apepat LIKE :buscar2 OR u.apemat LIKE :buscar3 OR u.correo LIKE :buscar4)"];
     $params = [':buscar1' => $like, ':buscar2' => $like, ':buscar3' => $like, ':buscar4' => $like];
 
+    // Solo un superadmin puede ver superadmins
+    if ($rol !== 'superadmin') {
+        $whereConditions[] = "u.rol <> 'superadmin'";
+    }
+
     // Por defecto, solo mostrar usuarios activos
     if (!$mostrar_inactivos) {
         $whereConditions[] = "u.activo = 1";

@@ -3,7 +3,6 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../session_config.php'; session_start();
 require_once __DIR__ . '/../includes/registro_acciones.php';
 
-header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -14,6 +13,13 @@ ini_set('error_log', __DIR__ . '/php_errors.log');
 if (!isset($_SESSION['usuario_id'])) {
     http_response_code(401);
     echo json_encode(["success" => false, "message" => "No autenticado"]);
+    exit;
+}
+
+// Solo admin o superadmin pueden crear o editar plataformas
+if (!in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin'], true)) {
+    http_response_code(403);
+    echo json_encode(["success" => false, "message" => "No tiene permisos para modificar plataformas"]);
     exit;
 }
 

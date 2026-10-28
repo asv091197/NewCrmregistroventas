@@ -74,6 +74,11 @@ if ($paginaActual < 1) $paginaActual = 1;
 $whereConditions = [];
 $params = [];
 
+// Solo un superadmin puede ver superadmins
+if ($rolSesion !== 'superadmin') {
+  $whereConditions[] = "u.rol <> 'superadmin'";
+}
+
 // Primero determinar si mostrar activos o inactivos
 if ($mostrar_inactivos) {
   // Cuando se marca el checkbox: mostrar usuarios inactivos
@@ -841,6 +846,9 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
               <div class="col-md-6">
                 <label for="editar_rol" class="form-label">Rol de usuario <span class="text-danger">*</span></label>
                 <select class="form-select" id="editar_rol" name="rol" required>
+                  <?php if ($rolSesion === 'superadmin'): ?>
+                  <option value="superadmin">Superadministrador</option>
+                  <?php endif; ?>
                   <option value="admin">Administrador</option>
                   <option value="usuario">Usuario</option>
                 </select>

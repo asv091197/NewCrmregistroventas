@@ -255,9 +255,11 @@ if ($conn) {
         <div class="card shadow">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h4 class="mb-0"><i class="bi bi-credit-card"></i> Gestión de Plataformas</h4>
+                <?php if ($es_admin): ?>
                 <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevaPlataforma">
                     <i class="bi bi-plus-circle"></i> Nueva Plataforma
                 </button>
+                <?php endif; ?>
             </div>
 
             <div class="card-body">
@@ -360,7 +362,9 @@ if ($conn) {
                                         </td>
                                     <?php endif; ?>
                                     <td class="table-actions">
-                                        <?php if ($plataforma['activo']): ?>
+                                        <?php if (!$es_admin): ?>
+                                            <span class="text-muted">—</span>
+                                        <?php elseif ($plataforma['activo']): ?>
                                             <button class="btn btn-sm btn-outline-primary edit-platform"
                                                 data-id="<?= $plataforma['id'] ?>"
                                                 data-plataforma='<?= htmlspecialchars(json_encode($plataforma)) ?>'>

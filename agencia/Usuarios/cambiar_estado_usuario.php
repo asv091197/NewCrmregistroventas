@@ -47,10 +47,15 @@ $accionTexto = $accion === 'activar' ? 'activado' : 'desactivado';
 
 try {
     // Verificar que el usuario existe
-    $stmt = $pdo->prepare("SELECT id, nombre, apepat FROM usuarios WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, nombre, apepat, rol FROM usuarios WHERE id = ?");
     $stmt->execute([$id]);
     $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
+    // Un admin no ve ni modifica superadmins
+    if ($usuario && $usuario['rol'] === 'superadmin' && $rol !== 'superadmin') {
+        $usuario = false;
+    }
+
     if (!$usuario) {
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Usuario no encontrado']);

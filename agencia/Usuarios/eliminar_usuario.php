@@ -56,10 +56,15 @@ try {
 
 try {
     // Verificar si el usuario existe
-    $stmt = $pdo->prepare("SELECT nombre, apepat, apemat FROM usuarios WHERE id = :id");
+    $stmt = $pdo->prepare("SELECT nombre, apepat, apemat, rol FROM usuarios WHERE id = :id");
     $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     $stmt->execute();
     $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Un admin no ve ni elimina superadmins
+    if ($usuario && $usuario['rol'] === 'superadmin' && $rol !== 'superadmin') {
+        $usuario = false;
+    }
 
     if (!$usuario) {
         http_response_code(404);

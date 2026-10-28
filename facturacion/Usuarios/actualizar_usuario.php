@@ -84,7 +84,7 @@ try {
 
     // Un admin no puede modificar a un superadmin
     if ($usuario['rol'] === 'superadmin' && $rolSesion !== 'superadmin') {
-        responder(false, 'Solo un superadmin puede modificar a otro superadmin');
+        responder(false, 'Usuario no encontrado');
     }
 
     // Verificar si el correo ya existe en otro usuario

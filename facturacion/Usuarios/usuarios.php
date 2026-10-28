@@ -74,6 +74,11 @@ if ($paginaActual < 1) $paginaActual = 1;
 $whereConditions = [];
 $params = [];
 
+// Solo un superadmin puede ver superadmins
+if ($rolSesion !== 'superadmin') {
+  $whereConditions[] = "u.rol <> 'superadmin'";
+}
+
 // Primero determinar si mostrar activos o inactivos
 if ($mostrar_inactivos) {
   // Cuando se marca el checkbox: mostrar usuarios inactivos
