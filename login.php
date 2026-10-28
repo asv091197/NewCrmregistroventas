@@ -13,6 +13,8 @@ ini_set('display_errors', 0); // Cambiado a 0 para producción
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/php_errors.log');
 
+require_once __DIR__ . '/includes/db.php';
+
 // Iniciar sesión
 if (session_status() === PHP_SESSION_NONE) {
     require_once __DIR__ . '/session_config.php'; session_start();
@@ -75,14 +77,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } else {
             // Conectar a la base de datos
             try {
-                $conexion = new mysqli("localhost", "root", "Xoloateno@10", "noreplyc_crmregistroventas");
-                
-                if ($conexion->connect_error) {
-                    throw new Exception("Error de conexión: " . $conexion->connect_error);
-                }
-                
-                $conexion->set_charset("utf8");
-                
+                $conexion = conexionPDO();
+
                 // Consulta para obtener datos del usuario
                 $stmt = $conexion->prepare("
                     SELECT 
@@ -97,22 +93,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     WHERE u.correo = ? AND u.activo = 1
                 ");
                 
-                if (!$stmt) {
-                    throw new Exception("Error en prepare: " . $conexion->error);
-                }
-                
-                $stmt->bind_param("s", $correo);
-                
-                if (!$stmt->execute()) {
-                    throw new Exception("Error en execute: " . $stmt->error);
-                }
-                
-                $stmt->store_result();
-                
-                if ($stmt->num_rows === 1) {
-                    $stmt->bind_result($id, $nombre, $apemat, $hash, $rol, $acceso_todas_salas, $salas_permitidas_json);
-                    $stmt->fetch();
-                    
+                $stmt->execute([$correo]);
+                $filas = $stmt->fetchAll(PDO::FETCH_NUM);
+
+                if (count($filas) === 1) {
+                    [$id, $nombre, $apemat, $hash, $rol, $acceso_todas_salas, $salas_permitidas_json] = $filas[0];
+
                     debugLog('Usuario encontrado', [
                         'id' => $id,
                         'nombre' => $nombre,
@@ -165,9 +151,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         ]);
                         
                         // Cerrar conexión y redirigir
-                        $stmt->close();
-                        $conexion->close();
-                        
+                        $stmt = null;
+                        $conexion = null;
+
                         // Determinar URL de redirección
                         if ($rol === 'admin') {
                             $redirect_url = "opcionesAdmin.php";
@@ -191,17 +177,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     debugLog('Usuario no encontrado o inactivo', $correo);
                 }
                 
-                $stmt->close();
-                $conexion->close();
-                
+                $stmt = null;
+                $conexion = null;
+
             } catch (Exception $e) {
                 $mensaje = "Error en el sistema. Por favor intente más tarde.";
                 $mensaje_tipo = "danger";
                 debugLog('Excepción en login', $e->getMessage());
-                
-                if ($conexion) {
-                    $conexion->close();
-                }
+
+                $conexion = null;
             }
         }
     }

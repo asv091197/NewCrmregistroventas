@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
 if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin' && $_SESSION['rol'] !== 'usuario')) {
@@ -7,8 +8,7 @@ if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] !== 'admin' && $_SESSIO
 }
 
 // Conexión a la base de datos
-$pdo = new PDO("mysql:host=65.99.205.112;dbname=noreplyc_crmregistroventas;charset=utf8", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS");
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$pdo = conexionPDO();
 
 $buscar = isset($_GET['buscar']) ? $_GET['buscar'] : '';
 $fechaInicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : '';
@@ -37,20 +37,22 @@ if (!empty($buscar)) {
     $params = [];
 
     $searchConditions = [
-        "c.nombre LIKE :buscar",
-        "c.apepat LIKE :buscar", 
-        "c.apemat LIKE :buscar", 
-        "c.numero1 LIKE :buscar", 
-        "c.numero2 LIKE :buscar", 
-        "c.asunto LIKE :buscar", 
-        "c.descripcion LIKE :buscar",
-        "CONCAT(COALESCE(u.apemat, '')) LIKE :buscar",
-        "CONCAT(COALESCE(uc.apemat, '')) LIKE :buscar",
-        "s.nombre LIKE :buscar"
+        "c.nombre LIKE :buscar1",
+        "c.apepat LIKE :buscar2", 
+        "c.apemat LIKE :buscar3", 
+        "c.numero1 LIKE :buscar4", 
+        "c.numero2 LIKE :buscar5", 
+        "c.asunto LIKE :buscar6", 
+        "c.descripcion LIKE :buscar7",
+        "CONCAT(COALESCE(u.apemat, '')) LIKE :buscar8",
+        "CONCAT(COALESCE(uc.apemat, '')) LIKE :buscar9",
+        "s.nombre LIKE :buscar10"
     ];
     
     $whereConditions[] = "(" . implode(" OR ", $searchConditions) . ")";
-    $params[':buscar'] = '%' . $buscar . '%';
+    for ($i = 1; $i <= 10; $i++) {
+        $params[':buscar' . $i] = '%' . $buscar . '%';
+    }
 
     if ($filtroSala) {
         $whereConditions[] = "c.sala_id = :sala_id";

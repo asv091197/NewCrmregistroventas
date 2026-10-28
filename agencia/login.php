@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // agencia/login.php
 
 header("Access-Control-Allow-Origin: *");
@@ -185,13 +186,7 @@ function registrarLogLogin($conexion, array $datos) {
             VALUES (?, ?, 'agencia', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ");
 
-        if (!$stmt) {
-            debugLog('Error prepare log_login: ' . $conexion->error);
-            return;
-        }
-
-        $stmt->bind_param(
-            "isissssssss",
+        $stmt->execute([
             $usuarioId,
             $correo,
             $exito,
@@ -203,20 +198,15 @@ function registrarLogLogin($conexion, array $datos) {
             $so,
             $navegador,
             $userAgent
-        );
+        ]);
 
-        $logId = null;
-        if (!$stmt->execute()) {
-            debugLog('Error execute log_login: ' . $stmt->error);
-        } else {
-            $logId = $stmt->insert_id;
-            debugLog('Log de login registrado (agencia)', [
-                'correo' => $correo, 'exito' => $exito, 'ip' => $ip,
-                'dispositivo' => $dispositivo, 'so' => $so, 'navegador' => $navegador,
-                'pais' => $pais, 'ciudad' => $ciudad
-            ]);
-        }
-        $stmt->close();
+        $logId = (int)$conexion->lastInsertId();
+        debugLog('Log de login registrado (agencia)', [
+            'correo' => $correo, 'exito' => $exito, 'ip' => $ip,
+            'dispositivo' => $dispositivo, 'so' => $so, 'navegador' => $navegador,
+            'pais' => $pais, 'ciudad' => $ciudad
+        ]);
+        $stmt = null;
         return $logId;
     } catch (Exception $e) {
         debugLog('Excepción registrando log_login: ' . $e->getMessage());
@@ -265,30 +255,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         debugLog('Campos vacíos', ['correo' => $correo, 'password_length' => strlen($contraseña)]);
         
         try {
-            $connLog = new mysqli("65.99.205.112", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS", "noreplyc_crmregistroventas");
-            if (!$connLog->connect_error) {
-                $connLog->set_charset("utf8mb4");
-                registrarLogLogin($connLog, [
-                    'correo'       => $correo,
-                    'exito'        => false,
-                    'motivo_fallo' => 'Campos vacíos'
-                ]);
-                $connLog->close();
-            }
+            $connLog = conexionPDO();
+            registrarLogLogin($connLog, [
+                'correo'       => $correo,
+                'exito'        => false,
+                'motivo_fallo' => 'Campos vacíos'
+            ]);
+            $connLog = null;
         } catch (Exception $e) {
             debugLog('Error log campos vacíos: ' . $e->getMessage());
         }
         
     } else {
         try {
-            $conexion = new mysqli("65.99.205.112", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS", "noreplyc_crmregistroventas");
-            
-            if ($conexion->connect_error) {
-                throw new Exception("Error de conexión: " . $conexion->connect_error);
-            }
-            
-            $conexion->set_charset("utf8mb4");
-            
+            $conexion = conexionPDO();
+
             $stmt = $conexion->prepare("
                 SELECT 
                     u.id, 
@@ -302,22 +283,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 WHERE u.correo = ? AND u.activo = 1
             ");
             
-            if (!$stmt) {
-                throw new Exception("Error en prepare: " . $conexion->error);
-            }
-            
-            $stmt->bind_param("s", $correo);
-            
-            if (!$stmt->execute()) {
-                throw new Exception("Error en execute: " . $stmt->error);
-            }
-            
-            $stmt->store_result();
-            
-            if ($stmt->num_rows === 1) {
-                $stmt->bind_result($id, $nombre, $apemat, $hash, $rol, $acceso_todas_salas, $salas_permitidas_json);
-                $stmt->fetch();
-                
+            $stmt->execute([$correo]);
+            $filas = $stmt->fetchAll(PDO::FETCH_NUM);
+
+            if (count($filas) === 1) {
+                [$id, $nombre, $apemat, $hash, $rol, $acceso_todas_salas, $salas_permitidas_json] = $filas[0];
+
                 debugLog('Usuario encontrado', [
                     'id' => $id,
                     'nombre' => $nombre,
@@ -367,8 +338,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         'session_id' => session_id()
                     ]);
                     
-                    $stmt->close();
-                    
+                    $stmt = null;
+
                     if ($rol === 'admin' || $rol === 'superadmin') {
                         $redirect_url = "opcionesAdmin.php";
                     } else {
@@ -407,27 +378,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 ]);
             }
             
-            if (isset($stmt) && $stmt instanceof mysqli_stmt) {
-                $stmt->close();
+            if (isset($stmt) && $stmt instanceof PDOStatement) {
+                $stmt = null;
             }
-            
+
         } catch (Exception $e) {
             $mensaje = "Error interno del sistema";
             $mensaje_tipo = "danger";
             debugLog('EXCEPCIÓN: ' . $e->getMessage());
         } finally {
-            if ($conexion) {
-                $conexion->close();
-            }
+            $conexion = null;
         }
     }
 } else {
     debugLog('Método no POST', $_SERVER['REQUEST_METHOD']);
 }
 
-if ($conexion) {
-    $conexion->close();
-}
+$conexion = null;
 
 debugLog('=== FIN DE PROCESO LOGIN ===');
 ?>

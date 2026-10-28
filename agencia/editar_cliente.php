@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../session_config.php'; session_start();
 if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'usuario') {
     header("Location: login.php");
@@ -6,8 +7,7 @@ if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'usuario') {
 }
 
 
-$pdo = new PDO("mysql:host=65.99.205.112;dbname=marketinpro;charset=utf8", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS");
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$pdo = conexionPDO('marketinpro');
 
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $mensaje = '';

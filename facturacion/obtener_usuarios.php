@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // Configuración de errores
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -8,11 +9,6 @@ ini_set('error_log', __DIR__ . '/php_errors_usuarios.log');
 date_default_timezone_set('America/Mexico_City');
 
 header('Content-Type: application/json; charset=utf-8');
-
-$servername = "65.99.205.112";
-$username = "noreplyc_alexsanchez09";
-$password = "SWn_VrAc3K7lq;LS";
-$dbname = "noreplyc_crmregistroventas";
 
 function sendError($message, $code = 500) {
     http_response_code($code);
@@ -38,16 +34,14 @@ try {
     error_log("Sala ID solicitada: " . ($sala_id ?: 'NULL'));
     error_log("Parámetro todos: " . ($todos ? 'SI' : 'NO'));
     
-    // Crear conexión MySQLi
-    $conn = new mysqli($servername, $username, $password, $dbname);
-    
-    if ($conn->connect_error) {
-        error_log("Error de conexión a BD: " . $conn->connect_error);
+    // Crear conexión PDO
+    try {
+        $conn = conexionPDO();
+    } catch (PDOException $e) {
+        error_log("Error de conexión a BD: " . $e->getMessage());
         sendError("Error de conexión a la base de datos");
     }
-    
-    $conn->set_charset("utf8");
-    
+
     // Si se solicita TODOS los usuarios
     if ($todos) {
         // Obtener todos los usuarios activos
@@ -67,10 +61,7 @@ try {
         error_log("SQL: " . $sql);
         
         $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            error_log("Error al preparar consulta: " . $conn->error);
-            sendError("Error al preparar la consulta");
-        }
+        $params = [];
     } elseif ($sala_id) {
         // Filtrar usuarios por sala específica
         $sql = "SELECT 
@@ -89,15 +80,11 @@ try {
         error_log("SQL: " . $sql);
         
         $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            error_log("Error al preparar consulta: " . $conn->error);
-            sendError("Error al preparar la consulta");
-        }
-        
+
         $json_sala = '["' . $sala_id . '"]';
         error_log("JSON buscado: " . $json_sala);
         
-        $stmt->bind_param("s", $json_sala);
+        $params = [$json_sala];
     } else {
         // Si no hay parámetros, también devolver todos (por defecto)
         $sql = "SELECT 
@@ -116,28 +103,19 @@ try {
         error_log("SQL: " . $sql);
         
         $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            error_log("Error al preparar consulta: " . $conn->error);
-            sendError("Error al preparar la consulta");
-        }
+        $params = [];
     }
     
     // Ejecutar consulta
-    if (!$stmt->execute()) {
-        error_log("Error al ejecutar consulta: " . $stmt->error);
+    if (!$stmt->execute($params)) {
+        error_log("Error al ejecutar consulta");
         sendError("Error al ejecutar la consulta");
     }
-    
-    $result = $stmt->get_result();
-    
-    if (!$result) {
-        error_log("Error al obtener resultados: " . $stmt->error);
-        sendError("Error al obtener resultados");
-    }
-    
+
     $usuarios = [];
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (count($rows) > 0) {
+        foreach ($rows as $row) {
             // Limpiar símbolos
             if (!empty($row['apemat'])) {
                 $row['apemat'] = preg_replace('/[^\p{L}\p{N}\s]/u', '', $row['apemat']);
@@ -150,9 +128,6 @@ try {
     }
     
     error_log("Usuarios encontrados: " . count($usuarios));
-    
-    $stmt->close();
-    $conn->close();
     
     sendSuccess($usuarios);
 

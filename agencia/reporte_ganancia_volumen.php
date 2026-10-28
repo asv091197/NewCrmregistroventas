@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // reporte_ganancia_volumen_excel.php
 // Limpiar cualquier salida previa
 while (ob_get_level()) {
@@ -50,17 +51,9 @@ function formatoMoneda($valor) {
 }
 
 // Conexión a base de datos
-$host = '65.99.205.112';
-$dbname = 'noreplyc_crmregistroventas';
-$username = 'noreplyc_alexsanchez09';
-$password = 'SWn_VrAc3K7lq;LS';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_TIMEOUT => 30,
-        PDO::ATTR_EMULATE_PREPARES => false
-    ]);
+    $pdo = conexionPDO();
 } catch (PDOException $e) {
     die("Error de conexión a la base de datos: " . $e->getMessage());
 }

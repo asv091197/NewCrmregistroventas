@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // cron/enviar_reporte_logs.php
 // Envía por correo el PDF de logs de actividades de los últimos 7 días (de viernes a jueves).
 //
@@ -59,19 +60,19 @@ $_GET = [
     'fecha_fin'    => date('Y-m-d', strtotime('-1 day')),
 ];
 
-$conn = new mysqli("65.99.205.112", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS", "noreplyc_crmregistroventas");
-if ($conn->connect_error) {
-    fwrite(STDERR, "Error de conexión: " . $conn->connect_error . "\n");
+try {
+    $conn = conexionPDO();
+} catch (PDOException $e) {
+    fwrite(STDERR, "Error de conexión: " . $e->getMessage() . "\n");
     exit(1);
 }
-$conn->set_charset("utf8mb4");
 
 require __DIR__ . '/../agencia/logs_filtros.php';
 require __DIR__ . '/../agencia/logs_reporte.php';
 
 echo "[" . date('Y-m-d H:i:s') . "] Reporte de logs del $filtroFechaInicio al $filtroFechaFin\n";
 
-[$logs, $accionesPorLogin] = cargarLogsConAcciones($conn, $where, $params, $types);
+[$logs, $accionesPorLogin] = cargarLogsConAcciones($conn, $where, $params);
 $rango   = rangoTexto($filtroFechaInicio, $filtroFechaFin);
 $resumen = resumenLogs($logs, $accionesPorLogin);
 $pdf     = generarPdfLogs($logs, $accionesPorLogin, $rango);

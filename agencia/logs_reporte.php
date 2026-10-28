@@ -5,12 +5,11 @@
 // Requiere haber cargado antes vendor/autoload.php y logs_filtros.php (formatearDetalle, $etiquetas).
 
 // Devuelve [$logs, $accionesPorLogin] para los filtros armados en logs_filtros.php
-function cargarLogsConAcciones(mysqli $conn, array $where, array $params, string $types, int $limite = 5000): array {
+function cargarLogsConAcciones(PDO $conn, array $where, array $params, int $limite = 5000): array {
     $sql  = "SELECT * FROM logs_login WHERE " . implode(' AND ', $where) . " ORDER BY fecha_intento DESC LIMIT $limite";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $logs = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->execute($params);
+    $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Acciones de cada login exitoso, agrupadas por login_id
     $accionesPorLogin = [];
@@ -22,7 +21,7 @@ function cargarLogsConAcciones(mysqli $conn, array $where, array $params, string
                 WHERE login_id IN (" . implode(',', $ids) . ")
                 ORDER BY login_id, fecha, id
             ");
-            while ($r = $res->fetch_assoc()) {
+            while ($r = $res->fetch(PDO::FETCH_ASSOC)) {
                 $accionesPorLogin[$r['login_id']][] = $r;
             }
         } catch (Throwable $e) {

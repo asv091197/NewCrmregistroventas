@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../includes/db.php';
 // Configuración de manejo de errores
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -41,15 +42,9 @@ if ($id <= 0) {
 }
 
 // Conexión a base de datos
-$host = '65.99.205.112';
-$dbname = 'noreplyc_crmregistroventas';
-$username = 'noreplyc_alexsanchez09';
-$password = 'SWn_VrAc3K7lq;LS';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    $pdo = conexionPDO();
 } catch (PDOException $e) {
     error_log("Error de conexión a BD: " . $e->getMessage());
     http_response_code(500);

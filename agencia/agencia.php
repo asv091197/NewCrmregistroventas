@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 ini_set('session.gc_probability', 1);
 ini_set('session.gc_divisor', 1000); // Solo 0.1% de probabilidad de limpieza
 ini_set('session.cookie_secure', 0);
@@ -28,18 +29,9 @@ set_exception_handler(function($exception) {
 });
 
 // Conexión a base de datos con mejor manejo de errores
-$host = '65.99.205.112';
-$dbname = 'noreplyc_crmregistroventas';
-$username = 'noreplyc_alexsanchez09';
-$password = 'SWn_VrAc3K7lq;LS';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_TIMEOUT => 30,
-        PDO::ATTR_PERSISTENT => false,
-        PDO::ATTR_EMULATE_PREPARES => false
-    ]);
+    $pdo = conexionPDO();
 } catch (PDOException $e) {
     error_log("Error de conexión a BD: " . $e->getMessage());
     die("Error de conexión a la base de datos. Por favor, intente más tarde.");

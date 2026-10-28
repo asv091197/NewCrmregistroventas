@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/db.php';
 // includes/registro_acciones.php
 // Registra en logs_acciones cada acción sobre la BD, ligada al login (logs_login.id) de la sesión.
 
 /**
- * @param PDO|mysqli|null $db      Conexión existente; si es null se abre una propia
- * @param string          $accion  INSERT | UPDATE | DELETE | LOGOUT
- * @param array|string    $detalle Datos relevantes (no incluir contraseñas)
+ * @param PDO|null     $db      Conexión existente; si es null se usa conexionPDO()
+ * @param string       $accion  INSERT | UPDATE | DELETE | LOGOUT
+ * @param array|string $detalle Datos relevantes (no incluir contraseñas)
  */
 function registrarAccion($db, $accion, $tabla = null, $registroId = null, $detalle = null) {
     try {
@@ -31,26 +32,8 @@ function registrarAccion($db, $accion, $tabla = null, $registroId = null, $detal
                     (login_id, session_id, usuario_id, correo, origen, accion, tabla, registro_id, detalle, ip, url, fecha)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
-        $propia = false;
-        if ($db === null) {
-            $db = new mysqli("65.99.205.112", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS", "noreplyc_crmregistroventas");
-            if ($db->connect_error) return;
-            $db->set_charset("utf8mb4");
-            $propia = true;
-        }
-
-        if ($db instanceof PDO) {
-            $db->prepare($sql)->execute($params);
-        } elseif ($db instanceof mysqli) {
-            $stmt = $db->prepare($sql);
-            if ($stmt) {
-                $stmt->bind_param(str_repeat('s', count($params)), ...$params);
-                $stmt->execute();
-                $stmt->close();
-            }
-        }
-
-        if ($propia) $db->close();
+        $db = $db instanceof PDO ? $db : conexionPDO();
+        $db->prepare($sql)->execute($params);
     } catch (Throwable $e) {
         // La bitácora nunca debe romper la operación principal
         error_log("registrarAccion: " . $e->getMessage());

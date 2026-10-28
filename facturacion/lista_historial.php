@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 date_default_timezone_set('America/Mexico_City');
 
 // Configuración de manejo de errores
@@ -16,12 +17,6 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 }
 
-// Conexión a la base de datos
-$servername = "65.99.205.112";
-$username = "noreplyc_alexsanchez09";
-$password = "SWn_VrAc3K7lq;LS";
-$dbname = "noreplyc_crmregistroventas";
-
 // Parámetros de filtrado
 $fecha_inicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : '';
 $fecha_fin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : '';
@@ -29,41 +24,31 @@ $usuario_id = isset($_GET['usuario_id']) ? intval($_GET['usuario_id']) : '';
 $accion = isset($_GET['accion']) ? $_GET['accion'] : '';
 
 try {
-    $conn = new mysqli($servername, $username, $password, $dbname);
-    
-    if ($conn->connect_error) {
-        throw new Exception("Conexión fallida: " . $conn->connect_error);
-    }
-    
-    $conn->set_charset("utf8");
+    // Conexión a la base de datos
+    $conn = conexionPDO();
 
     // Construir consulta con filtros
     $whereConditions = [];
     $params = [];
-    $types = "";
 
     if (!empty($fecha_inicio)) {
         $whereConditions[] = "h.fecha_accion >= ?";
         $params[] = $fecha_inicio . ' 00:00:00';
-        $types .= "s";
     }
 
     if (!empty($fecha_fin)) {
         $whereConditions[] = "h.fecha_accion <= ?";
         $params[] = $fecha_fin . ' 23:59:59';
-        $types .= "s";
     }
 
     if (!empty($usuario_id)) {
         $whereConditions[] = "h.usuario_id = ?";
         $params[] = $usuario_id;
-        $types .= "i";
     }
 
     if (!empty($accion)) {
         $whereConditions[] = "h.accion = ?";
         $params[] = $accion;
-        $types .= "s";
     }
 
     $whereClause = '';
@@ -88,27 +73,18 @@ try {
                      LIMIT 1000";
 
     $stmt_historial = $conn->prepare($sql_historial);
-    
-    if (!empty($params)) {
-        $stmt_historial->bind_param($types, ...$params);
-    }
-    
-    $stmt_historial->execute();
-    $result_historial = $stmt_historial->get_result();
+    $stmt_historial->execute($params);
     
     $historial = [];
-    while ($row = $result_historial->fetch_assoc()) {
+    while ($row = $stmt_historial->fetch(PDO::FETCH_ASSOC)) {
         $historial[] = $row;
     }
-    $stmt_historial->close();
 
     // Obtener lista de usuarios para el filtro
     $sql_usuarios = "SELECT id, CONCAT(nombre, ' ', apepat, ' ', COALESCE(apemat, '')) as nombre_completo 
                      FROM usuarios 
                      ORDER BY nombre";
-    $usuarios = $conn->query($sql_usuarios)->fetch_all(MYSQLI_ASSOC);
-
-    $conn->close();
+    $usuarios = $conn->query($sql_usuarios)->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {
     error_log("ERROR en lista_historial.php: " . $e->getMessage());

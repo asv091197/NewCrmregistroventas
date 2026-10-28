@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // Configuración para sesión persistente
 ini_set('session.gc_probability', 1);
 ini_set('session.gc_divisor', 1000);
@@ -19,10 +20,9 @@ $tiene_permiso_plataforma = false;
 
 if ($es_admin) {
     try {
-        $pdo = new PDO("mysql:host=65.99.205.112;dbname=noreplyc_crmregistroventas;charset=utf8", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS");
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        
-        $stmt = $pdo->prepare("SELECT permiso_plataforma FROM usuarios_facturacion WHERE id = ?");
+        $conn = conexionPDO();
+
+        $stmt = $conn->prepare("SELECT permiso_plataforma FROM usuarios_facturacion WHERE id = ?");
         $stmt->execute([$_SESSION['usuario_id']]);
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -48,10 +48,6 @@ set_exception_handler(function ($exception) {
 });
 
 // Configuración
-$servername = "65.99.205.112";
-$username = "noreplyc_alexsanchez09";
-$password = "SWn_VrAc3K7lq;LS";
-$dbname = "noreplyc_crmregistroventas";
 $registros_por_pagina = 10;
 
 // Parámetros
@@ -67,21 +63,23 @@ $mostrar_paginacion = false;
 $error = null;
 
 // Conexión y consulta
-$conn = new mysqli($servername, $username, $password, $dbname);
-$conn->set_charset("utf8");
+try {
+    $conn = conexionPDO();
+} catch (PDOException $e) {
+    $conn = null;
+    $error = "Error de conexión: " . $e->getMessage();
+}
 
-if (!$conn->connect_error) {
+if ($conn) {
     try {
         // Construir WHERE conditions
         $conditions = [];
         $params = [];
-        $types = '';
 
         if ($busqueda) {
             $conditions[] = "(nombre_ancronimo LIKE ? OR plataformaspei LIKE ? OR metodo_pago LIKE ?)";
             $search_param = "%$busqueda%";
             array_push($params, $search_param, $search_param, $search_param);
-            $types .= 'sss';
         }
 
         if (!$mostrar_inactivos) {
@@ -93,10 +91,8 @@ if (!$conn->connect_error) {
         // Contar total
         $sql_count = "SELECT COUNT(*) as total FROM plataforma $where_sql";
         $stmt = $conn->prepare($sql_count);
-        if ($params) $stmt->bind_param($types, ...$params);
-        $stmt->execute();
-        $total_registros = $stmt->get_result()->fetch_assoc()['total'];
-        $stmt->close();
+        $stmt->execute($params);
+        $total_registros = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         // Calcular paginación
         $total_paginas = ceil($total_registros / $registros_por_pagina);
@@ -109,23 +105,18 @@ if (!$conn->connect_error) {
                 LIMIT ? OFFSET ?";
 
         $stmt = $conn->prepare($sql);
-        if ($params) {
-            $types .= 'ii';
-            array_push($params, $registros_por_pagina, $offset);
-            $stmt->bind_param($types, ...$params);
-        } else {
-            $stmt->bind_param('ii', $registros_por_pagina, $offset);
+        $pos = 1;
+        foreach ($params as $param) {
+            $stmt->bindValue($pos++, $param);
         }
+        $stmt->bindValue($pos++, (int)$registros_por_pagina, PDO::PARAM_INT);
+        $stmt->bindValue($pos++, (int)$offset, PDO::PARAM_INT);
 
         $stmt->execute();
-        $plataformas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
+        $plataformas = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         $error = "Error al cargar las plataformas: " . $e->getMessage();
     }
-    $conn->close();
-} else {
-    $error = "Error de conexión: " . $conn->connect_error;
 }
 ?>
 

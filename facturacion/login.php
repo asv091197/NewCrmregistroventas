@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // facturacion/login.php
 
 date_default_timezone_set('America/Mexico_City');
@@ -182,13 +183,7 @@ function registrarLogLoginFacturacion($conexion, array $datos) {
             VALUES (?, ?, 'facturacion', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ");
 
-        if (!$stmt) {
-            debugLog('Error prepare log facturacion: ' . $conexion->error);
-            return;
-        }
-
-        $stmt->bind_param(
-            "isissssssss",
+        $stmt->execute([
             $usuarioId,
             $correo,
             $exito,
@@ -200,20 +195,15 @@ function registrarLogLoginFacturacion($conexion, array $datos) {
             $so,
             $navegador,
             $userAgent
-        );
+        ]);
 
-        $logId = null;
-        if (!$stmt->execute()) {
-            debugLog('Error execute log facturacion: ' . $stmt->error);
-        } else {
-            $logId = $stmt->insert_id;
-            debugLog('Log login facturacion registrado', [
-                'correo' => $correo, 'exito' => $exito, 'ip' => $ip,
-                'dispositivo' => $dispositivo, 'so' => $so, 'navegador' => $navegador,
-                'pais' => $pais, 'ciudad' => $ciudad
-            ]);
-        }
-        $stmt->close();
+        $logId = (int)$conexion->lastInsertId();
+        debugLog('Log login facturacion registrado', [
+            'correo' => $correo, 'exito' => $exito, 'ip' => $ip,
+            'dispositivo' => $dispositivo, 'so' => $so, 'navegador' => $navegador,
+            'pais' => $pais, 'ciudad' => $ciudad
+        ]);
+        $stmt = null;
         return $logId;
     } catch (Exception $e) {
         debugLog('Excepción registrando log facturacion: ' . $e->getMessage());
@@ -246,12 +236,12 @@ if (isset($_SESSION['usuario_id']) && isset($_SESSION['rol'])) {
     }
 }
 
-$conexion = new mysqli("65.99.205.112", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS", "noreplyc_crmregistroventas");
-if ($conexion->connect_error) {
-    debugLog('Error de conexión a BD', $conexion->connect_error);
-    die("Error de conexión: " . $conexion->connect_error);
+try {
+    $conexion = conexionPDO();
+} catch (PDOException $e) {
+    debugLog('Error de conexión a BD', $e->getMessage());
+    die("Error de conexión: " . $e->getMessage());
 }
-$conexion->set_charset("utf8mb4");
 
 $mensaje = "";
 $mensaje_tipo = "";
@@ -287,17 +277,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         ");
 
         if (!$stmt) {
-            debugLog('Error en prepare para facturación', $conexion->error);
+            debugLog('Error en prepare para facturación', $conexion->errorInfo()[2] ?? '');
             $mensaje = "Error interno del sistema";
             $mensaje_tipo = "danger";
         } else {
-            $stmt->bind_param("s", $correo);
-            $stmt->execute();
-            $stmt->store_result();
+            $stmt->execute([$correo]);
+            $filas = $stmt->fetchAll(PDO::FETCH_NUM);
 
-            if ($stmt->num_rows === 1) {
-                $stmt->bind_result($id, $nombre, $hash, $rol, $acceso_todas_salas, $salas_permitidas_json);
-                $stmt->fetch();
+            if (count($filas) === 1) {
+                [$id, $nombre, $hash, $rol, $acceso_todas_salas, $salas_permitidas_json] = $filas[0];
 
                 debugLog('Usuario encontrado en facturación', [
                     'id' => $id, 'nombre' => $nombre, 'rol' => $rol
@@ -361,8 +349,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             'session_id' => session_id()
                         ]);
 
-                        $stmt->close();
-                        $conexion->close();
+                        $stmt = null;
+                        $conexion = null;
 
                         debugLog('Redirigiendo a ventas.php (facturación)');
                         header("Location: ventas.php");
@@ -392,8 +380,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 ]);
             }
 
-            if (isset($stmt) && $stmt instanceof mysqli_stmt) {
-                $stmt->close();
+            if (isset($stmt) && $stmt instanceof PDOStatement) {
+                $stmt = null;
             }
         }
     }
@@ -401,7 +389,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     debugLog('Método no POST para facturación', $_SERVER['REQUEST_METHOD']);
 }
 
-$conexion->close();
+$conexion = null;
 debugLog('=== FIN DE PROCESO LOGIN FACTURACION ===');
 ?>
 

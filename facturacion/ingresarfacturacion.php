@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // Configuración para sesión persistente
 ini_set('session.gc_probability', 1);
 ini_set('session.gc_divisor', 1000);
@@ -39,8 +40,7 @@ $tiene_permiso_plataforma = false; // Nueva variable
 $salasPermitidas = [];
 
 try {
-    $pdo = new PDO("mysql:host=65.99.205.112;dbname=noreplyc_crmregistroventas;charset=utf8", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS");
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = conexionPDO();
 
     // Obtener información del usuario de la tabla usuarios_facturacion
     $stmt = $pdo->prepare("SELECT acceso_todas_salas, salas_permitidas, permiso_plataforma FROM usuarios_facturacion WHERE id = ? AND activo = 1");

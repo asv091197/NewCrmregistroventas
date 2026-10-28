@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // agencia/ver_logs.php
 require_once __DIR__ . '/../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
@@ -13,17 +14,18 @@ if (($_SESSION['rol'] ?? '') !== 'superadmin') {
     exit;
 }
 
-$conn = new mysqli("65.99.205.112", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS", "noreplyc_crmregistroventas");
-if ($conn->connect_error) die("Error de conexión");
-$conn->set_charset("utf8mb4");
+try {
+    $conn = conexionPDO();
+} catch (PDOException $e) {
+    die("Error de conexión");
+}
 
 require_once __DIR__ . '/logs_filtros.php';
 
 $sql  = "SELECT * FROM logs_login WHERE " . implode(' AND ', $where) . " ORDER BY fecha_intento DESC LIMIT 500";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param($types, ...$params);
-$stmt->execute();
-$logs = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->execute($params);
+$logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Conteo de acciones por login exitoso
 $conteoAcciones = [];
@@ -36,7 +38,7 @@ if ($idsExitosos) {
             WHERE login_id IN (" . implode(',', $idsExitosos) . ")
             GROUP BY login_id
         ");
-        while ($r = $res->fetch_assoc()) {
+        while ($r = $res->fetch(PDO::FETCH_ASSOC)) {
             $conteoAcciones[$r['login_id']] = $r;
         }
         // Última acción (sin contar LOGOUT) de cada login
@@ -50,7 +52,7 @@ if ($idsExitosos) {
                 GROUP BY login_id
             ) u ON u.id = la.id
         ");
-        while ($r = $res->fetch_assoc()) {
+        while ($r = $res->fetch(PDO::FETCH_ASSOC)) {
             $conteoAcciones[$r['login_id']]['ultima'] = $r;
         }
     } catch (Throwable $e) {
@@ -64,14 +66,12 @@ $sesion   = null;
 $acciones = [];
 if ($sesionId > 0) {
     $stmt = $conn->prepare("SELECT * FROM logs_login WHERE id = ?");
-    $stmt->bind_param("i", $sesionId);
-    $stmt->execute();
-    $sesion = $stmt->get_result()->fetch_assoc();
+    $stmt->execute([$sesionId]);
+    $sesion = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     try {
         $stmt = $conn->prepare("SELECT * FROM logs_acciones WHERE login_id = ? ORDER BY fecha, id");
-        $stmt->bind_param("i", $sesionId);
-        $stmt->execute();
-        $acciones = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->execute([$sesionId]);
+        $acciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Throwable $e) {
         error_log("ver_logs acciones sesión: " . $e->getMessage());
     }

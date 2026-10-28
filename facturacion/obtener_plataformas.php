@@ -1,19 +1,14 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
 // Conexión a la base de datos
-$servername = "65.99.205.112";
-$username = "noreplyc_alexsanchez09";
-$password = "SWn_VrAc3K7lq;LS";
-$dbname = "noreplyc_crmregistroventas";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-$conn->set_charset("utf8");
-
-if ($conn->connect_error) {
+try {
+    $conn = conexionPDO();
+} catch (PDOException $e) {
     http_response_code(500);
-    die(json_encode(["error" => "Conexión fallida: " . $conn->connect_error]));
+    die(json_encode(["error" => "Conexión fallida: " . $e->getMessage()]));
 }
 
 try {
@@ -26,10 +21,8 @@ try {
     $result = $conn->query($sql);
 
     $plataformas = [];
-    if ($result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
-            $plataformas[] = $row;
-        }
+    while($row = $result->fetch(PDO::FETCH_ASSOC)) {
+        $plataformas[] = $row;
     }
 
     echo json_encode($plataformas);
@@ -37,7 +30,5 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(["error" => "Error al obtener plataformas: " . $e->getMessage()]);
-} finally {
-    $conn->close();
 }
 ?>

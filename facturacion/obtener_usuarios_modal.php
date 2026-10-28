@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // Configuración para sesión persistente
 ini_set('session.gc_probability', 1);
 ini_set('session.gc_divisor', 1000);
@@ -23,18 +24,9 @@ ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/php_errors.log');
 
 // Conexión a base de datos
-$host = '65.99.205.112';
-$dbname = 'noreplyc_crmregistroventas';
-$username = 'noreplyc_alexsanchez09';
-$password = 'SWn_VrAc3K7lq;LS';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_TIMEOUT => 30,
-        PDO::ATTR_PERSISTENT => false,
-        PDO::ATTR_EMULATE_PREPARES => false
-    ]);
+    $pdo = conexionPDO();
 } catch (PDOException $e) {
     error_log("Error de conexión a BD: " . $e->getMessage());
     echo json_encode(['error' => 'Error de conexión a la base de datos']);

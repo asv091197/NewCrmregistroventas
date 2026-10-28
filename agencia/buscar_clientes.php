@@ -1,11 +1,11 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../session_config.php'; session_start();
 if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'usuario') {
     exit;
 }
 
-$pdo = new PDO("mysql:host=65.99.205.112;dbname=marketinpro;charset=utf8", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS");
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$pdo = conexionPDO('marketinpro');
 
 $buscar = isset($_GET['buscar']) ? trim($_GET['buscar']) : '';
 
@@ -13,8 +13,8 @@ if (strlen($buscar) < 3) {
     exit; // No mostrar nada si la búsqueda es menor a 3 caracteres
 }
 
-$stmt = $pdo->prepare("SELECT id, nombre, numero1, numero2, asunto, descripcion FROM cliente WHERE nombre LIKE :buscar OR asunto LIKE :buscar OR descripcion LIKE :buscar");
-$stmt->execute(['buscar' => "%$buscar%"]);
+$stmt = $pdo->prepare("SELECT id, nombre, numero1, numero2, asunto, descripcion FROM cliente WHERE nombre LIKE :buscar1 OR asunto LIKE :buscar2 OR descripcion LIKE :buscar3");
+$stmt->execute(['buscar1' => "%$buscar%", 'buscar2' => "%$buscar%", 'buscar3' => "%$buscar%"]);
 $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 foreach ($clientes as $cliente) {

@@ -1,10 +1,10 @@
 <?php
+require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
 
 // Conexión a la base de datos
-$pdo = new PDO("mysql:host=65.99.205.112;dbname=noreplyc_crmregistroventas;charset=utf8", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS");
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$pdo = conexionPDO();
 
 // Forzar respuesta JSON incluso si hay errores
 header('Content-Type: application/json');

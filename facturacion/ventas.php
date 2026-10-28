@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // Configuración para sesión persistente
 ini_set('session.gc_probability', 1);
 ini_set('session.gc_divisor', 1000);
@@ -42,18 +43,9 @@ if (isset($_GET['success'])) {
 }
 
 // Conexión a base de datos con mejor manejo de errores
-$host = '65.99.205.112';
-$dbname = 'noreplyc_crmregistroventas';
-$username = 'noreplyc_alexsanchez09';
-$password = 'SWn_VrAc3K7lq;LS';
 
 try {
-  $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_TIMEOUT => 30,
-    PDO::ATTR_PERSISTENT => false,
-    PDO::ATTR_EMULATE_PREPARES => false
-  ]);
+  $pdo = conexionPDO();
 } catch (PDOException $e) {
   error_log("Error de conexión a BD: " . $e->getMessage());
   die("Error de conexión a la base de datos. Por favor, intente más tarde.");
@@ -202,13 +194,15 @@ if (!empty($plataformaIds)) {
 
 // Añadir condición de búsqueda si existe
 if (!empty($busqueda)) {
-  $whereConditions[] = "(v.folio LIKE :busqueda OR 
-                          v.cliente LIKE :busqueda OR 
-                          v.apepat LIKE :busqueda OR 
-                          v.apemat LIKE :busqueda OR 
-                          v.producto LIKE :busqueda OR 
-                          CONCAT(v.cliente, ' ', v.apepat, ' ', COALESCE(v.apemat, '')) LIKE :busqueda)";
-  $params[':busqueda'] = "%$busqueda%";
+  $whereConditions[] = "(v.folio LIKE :busqueda1 OR 
+                          v.cliente LIKE :busqueda2 OR 
+                          v.apepat LIKE :busqueda3 OR 
+                          v.apemat LIKE :busqueda4 OR 
+                          v.producto LIKE :busqueda5 OR 
+                          CONCAT(v.cliente, ' ', v.apepat, ' ', COALESCE(v.apemat, '')) LIKE :busqueda6)";
+  for ($i = 1; $i <= 6; $i++) {
+    $params[':busqueda' . $i] = "%$busqueda%";
+  }
 }
 
 // Añadir condición de tipo_venta si existe

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // agencia/exportar_logs.php
 // Exporta los logs de inicio de sesión (con sus acciones) a Excel o PDF usando los mismos filtros de ver_logs.php
 require_once __DIR__ . '/../session_config.php'; session_start();
@@ -29,14 +30,16 @@ if (!in_array($formato, ['excel', 'pdf'], true)) {
     die("Formato no válido");
 }
 
-$conn = new mysqli("65.99.205.112", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS", "noreplyc_crmregistroventas");
-if ($conn->connect_error) die("Error de conexión");
-$conn->set_charset("utf8mb4");
+try {
+    $conn = conexionPDO();
+} catch (PDOException $e) {
+    die("Error de conexión");
+}
 
 require_once __DIR__ . '/logs_filtros.php';
 require_once __DIR__ . '/logs_reporte.php';
 
-[$logs, $accionesPorLogin] = cargarLogsConAcciones($conn, $where, $params, $types);
+[$logs, $accionesPorLogin] = cargarLogsConAcciones($conn, $where, $params);
 
 $etiquetaAccion = 'etiquetaAccion';
 $soloAcciones   = 'soloAcciones';

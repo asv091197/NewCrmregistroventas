@@ -1,15 +1,9 @@
 <?php
+require_once __DIR__ . '/../../includes/db.php';
 // Configuración de conexión
-$host = "65.99.205.112";
-$dbname = "noreplyc_crmregistroventas";
-$username = "noreplyc_alexsanchez09";
-$password = "SWn_VrAc3K7lq;LS";
-$charset = "utf8";
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=$charset", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+    $pdo = conexionPDO();
 } catch (PDOException $e) {
     echo "Error de conexión: " . $e->getMessage();
     exit;

@@ -1,12 +1,12 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 date_default_timezone_set('America/Mexico_City');
 
 // Conexión
-$conn = new mysqli("65.99.205.112", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS", "noreplyc_crmregistroventas");
-$conn->set_charset("utf8mb4");
-
-if ($conn->connect_error) {
-  die("Error de conexión: " . $conn->connect_error);
+try {
+  $conn = conexionPDO();
+} catch (PDOException $e) {
+  die("Error de conexión: " . $e->getMessage());
 }
 
 // Paginación
@@ -17,7 +17,7 @@ $offset = ($pagina - 1) * $por_pagina;
 // Total de registros
 $total_sql = "SELECT COUNT(*) AS total FROM ventas";
 $total_result = $conn->query($total_sql);
-$total = $total_result->fetch_assoc()['total'];
+$total = $total_result->fetch(PDO::FETCH_ASSOC)['total'];
 $total_paginas = ceil($total / $por_pagina);
 
 // Consulta principal con JOINs
@@ -34,9 +34,10 @@ $sql = "SELECT v.*,
         LIMIT ? OFFSET ?";
 
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("ii", $por_pagina, $offset);
+$stmt->bindValue(1, (int)$por_pagina, PDO::PARAM_INT);
+$stmt->bindValue(2, (int)$offset, PDO::PARAM_INT);
 $stmt->execute();
-$result = $stmt->get_result();
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -55,7 +56,7 @@ $result = $stmt->get_result();
     <!-- 🔽 Botón de exportación a Excel -->
     <!-- <a href="exportar_excel.php" class="btn btn-success mb-3">📤 Exportar a Excel</a> -->
 
-    <?php if ($result->num_rows > 0): ?>
+    <?php if (count($rows) > 0): ?>
       <table class="table table-bordered table-hover">
         <thead class="table-dark">
           <tr>
@@ -73,7 +74,7 @@ $result = $stmt->get_result();
           </tr>
         </thead>
         <tbody>
-          <?php while ($row = $result->fetch_assoc()): ?>
+          <?php foreach ($rows as $row): ?>
             <tr>
               <td><?= htmlspecialchars($row['folio']) ?></td>
               <td><?= date('d/m/Y', strtotime($row['fecha'])) ?></td>
@@ -87,7 +88,7 @@ $result = $stmt->get_result();
               <td><?= htmlspecialchars($row['metodo_pago']) ?></td>
               <td><?= htmlspecialchars($row['banco']) ?></td>
             </tr>
-          <?php endwhile; ?>
+          <?php endforeach; ?>
         </tbody>
       </table>
 
@@ -108,7 +109,3 @@ $result = $stmt->get_result();
   </div>
 </body>
 </html>
-<?php
-$stmt->close();
-$conn->close();
-?>

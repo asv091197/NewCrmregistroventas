@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 date_default_timezone_set('America/Mexico_City');
 require_once __DIR__ . '/../includes/registro_acciones.php';
 
@@ -28,10 +29,8 @@ function sendResponse($success, $message, $redirect = '') {
 function obtenerVentaActual($conn, $id) {
     $sql = "SELECT * FROM ventas_facturacion WHERE id = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    return $result->fetch_assoc();
+    $stmt->execute([$id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
 // Función para registrar en el historial
@@ -43,8 +42,7 @@ function registrarHistorial($conn, $venta_id, $usuario_id, $accion, $campo_modif
     $ip_address = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
     
-    $stmt->bind_param("iissssss", $venta_id, $usuario_id, $accion, $campo_modificado, $valor_anterior, $valor_nuevo, $ip_address, $user_agent);
-    return $stmt->execute();
+    return $stmt->execute([$venta_id, $usuario_id, $accion, $campo_modificado, $valor_anterior, $valor_nuevo, $ip_address, $user_agent]);
 }
 
 // Función para comparar y registrar cambios
@@ -183,7 +181,7 @@ function formatearPrecioDecimal($precio) {
 
 // Función para determinar el tipo de parámetro considerando NULLs
 function getParamType($value) {
-    if (is_null($value)) return 's'; // Tratar NULLs como string para bind_param
+    if (is_null($value)) return 's'; // NULLs se registran como string en el debug
     if (is_int($value)) return 'i';
     if (is_float($value)) return 'd';
     if (is_double($value)) return 'd';
@@ -342,18 +340,7 @@ try {
     }
 
     // Conexión a la base de datos
-    $servername = "65.99.205.112";
-    $username = "noreplyc_alexsanchez09";
-    $password = "SWn_VrAc3K7lq;LS";
-    $dbname = "noreplyc_crmregistroventas";
-
-    $conn = new mysqli($servername, $username, $password, $dbname);
-    
-    if ($conn->connect_error) {
-        throw new Exception("Conexión fallida: " . $conn->connect_error);
-    }
-    
-    $conn->set_charset("utf8");
+    $conn = conexionPDO();
 
     // OBTENER DATOS ACTUALES DE LA VENTA PARA COMPARACIÓN
     $venta_actual = obtenerVentaActual($conn, $id);
@@ -418,12 +405,10 @@ try {
     if ($plataforma_id) {
         $sql_plataforma = "SELECT porcent_front, porcent_linea, porcent_cierre FROM plataforma WHERE id = ? AND activo = 1";
         $stmt_plat = $conn->prepare($sql_plataforma);
-        $stmt_plat->bind_param("i", $plataforma_id);
-        $stmt_plat->execute();
-        $result_plat = $stmt_plat->get_result();
+        $stmt_plat->execute([$plataforma_id]);
+        $plataforma_data = $stmt_plat->fetch(PDO::FETCH_ASSOC);
         
-        if ($result_plat->num_rows > 0) {
-            $plataforma_data = $result_plat->fetch_assoc();
+        if ($plataforma_data) {
             $porcent_front = $plataforma_data['porcent_front'];
             $porcent_linea = $plataforma_data['porcent_linea'];
             $porcent_cierre = $plataforma_data['porcent_cierre'];
@@ -432,7 +417,7 @@ try {
         } else {
             error_log("Plataforma ID $plataforma_id no encontrada o inactiva, no se calcularán ganancias");
         }
-        $stmt_plat->close();
+        $stmt_plat->closeCursor();
     }
 
     // CALCULAR PRECIO NETO Y GANANCIAS SI ES NECESARIO
@@ -541,11 +526,8 @@ try {
         WHERE id = ?";
 
     $stmt = $conn->prepare($sql);
-    if (!$stmt) {
-        throw new Exception("Error al preparar la consulta: " . $conn->error);
-    }
 
-    // Parámetros para bind_param - INCLUYENDO CAMPOS MANUALES, TIPO_VENTA Y SALA_ID
+    // Parámetros para la consulta - INCLUYENDO CAMPOS MANUALES, TIPO_VENTA Y SALA_ID
     $parametros = [
         $fecha,
         $precio,
@@ -592,10 +574,8 @@ try {
         throw new Exception("Error: Número de parámetros (" . count($parametros) . ") no coincide con tipos (" . strlen($tipos) . ")");
     }
 
-    $stmt->bind_param($tipos, ...$parametros);
-
-    if ($stmt->execute()) {
-        $filas_afectadas = $stmt->affected_rows;
+    if ($stmt->execute($parametros)) {
+        $filas_afectadas = $stmt->rowCount();
         
         if ($filas_afectadas > 0) {
             // REGISTRAR CAMBIOS EN EL HISTORIAL
@@ -631,11 +611,8 @@ try {
         sendResponse(true, "✅ Venta actualizada correctamente", "ventas.php?success=" . urlencode("Venta actualizada correctamente"));
         
     } else {
-        throw new Exception("Error al ejecutar la actualización: " . $stmt->error);
+        throw new Exception("Error al ejecutar la actualización");
     }
-
-    $stmt->close();
-    $conn->close();
 
 } catch (Exception $e) {
     error_log("ERROR en actualizar_venta.php: " . $e->getMessage());

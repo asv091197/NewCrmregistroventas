@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 date_default_timezone_set('America/Mexico_City');
 
 // Configuración de manejo de errores
@@ -27,27 +28,14 @@ $historial_id = intval($_GET['historial_id']);
 
 try {
     // Conexión a la base de datos
-    $servername = "65.99.205.112";
-    $username = "noreplyc_alexsanchez09";
-    $password = "SWn_VrAc3K7lq;LS";
-    $dbname = "noreplyc_crmregistroventas";
-
-    $conn = new mysqli($servername, $username, $password, $dbname);
-    
-    if ($conn->connect_error) {
-        throw new Exception("Conexión fallida: " . $conn->connect_error);
-    }
-    
-    $conn->set_charset("utf8");
+    $conn = conexionPDO();
 
     // Obtener datos del historial
     $sql = "SELECT datos_anteriores, datos_nuevos FROM ventas_historial WHERE id = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $historial_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $registro = $result->fetch_assoc();
-    $stmt->close();
+    $stmt->execute([$historial_id]);
+    $registro = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt->closeCursor();
 
     if (!$registro) {
         throw new Exception("No se encontró el registro de historial");
@@ -63,8 +51,6 @@ try {
     // Obtener información de usuarios y plataformas para mostrar nombres
     $usuarios_info = obtenerInfoUsuarios($conn);
     $plataformas_info = obtenerInfoPlataformas($conn);
-
-    $conn->close();
 
     // Generar HTML para mostrar los cambios
     $html = '<div class="row">';
@@ -108,7 +94,7 @@ function obtenerInfoUsuarios($conn) {
     $result = $conn->query($sql);
     $usuarios = [];
     
-    while ($row = $result->fetch_assoc()) {
+    while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
         $usuarios[$row['id']] = $row['nombre'] . ' ' . $row['apepat'] . ' ' . ($row['apemat'] ?? '');
     }
     
@@ -121,7 +107,7 @@ function obtenerInfoPlataformas($conn) {
     $result = $conn->query($sql);
     $plataformas = [];
     
-    while ($row = $result->fetch_assoc()) {
+    while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
         $plataformas[$row['id']] = $row['nombre_ancronimo'] . ' (' . $row['plataformaspei'] . ')';
     }
     

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 //exportar_Excel.php 
 // Aumentar límites para manejar grandes volúmenes de datos
 ini_set('memory_limit', '2048M');        // Aumentar a 2GB (ajusta según necesidad)
@@ -80,17 +81,9 @@ function obtenerConfigOverPorSala($configOver, $salaId)
 }
 
 // Conexión a base de datos
-$host = '65.99.205.112';
-$dbname = 'noreplyc_crmregistroventas';
-$username = 'noreplyc_alexsanchez09';
-$password = 'SWn_VrAc3K7lq;LS';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_TIMEOUT => 30,
-        PDO::ATTR_EMULATE_PREPARES => false
-    ]);
+    $pdo = conexionPDO();
 } catch (PDOException $e) {
     die("Error de conexión a la base de datos: " . $e->getMessage());
 }

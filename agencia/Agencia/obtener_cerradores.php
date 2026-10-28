@@ -1,21 +1,18 @@
 <?php
-$host = '65.99.205.112';         // o la IP del servidor
-$usuario = 'noreplyc_alexsanchez09';     // reemplaza con tu usuario de MySQL
-$contrasena = 'SWn_VrAc3K7lq;LS'; // reemplaza con tu contraseña
+require_once __DIR__ . '/../../includes/db.php';
 $base_datos = 'marketinpro'; // reemplaza con el nombre de tu base
 
-$conn = new mysqli($host, $usuario, $contrasena, $base_datos);
-
-// Verificar conexión
-if ($conn->connect_error) {
-    die("Conexión fallida: " . $conn->connect_error);
+try {
+    $conn = conexionPDO($base_datos);
+} catch (PDOException $e) {
+    die("Conexión fallida: " . $e->getMessage());
 }
 
 $sql = "SELECT id, nombre, apepat, apemat FROM usuariosA ";
 $resultado = $conn->query($sql);
 
 $cerradores = [];
-while ($row = $resultado->fetch_assoc()) {
+while ($row = $resultado->fetch(PDO::FETCH_ASSOC)) {
     $cerradores[] = [
         'id' => $row['id'],
         'nombre_completo' => $row['nombre'] . ' ' . $row['apepat'] . ' ' . $row['apemat']

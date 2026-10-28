@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../session_config.php'; session_start();
 if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: login.php");
@@ -7,14 +8,9 @@ if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin') {
 
 
 
-$host = '65.99.205.112';
-$dbname = 'marketinpro';
-$username = 'noreplyc_alexsanchez09';
-$password = 'SWn_VrAc3K7lq;LS';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = conexionPDO('marketinpro');
 } catch (PDOException $e) {
     die("Error de conexión: " . $e->getMessage());
 }

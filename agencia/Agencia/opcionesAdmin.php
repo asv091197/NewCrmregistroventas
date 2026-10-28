@@ -1,4 +1,4 @@
-<?php
+<?php require_once __DIR__ . '/../../includes/db.php';
 ini_set('session.gc_probability', 1);
 ini_set('session.gc_divisor', 1000); // Solo 0.1% de probabilidad de limpieza
 ini_set('session.cookie_secure', 0);
@@ -26,17 +26,14 @@ if ($_SESSION['rol'] == 'usuario') {
 }
 
 // Conexión a la base de datos
-require_once 'config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 // Obtener permisos del admin desde la base de datos
 $admin_id = $_SESSION['usuario_id'];
 $query_permisos = "SELECT acceso_todas_salas, salas_permitidas FROM usuarios WHERE id = ?";
 $stmt_permisos = $conn->prepare($query_permisos);
-$stmt_permisos->bind_param("i", $admin_id);
-$stmt_permisos->execute();
-$result_permisos = $stmt_permisos->get_result();
-$permisos = $result_permisos->fetch_assoc();
-$stmt_permisos->close();
+$stmt_permisos->execute([$admin_id]);
+$permisos = $stmt_permisos->fetch(PDO::FETCH_ASSOC);
 
 $acceso_todas_salas = $permisos['acceso_todas_salas'];
 $salas_permitidas = json_decode($permisos['salas_permitidas'] ?? '[]', true) ?: [];
@@ -82,11 +79,8 @@ if ($acceso_todas_salas == 1) {
         $query_salas = "SELECT id, nombre FROM salas WHERE activo = 1 AND id IN ($placeholders) ORDER BY nombre";
         $stmt_salas = $conn->prepare($query_salas);
 
-        // Crear tipos de parámetros (todos 'i' para enteros)
-        $types = str_repeat('i', count($salas_permitidas));
-        $stmt_salas->bind_param($types, ...$salas_permitidas);
-        $stmt_salas->execute();
-        $result_salas = $stmt_salas->get_result();
+        $stmt_salas->execute(array_values($salas_permitidas));
+        $result_salas = $stmt_salas;
     } else {
         // Si no tiene salas permitidas, mostrar solo una opción
         $result_salas = false;
@@ -95,7 +89,7 @@ if ($acceso_todas_salas == 1) {
 
 $salas = [];
 if ($result_salas) {
-    while ($sala = $result_salas->fetch_assoc()) {
+    while ($sala = $result_salas->fetch(PDO::FETCH_ASSOC)) {
         $salas[] = $sala;
     }
 }
@@ -116,13 +110,10 @@ if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
     $sala_id = (int)$sala_seleccionada;
     $query_nombre_sala = "SELECT nombre FROM salas WHERE id = ?";
     $stmt_nombre = $conn->prepare($query_nombre_sala);
-    $stmt_nombre->bind_param("i", $sala_id);
-    $stmt_nombre->execute();
-    $result_nombre = $stmt_nombre->get_result();
-    if ($row = $result_nombre->fetch_assoc()) {
+    $stmt_nombre->execute([$sala_id]);
+    if ($row = $stmt_nombre->fetch(PDO::FETCH_ASSOC)) {
         $nombre_sala_seleccionada = $row['nombre'];
     }
-    $stmt_nombre->close();
 
     // Agregar condiciones a las consultas
     $condicion_sala_diario = " AND c.sala_id = ? ";
@@ -140,180 +131,155 @@ $ganancia_volumen_mensual = 0;
 $venta_bruta_diaria = 0;
 $venta_bruta_mensual = 0;
 
-// Conexión para ganancia volumen
-$host_ventas = '65.99.205.112';
-$dbname_ventas = 'noreplyc_crmregistroventas';
-$username_ventas = 'noreplyc_alexsanchez09';
-$password_ventas = 'SWn_VrAc3K7lq;LS';
-
 try {
-    $conn_ventas = new mysqli($host_ventas, $username_ventas, $password_ventas, $dbname_ventas);
-    if ($conn_ventas->connect_error) {
-        $ganancia_volumen_diaria = 0;
-        $ganancia_volumen_mensual = 0;
-        $venta_bruta_diaria = 0;
-        $venta_bruta_mensual = 0;
-    } else {
-        $conn_ventas->set_charset("utf8");
+    $conn_ventas = conexionPDO();
 
-        // CALCULAR GANANCIA VOLUMEN DIARIA Y VENTA BRUTA
-        $query_ventas_dia = "
-            SELECT v.precio, 
-                v.liner_id, v.closer1_id, v.closer2_id, v.full_stack_id,
-                liner.apemat as liner_nombre,
-                c1.apemat as closer1_nombre, 
-                c2.apemat as closer2_nombre,
-                fs.apemat as front_nombre
-            FROM ventas_facturacion v
-            LEFT JOIN usuarios liner ON v.liner_id = liner.id
-            LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
-            LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
-            LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
-            WHERE DATE(v.fecha) = ? 
-        ";
+    // CALCULAR GANANCIA VOLUMEN DIARIA Y VENTA BRUTA
+    $query_ventas_dia = "
+        SELECT v.precio, 
+            v.liner_id, v.closer1_id, v.closer2_id, v.full_stack_id,
+            liner.apemat as liner_nombre,
+            c1.apemat as closer1_nombre, 
+            c2.apemat as closer2_nombre,
+            fs.apemat as front_nombre
+        FROM ventas_facturacion v
+        LEFT JOIN usuarios liner ON v.liner_id = liner.id
+        LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
+        LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
+        LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
+        WHERE DATE(v.fecha) = ? 
+    ";
 
-        // Agregar condición de sala si está seleccionada
-        if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-            $query_ventas_dia .= " AND v.sala_id = ? ";
-        }
-
-        $stmt_ventas_dia = $conn_ventas->prepare($query_ventas_dia);
-        if ($stmt_ventas_dia) {
-            if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-                $stmt_ventas_dia->bind_param("si", $fecha_seleccionada, $sala_seleccionada);
-            } else {
-                $stmt_ventas_dia->bind_param("s", $fecha_seleccionada);
-            }
-            $stmt_ventas_dia->execute();
-            $result_ventas_dia = $stmt_ventas_dia->get_result();
-
-            while ($venta = $result_ventas_dia->fetch_assoc()) {
-                $ventaBruta = (float)$venta['precio'];
-                $venta_bruta_diaria += $ventaBruta;
-
-                if (!empty($venta['liner_nombre'])) {
-                    $ganancia_volumen_diaria += $ventaBruta / 2;
-                }
-                if (!empty($venta['closer1_nombre'])) {
-                    $ganancia_volumen_diaria += $ventaBruta / 2;
-                }
-                if (!empty($venta['closer2_nombre'])) {
-                    $ganancia_volumen_diaria += $ventaBruta / 3;
-                }
-                if (!empty($venta['front_nombre'])) {
-                    $ganancia_volumen_diaria += $ventaBruta;
-                }
-            }
-            $stmt_ventas_dia->close();
-        }
-
-        // CALCULAR GANANCIA VOLUMEN MENSUAL Y VENTA BRUTA
-        $anio = date('Y', strtotime($mes_seleccionado . '-01'));
-        $mes = date('m', strtotime($mes_seleccionado . '-01'));
-
-        $query_ventas_mes = "
-            SELECT v.precio, 
-                v.liner_id, v.closer1_id, v.closer2_id, v.full_stack_id,
-                liner.apemat as liner_nombre,
-                c1.apemat as closer1_nombre, 
-                c2.apemat as closer2_nombre,
-                fs.apemat as front_nombre
-            FROM ventas_facturacion v
-            LEFT JOIN usuarios liner ON v.liner_id = liner.id
-            LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
-            LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
-            LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
-            WHERE YEAR(v.fecha) = ? AND MONTH(v.fecha) = ?
-        ";
-
-        // Agregar condición de sala si está seleccionada
-        if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-            $query_ventas_mes .= " AND v.sala_id = ? ";
-        }
-
-        $stmt_ventas_mes = $conn_ventas->prepare($query_ventas_mes);
-        if ($stmt_ventas_mes) {
-            if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-                $stmt_ventas_mes->bind_param("iii", $anio, $mes, $sala_seleccionada);
-            } else {
-                $stmt_ventas_mes->bind_param("ii", $anio, $mes);
-            }
-            $stmt_ventas_mes->execute();
-            $result_ventas_mes = $stmt_ventas_mes->get_result();
-
-            while ($venta = $result_ventas_mes->fetch_assoc()) {
-                $ventaBruta = (float)$venta['precio'];
-                $venta_bruta_mensual += $ventaBruta;
-
-                if (!empty($venta['liner_nombre'])) {
-                    $ganancia_volumen_mensual += $ventaBruta / 2;
-                }
-                if (!empty($venta['closer1_nombre'])) {
-                    $ganancia_volumen_mensual += $ventaBruta / 2;
-                }
-                if (!empty($venta['closer2_nombre'])) {
-                    $ganancia_volumen_mensual += $ventaBruta / 3;
-                }
-                if (!empty($venta['front_nombre'])) {
-                    $ganancia_volumen_mensual += $ventaBruta;
-                }
-            }
-            $stmt_ventas_mes->close();
-        }
-
-        // ============================================================================
-        // CONSULTA PARA GRAFICA LINEAL - VENTA BRUTA POR DÍA DEL MES
-        // ============================================================================
-
-        $ventas_por_dia = array();
-        $dias_del_mes = array();
-
-        // Obtener número de días en el mes seleccionado
-        $ultimo_dia = date('t', strtotime($mes_seleccionado . '-01'));
-
-        // Inicializar array con todos los días del mes (1 al último día)
-        for ($dia = 1; $dia <= $ultimo_dia; $dia++) {
-            $fecha_dia = sprintf('%04d-%02d-%02d', $anio, $mes, $dia);
-            $dias_del_mes[] = $dia;
-            $ventas_por_dia[$dia] = 0; // Inicializar en 0
-        }
-
-        // Consultar ventas por día del mes
-        $query_ventas_por_dia = "
-            SELECT DAY(v.fecha) as dia, SUM(v.precio) as total_venta
-            FROM ventas_facturacion v
-            WHERE YEAR(v.fecha) = ? AND MONTH(v.fecha) = ?
-        ";
-
-        // Agregar condición de sala si está seleccionada
-        if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-            $query_ventas_por_dia .= " AND v.sala_id = ? ";
-        }
-
-        $query_ventas_por_dia .= " GROUP BY DAY(v.fecha) ORDER BY dia";
-
-        $stmt_ventas_dia = $conn_ventas->prepare($query_ventas_por_dia);
-        if ($stmt_ventas_dia) {
-            if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-                $stmt_ventas_dia->bind_param("iii", $anio, $mes, $sala_seleccionada);
-            } else {
-                $stmt_ventas_dia->bind_param("ii", $anio, $mes);
-            }
-            $stmt_ventas_dia->execute();
-            $result_ventas_dia = $stmt_ventas_dia->get_result();
-
-            while ($row = $result_ventas_dia->fetch_assoc()) {
-                $dia = (int)$row['dia'];
-                $ventas_por_dia[$dia] = (float)$row['total_venta'];
-            }
-            $stmt_ventas_dia->close();
-        }
-
-        // Convertir el array asociativo a array indexado para JavaScript
-        $ventas_por_dia_array = array_values($ventas_por_dia);
-
-        $conn_ventas->close();
+    // Agregar condición de sala si está seleccionada
+    if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
+        $query_ventas_dia .= " AND v.sala_id = ? ";
     }
+
+    $stmt_ventas_dia = $conn_ventas->prepare($query_ventas_dia);
+    if ($stmt_ventas_dia) {
+        if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
+            $stmt_ventas_dia->execute([$fecha_seleccionada, (int)$sala_seleccionada]);
+        } else {
+            $stmt_ventas_dia->execute([$fecha_seleccionada]);
+        }
+
+        while ($venta = $stmt_ventas_dia->fetch(PDO::FETCH_ASSOC)) {
+            $ventaBruta = (float)$venta['precio'];
+            $venta_bruta_diaria += $ventaBruta;
+
+            if (!empty($venta['liner_nombre'])) {
+                $ganancia_volumen_diaria += $ventaBruta / 2;
+            }
+            if (!empty($venta['closer1_nombre'])) {
+                $ganancia_volumen_diaria += $ventaBruta / 2;
+            }
+            if (!empty($venta['closer2_nombre'])) {
+                $ganancia_volumen_diaria += $ventaBruta / 3;
+            }
+            if (!empty($venta['front_nombre'])) {
+                $ganancia_volumen_diaria += $ventaBruta;
+            }
+        }
+    }
+
+    // CALCULAR GANANCIA VOLUMEN MENSUAL Y VENTA BRUTA
+    $anio = date('Y', strtotime($mes_seleccionado . '-01'));
+    $mes = date('m', strtotime($mes_seleccionado . '-01'));
+
+    $query_ventas_mes = "
+        SELECT v.precio, 
+            v.liner_id, v.closer1_id, v.closer2_id, v.full_stack_id,
+            liner.apemat as liner_nombre,
+            c1.apemat as closer1_nombre, 
+            c2.apemat as closer2_nombre,
+            fs.apemat as front_nombre
+        FROM ventas_facturacion v
+        LEFT JOIN usuarios liner ON v.liner_id = liner.id
+        LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
+        LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
+        LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
+        WHERE YEAR(v.fecha) = ? AND MONTH(v.fecha) = ?
+    ";
+
+    // Agregar condición de sala si está seleccionada
+    if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
+        $query_ventas_mes .= " AND v.sala_id = ? ";
+    }
+
+    $stmt_ventas_mes = $conn_ventas->prepare($query_ventas_mes);
+    if ($stmt_ventas_mes) {
+        if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
+            $stmt_ventas_mes->execute([$anio, $mes, (int)$sala_seleccionada]);
+        } else {
+            $stmt_ventas_mes->execute([$anio, $mes]);
+        }
+
+        while ($venta = $stmt_ventas_mes->fetch(PDO::FETCH_ASSOC)) {
+            $ventaBruta = (float)$venta['precio'];
+            $venta_bruta_mensual += $ventaBruta;
+
+            if (!empty($venta['liner_nombre'])) {
+                $ganancia_volumen_mensual += $ventaBruta / 2;
+            }
+            if (!empty($venta['closer1_nombre'])) {
+                $ganancia_volumen_mensual += $ventaBruta / 2;
+            }
+            if (!empty($venta['closer2_nombre'])) {
+                $ganancia_volumen_mensual += $ventaBruta / 3;
+            }
+            if (!empty($venta['front_nombre'])) {
+                $ganancia_volumen_mensual += $ventaBruta;
+            }
+        }
+    }
+
+    // ============================================================================
+    // CONSULTA PARA GRAFICA LINEAL - VENTA BRUTA POR DÍA DEL MES
+    // ============================================================================
+
+    $ventas_por_dia = array();
+    $dias_del_mes = array();
+
+    // Obtener número de días en el mes seleccionado
+    $ultimo_dia = date('t', strtotime($mes_seleccionado . '-01'));
+
+    // Inicializar array con todos los días del mes (1 al último día)
+    for ($dia = 1; $dia <= $ultimo_dia; $dia++) {
+        $fecha_dia = sprintf('%04d-%02d-%02d', $anio, $mes, $dia);
+        $dias_del_mes[] = $dia;
+        $ventas_por_dia[$dia] = 0; // Inicializar en 0
+    }
+
+    // Consultar ventas por día del mes
+    $query_ventas_por_dia = "
+        SELECT DAY(v.fecha) as dia, SUM(v.precio) as total_venta
+        FROM ventas_facturacion v
+        WHERE YEAR(v.fecha) = ? AND MONTH(v.fecha) = ?
+    ";
+
+    // Agregar condición de sala si está seleccionada
+    if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
+        $query_ventas_por_dia .= " AND v.sala_id = ? ";
+    }
+
+    $query_ventas_por_dia .= " GROUP BY DAY(v.fecha) ORDER BY dia";
+
+    $stmt_ventas_dia = $conn_ventas->prepare($query_ventas_por_dia);
+    if ($stmt_ventas_dia) {
+        if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
+            $stmt_ventas_dia->execute([$anio, $mes, (int)$sala_seleccionada]);
+        } else {
+            $stmt_ventas_dia->execute([$anio, $mes]);
+        }
+
+        while ($row = $stmt_ventas_dia->fetch(PDO::FETCH_ASSOC)) {
+            $dia = (int)$row['dia'];
+            $ventas_por_dia[$dia] = (float)$row['total_venta'];
+        }
+    }
+
+    // Convertir el array asociativo a array indexado para JavaScript
+    $ventas_por_dia_array = array_values($ventas_por_dia);
 } catch (Exception $e) {
     $ganancia_volumen_diaria = 0;
     $ganancia_volumen_mensual = 0;
@@ -344,15 +310,13 @@ $query_top3 = "
 
 $stmt_top3 = $conn->prepare($query_top3);
 if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-    $stmt_top3->bind_param("si", $fecha_seleccionada, $sala_seleccionada);
+    $stmt_top3->execute([$fecha_seleccionada, (int)$sala_seleccionada]);
 } else {
-    $stmt_top3->bind_param("s", $fecha_seleccionada);
+    $stmt_top3->execute([$fecha_seleccionada]);
 }
-$stmt_top3->execute();
-$result_top3 = $stmt_top3->get_result();
 
 $top_usuarios = [];
-while ($row = $result_top3->fetch_assoc()) {
+while ($row = $stmt_top3->fetch(PDO::FETCH_ASSOC)) {
     $apemat_limpio = preg_replace('/[^\p{L}\p{N}\s]/u', '', $row['apemat']);
     $apemat_limpio = trim(preg_replace('/\s+/', ' ', $apemat_limpio));
     $top_usuarios[] = [
@@ -360,7 +324,6 @@ while ($row = $result_top3->fetch_assoc()) {
         'cantidad' => $row['cantidad']
     ];
 }
-$stmt_top3->close();
 
 // Consulta para obtener TODOS los usuarios de la fecha seleccionada
 $query_todos = "
@@ -378,15 +341,13 @@ $query_todos = "
 
 $stmt_todos = $conn->prepare($query_todos);
 if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-    $stmt_todos->bind_param("si", $fecha_seleccionada, $sala_seleccionada);
+    $stmt_todos->execute([$fecha_seleccionada, (int)$sala_seleccionada]);
 } else {
-    $stmt_todos->bind_param("s", $fecha_seleccionada);
+    $stmt_todos->execute([$fecha_seleccionada]);
 }
-$stmt_todos->execute();
-$result_todos = $stmt_todos->get_result();
 
 $todos_usuarios = [];
-while ($row = $result_todos->fetch_assoc()) {
+while ($row = $stmt_todos->fetch(PDO::FETCH_ASSOC)) {
     $apemat_limpio = preg_replace('/[^\p{L}\p{N}\s]/u', '', $row['apemat']);
     $apemat_limpio = trim(preg_replace('/\s+/', ' ', $apemat_limpio));
     $todos_usuarios[] = [
@@ -394,7 +355,6 @@ while ($row = $result_todos->fetch_assoc()) {
         'cantidad' => $row['cantidad']
     ];
 }
-$stmt_todos->close();
 
 // Consulta para volumen mensual
 $query_mensual = "
@@ -416,16 +376,14 @@ $mes = date('m', strtotime($mes_seleccionado . '-01'));
 
 $stmt_mensual = $conn->prepare($query_mensual);
 if ($sala_seleccionada !== 'todas' && is_numeric($sala_seleccionada)) {
-    $stmt_mensual->bind_param("iii", $anio, $mes, $sala_seleccionada);
+    $stmt_mensual->execute([$anio, $mes, (int)$sala_seleccionada]);
 } else {
-    $stmt_mensual->bind_param("ii", $anio, $mes);
+    $stmt_mensual->execute([$anio, $mes]);
 }
-$stmt_mensual->execute();
-$result_mensual = $stmt_mensual->get_result();
 
 $usuarios_mensual = [];
 $total_mensual = 0;
-while ($row = $result_mensual->fetch_assoc()) {
+while ($row = $stmt_mensual->fetch(PDO::FETCH_ASSOC)) {
     $apemat_limpio = preg_replace('/[^\p{L}\p{N}\s]/u', '', $row['apemat']);
     $apemat_limpio = trim(preg_replace('/\s+/', ' ', $apemat_limpio));
     $usuarios_mensual[] = [
@@ -434,7 +392,6 @@ while ($row = $result_mensual->fetch_assoc()) {
     ];
     $total_mensual += $row['cantidad'];
 }
-$stmt_mensual->close();
 
 // Top 3 mensual
 $top3_mensual = array_slice($usuarios_mensual, 0, 3);

@@ -1,7 +1,7 @@
 <?php
 // agencia/logs_filtros.php
 // Filtros compartidos por ver_logs.php y exportar_logs.php.
-// Deja listos: $filtro*, $fechaDesde, $fechaHasta, $where, $params, $types, $colores, $etiquetas
+// Deja listos: $filtro*, $fechaDesde, $fechaHasta, $where, $params, $colores, $etiquetas
 
 $colores   = ['INSERT' => 'success', 'UPDATE' => 'primary', 'DELETE' => 'danger', 'LOGOUT' => 'secondary', 'EXPORT_EXCEL' => 'info', 'EXPORT_PDF' => 'warning'];
 $etiquetas = ['INSERT' => 'NUEVO', 'UPDATE' => 'ACTUALIZAR', 'DELETE' => 'ELIMINAR', 'EXPORT_EXCEL' => 'DESCARGA EXCEL VOLUMEN', 'EXPORT_PDF' => 'DESCARGA PDF VOLUMEN'];
@@ -26,22 +26,18 @@ $fechaHasta = date('Y-m-d', strtotime($filtroFechaFin . ' +1 day')) . ' 00:00:00
 
 $where  = ["fecha_intento >= ?", "fecha_intento < ?"];
 $params = [$fechaDesde, $fechaHasta];
-$types  = "ss";
 
 if ($filtroExito !== '') {
     $where[]  = "exito = ?";
     $params[] = (int)$filtroExito;
-    $types   .= "i";
 }
 if ($filtroOrigen !== '') {
     $where[]  = "origen = ?";
     $params[] = $filtroOrigen;
-    $types   .= "s";
 }
 if ($filtroCorreo !== '') {
     $where[]  = "correo LIKE ?";
     $params[] = "%$filtroCorreo%";
-    $types   .= "s";
 }
 // Actividad: logins exitosos con / sin acciones registradas (sin contar LOGOUT)
 if ($filtroActividad === 'con' || $filtroActividad === 'sin') {

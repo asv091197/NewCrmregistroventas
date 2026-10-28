@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 date_default_timezone_set('America/Mexico_City');
 
 // Configuración de manejo de errores
@@ -24,19 +25,8 @@ if (!isset($_GET['venta_id']) || empty($_GET['venta_id'])) {
 $venta_id = intval($_GET['venta_id']);
 
 // Conexión a la base de datos
-$servername = "65.99.205.112";
-$username = "noreplyc_alexsanchez09";
-$password = "SWn_VrAc3K7lq;LS";
-$dbname = "noreplyc_crmregistroventas";
-
 try {
-    $conn = new mysqli($servername, $username, $password, $dbname);
-    
-    if ($conn->connect_error) {
-        throw new Exception("Conexión fallida: " . $conn->connect_error);
-    }
-    
-    $conn->set_charset("utf8");
+    $conn = conexionPDO();
 
     // 1. Obtener información básica de la venta
     $sql_venta = "SELECT v.*, 
@@ -47,11 +37,9 @@ try {
                  WHERE v.id = ?";
     
     $stmt_venta = $conn->prepare($sql_venta);
-    $stmt_venta->bind_param("i", $venta_id);
-    $stmt_venta->execute();
-    $result_venta = $stmt_venta->get_result();
-    $venta = $result_venta->fetch_assoc();
-    $stmt_venta->close();
+    $stmt_venta->execute([$venta_id]);
+    $venta = $stmt_venta->fetch(PDO::FETCH_ASSOC);
+    $stmt_venta->closeCursor();
 
     if (!$venta) {
         die("Error: No se encontró la venta con ID: " . $venta_id);
@@ -67,13 +55,8 @@ try {
                      ORDER BY h.fecha_accion DESC";
     
     $stmt_historial = $conn->prepare($sql_historial);
-    $stmt_historial->bind_param("i", $venta_id);
-    $stmt_historial->execute();
-    $result_historial = $stmt_historial->get_result();
-    $historial = $stmt_historial->get_result()->fetch_all(MYSQLI_ASSOC);
-    $stmt_historial->close();
-
-    $conn->close();
+    $stmt_historial->execute([$venta_id]);
+    $historial = $stmt_historial->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (Exception $e) {
     error_log("ERROR en historial_venta.php: " . $e->getMessage());

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../includes/db.php';
 // Configuración de manejo de errores
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -11,15 +12,9 @@ if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin'  && $_SESSIO
 }
 
 // Conexión a base de datos
-$host = '65.99.205.112';
-$dbname = 'noreplyc_crmregistroventas';
-$username = 'noreplyc_alexsanchez09';
-$password = 'SWn_VrAc3K7lq;LS';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    $pdo = conexionPDO();
 } catch (PDOException $e) {
     die("Error de conexión");
 }
@@ -45,8 +40,8 @@ try {
     }
     
     // Construir consulta con filtros
-    $whereConditions = ["(u.nombre LIKE :buscar OR u.apepat LIKE :buscar OR u.apemat LIKE :buscar OR u.correo LIKE :buscar)"];
-    $params = [':buscar' => "%$buscar%"];
+    $whereConditions = ["(u.nombre LIKE :buscar1 OR u.apepat LIKE :buscar2 OR u.apemat LIKE :buscar3 OR u.correo LIKE :buscar4)"];
+    $params = [':buscar1' => "%$buscar%", ':buscar2' => "%$buscar%", ':buscar3' => "%$buscar%", ':buscar4' => "%$buscar%"];
     
     // NUEVO: Filtro para estado activo/inactivo
     if (!$mostrar_inactivos) {

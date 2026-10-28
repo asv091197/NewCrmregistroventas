@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 // Configuración para mostrar TODOS los errores - PRIMERO
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -35,30 +36,13 @@ $es_admin = (($_SESSION['rol'] ?? '') === 'admin') || (($_SESSION['rol'] ?? '') 
 // FUNCIONES AUXILIARES
 function obtenerSalaDesdeUsuario($usuario_id) {
     try {
-        $servername = "65.99.205.112";
-        $username = "noreplyc_alexsanchez09";
-        $password = "SWn_VrAc3K7lq;LS";
-        $dbname = "noreplyc_crmregistroventas";
-        
-        $conn = new mysqli($servername, $username, $password, $dbname);
-        if ($conn->connect_error) {
-            error_log("Error conexión BD en obtenerSalaDesdeUsuario: " . $conn->connect_error);
-            return null;
-        }
+        $conn = conexionPDO();
         
         $sql = "SELECT salas_permitidas FROM usuarios WHERE id = ? AND activo = 1";
         $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            error_log("Error preparar consulta: " . $conn->error);
-            $conn->close();
-            return null;
-        }
+        $stmt->execute([$usuario_id]);
         
-        $stmt->bind_param("i", $usuario_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($row = $result->fetch_assoc()) {
+        if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $salas_permitidas = json_decode($row['salas_permitidas'] ?? '[]', true);
             if (!empty($salas_permitidas) && is_array($salas_permitidas)) {
                 $sala = intval($salas_permitidas[0]);
@@ -67,8 +51,6 @@ function obtenerSalaDesdeUsuario($usuario_id) {
             }
         }
         
-        $stmt->close();
-        $conn->close();
         return null;
         
     } catch (Exception $e) {
@@ -79,25 +61,15 @@ function obtenerSalaDesdeUsuario($usuario_id) {
 
 function obtenerSalaPorDefecto() {
     try {
-        $servername = "65.99.205.112";
-        $username = "noreplyc_alexsanchez09";
-        $password = "SWn_VrAc3K7lq;LS";
-        $dbname = "noreplyc_crmregistroventas";
-        
-        $conn = new mysqli($servername, $username, $password, $dbname);
-        if ($conn->connect_error) {
-            error_log("Error conexión BD en obtenerSalaPorDefecto: " . $conn->connect_error);
-            return null;
-        }
+        $conn = conexionPDO();
         
         $result = $conn->query("SELECT id FROM salas WHERE activo = 1 ORDER BY id LIMIT 1");
-        if ($result && $row = $result->fetch_assoc()) {
+        if ($result && $row = $result->fetch(PDO::FETCH_ASSOC)) {
             $sala = intval($row['id']);
             error_log("Sala por defecto obtenida: " . $sala);
             return $sala;
         }
         
-        $conn->close();
         error_log("No se encontraron salas activas");
         return null;
         
@@ -335,19 +307,8 @@ try {
     $precio_neto = round($precio * 0.82, 10);
 
     // CONEXIÓN A LA BASE DE DATOS
-    $servername = "65.99.205.112";
-    $username = "noreplyc_alexsanchez09";
-    $password = "SWn_VrAc3K7lq;LS";
-    $dbname = "noreplyc_crmregistroventas";
-
     error_log("Conectando a la base de datos...");
-    $conn = new mysqli($servername, $username, $password, $dbname);
-    
-    if ($conn->connect_error) {
-        throw new Exception("Error de conexión a la base de datos: " . $conn->connect_error);
-    }
-    
-    $conn->set_charset("utf8");
+    $conn = conexionPDO();
     error_log("Conexión a BD exitosa");
 
     // OBTENER PORCENTAJES DE LA PLATAFORMA
@@ -359,12 +320,10 @@ try {
         $sql_plataforma = "SELECT porcent_front, porcent_linea, porcent_cierre FROM plataforma WHERE id = ? AND activo = 1";
         $stmt_plat = $conn->prepare($sql_plataforma);
         if ($stmt_plat) {
-            $stmt_plat->bind_param("i", $plataforma_id);
-            $stmt_plat->execute();
-            $result_plat = $stmt_plat->get_result();
+            $stmt_plat->execute([$plataforma_id]);
+            $plataforma_data = $stmt_plat->fetch(PDO::FETCH_ASSOC);
             
-            if ($result_plat->num_rows > 0) {
-                $plataforma_data = $result_plat->fetch_assoc();
+            if ($plataforma_data) {
                 $porcent_front = $plataforma_data['porcent_front'];
                 $porcent_linea = $plataforma_data['porcent_linea'];
                 $porcent_cierre = $plataforma_data['porcent_cierre'];
@@ -372,7 +331,7 @@ try {
             } else {
                 error_log("⚠️ No se encontró la plataforma con ID: $plataforma_id");
             }
-            $stmt_plat->close();
+            $stmt_plat->closeCursor();
         }
     } else {
         error_log("⚠️ No hay plataforma_id, porcentajes serán NULL");
@@ -432,7 +391,7 @@ try {
 
     // PREPARAR INSERT
     $check_columns = $conn->query("SHOW COLUMNS FROM ventas_facturacion LIKE 'usuario_creacion_id'");
-    $tiene_columnas_usuario = ($check_columns->num_rows > 0);
+    $tiene_columnas_usuario = (count($check_columns->fetchAll(PDO::FETCH_ASSOC)) > 0);
     
     if ($tiene_columnas_usuario) {
         $sql = "INSERT INTO ventas_facturacion (
@@ -449,11 +408,7 @@ try {
         error_log("SQL CON USUARIO Y SALA: " . $sql);
         
         $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            throw new Exception("Error al preparar la consulta: " . $conn->error . " - SQL: " . $sql);
-        }
         
-        $tipos = "sdssssssisisisisdddisdiss";
         $parametros = [
             $fecha, $precio, $cliente, $apepat, $apemat, $celular, $correo, $producto,
             $liner_id, $liner_nombre_manual, 
@@ -479,11 +434,7 @@ try {
         error_log("SQL SIN USUARIO PERO CON SALA: " . $sql);
         
         $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            throw new Exception("Error al preparar la consulta: " . $conn->error . " - SQL: " . $sql);
-        }
         
-        $tipos = "sdssssssisisisisdddisdss";
         $parametros = [
             $fecha, $precio, $cliente, $apepat, $apemat, $celular, $correo, $producto,
             $liner_id, $liner_nombre_manual, 
@@ -508,26 +459,18 @@ try {
 
     // DEBUG: Mostrar parámetros antes de ejecutar
     error_log("=== PARÁMETROS PARA INSERT ===");
-    error_log("Tipos: $tipos");
     foreach ($parametros as $i => $param) {
         error_log("  [$i] = " . ($param !== null ? "$param (" . gettype($param) . ")" : "NULL"));
     }
 
     // EJECUTAR INSERT
-    error_log("Ejecutando bind_param...");
-    $bind_result = $stmt->bind_param($tipos, ...$parametros);
-    if (!$bind_result) {
-        throw new Exception("Error al bindear parámetros: " . $stmt->error);
-    }
-    
     error_log("Ejecutando execute...");
-    $execute_result = $stmt->execute();
+    $execute_result = $stmt->execute($parametros);
     if (!$execute_result) {
-        throw new Exception("Error al ejecutar la consulta: " . $stmt->error);
+        throw new Exception("Error al ejecutar la consulta");
     }
 
-    $idInsertado = $stmt->insert_id;
-    $stmt->close();
+    $idInsertado = (int) $conn->lastInsertId();
     
     error_log("✅ Venta registrada correctamente. ID: $idInsertado - Sala: $sala_id - Es admin: " . ($es_admin ? 'SI' : 'NO'));
     error_log("✅ Ganancia liner: " . ($ganancia_liner ?: 'NULL'));
@@ -545,8 +488,6 @@ try {
     ]);
 
     sendResponse(true, "✅ Venta registrada correctamente. ID: " . $idInsertado, ['id' => $idInsertado]);
-
-    $conn->close();
 
 } catch (Exception $e) {
     error_log("❌ ERROR CRÍTICO en guardar_factura: " . $e->getMessage());

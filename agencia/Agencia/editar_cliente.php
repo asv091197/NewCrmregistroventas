@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../session_config.php'; session_start();
 date_default_timezone_set('America/Mexico_City');
 require_once __DIR__ . '/../../includes/registro_acciones.php';
@@ -8,7 +9,7 @@ if (!isset($_SESSION['usuario_id']) || ($_SESSION['rol'] !== 'admin' && $_SESSIO
     exit;
 }
 
-$pdo = new PDO("mysql:host=65.99.205.112;dbname=noreplyc_crmregistroventas;charset=utf8", "noreplyc_alexsanchez09", "SWn_VrAc3K7lq;LS");
+$pdo = conexionPDO();
 
 $id = $_POST['id'] ?? 0;
 $nombre = $_POST['nombre'] ?? '';
