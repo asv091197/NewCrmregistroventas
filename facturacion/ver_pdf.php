@@ -46,7 +46,7 @@ try {
 // ============================================================================
 
 // Determinar si es admin
-$esAdmin = isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin';
+$esAdmin = isset($_SESSION['rol']) && in_array($_SESSION['rol'], ['admin', 'superadmin'], true);
 
 // Determinar el rango de fechas del mes en curso para usuarios no admin
 $fechaInicioMes = '';

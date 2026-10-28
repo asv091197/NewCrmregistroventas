@@ -838,6 +838,9 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
               <div class="col-md-6">
                 <label for="editar_rol" class="form-label">Rol de usuario <span class="text-danger">*</span></label>
                 <select class="form-select" id="editar_rol" name="rol" required>
+                  <?php if ($_SESSION['rol'] === 'superadmin'): ?>
+                  <option value="superadmin">Superadministrador</option>
+                  <?php endif; ?>
                   <option value="admin">Administrador</option>
                   <option value="usuario">Usuario</option>
                 </select>

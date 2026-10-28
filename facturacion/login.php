@@ -228,7 +228,7 @@ function registrarLogLoginFacturacion($conexion, array $datos) {
 debugLog('=== INICIO DE PROCESO LOGIN FACTURACION ===');
 
 if (isset($_SESSION['usuario_id']) && isset($_SESSION['rol'])) {
-    if ($_SESSION['rol'] === 'admin') {
+    if (in_array($_SESSION['rol'], ['admin', 'superadmin'], true)) {
         debugLog('Usuario admin ya tiene sesión activa para facturación', [
             'usuario_id' => $_SESSION['usuario_id'],
             'rol' => $_SESSION['rol']
@@ -304,8 +304,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 ]);
 
                 if (password_verify($contraseña, $hash)) {
-                    if ($rol !== 'admin') {
-                        $mensaje = "Acceso denegado: solo el rol admin puede iniciar sesión.";
+                    if (!in_array($rol, ['admin', 'superadmin'], true)) {
+                        $mensaje = "Acceso denegado: solo los roles admin y superadmin pueden iniciar sesión.";
                         $mensaje_tipo = "danger";
                         debugLog('Intento de acceso con rol no admin', [
                             'correo' => $correo, 'rol' => $rol

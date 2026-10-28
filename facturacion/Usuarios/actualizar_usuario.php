@@ -65,9 +65,16 @@ if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-if (!in_array($rol, ['admin', 'usuario'])) {
+if (!in_array($rol, ['superadmin', 'admin', 'usuario'], true)) {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Rol de usuario no válido']);
+    exit;
+}
+
+// Solo un superadmin puede asignar el rol superadmin
+if ($rol === 'superadmin' && $_SESSION['rol'] !== 'superadmin') {
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'Solo un superadmin puede asignar el rol superadmin']);
     exit;
 }
 
@@ -87,7 +94,7 @@ if ($acceso_salas === 'especificas' && empty($salas_seleccionadas)) {
 
 try {
     // Verificar si el usuario existe
-    $stmt = $pdo->prepare("SELECT id, correo FROM usuarios_facturacion WHERE id = :id");
+    $stmt = $pdo->prepare("SELECT id, correo, rol FROM usuarios_facturacion WHERE id = :id");
     $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     $stmt->execute();
     
@@ -98,7 +105,14 @@ try {
     }
     
     $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
+    // Un admin no puede modificar a un superadmin
+    if ($usuario['rol'] === 'superadmin' && $_SESSION['rol'] !== 'superadmin') {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Solo un superadmin puede modificar a otro superadmin']);
+        exit;
+    }
+
     // Verificar si el correo ya existe en otro usuario
     $stmt = $pdo->prepare("SELECT id FROM usuarios_facturacion WHERE correo = :correo AND id != :id");
     $stmt->bindParam(':correo', $correo);
