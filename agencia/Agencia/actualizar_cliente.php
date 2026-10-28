@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/../../includes/db.php';
-// Configuración de conexión
+require_once __DIR__ . '/../../session_config.php'; session_start();
+
+// Solo admin o superadmin pueden editar clientes
+if (!isset($_SESSION['usuario_id']) || !in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin', 'usuario'], true)) {
+    http_response_code(401);
+    echo "Error: no autorizado.";
+    exit;
+}
 
 try {
     $pdo = conexionPDO();

@@ -6,6 +6,11 @@ date_default_timezone_set('America/Mexico_City');
 // Forzar respuesta JSON incluso si hay errores
 header('Content-Type: application/json');
 
+if (!isset($_SESSION['usuario_id']) || !in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin', 'usuario'], true)) {
+    http_response_code(401);
+    die(json_encode(['success' => false, 'error' => 'No autorizado', 'agentes' => []]));
+}
+
 try {
     $pdo = conexionPDO();
 

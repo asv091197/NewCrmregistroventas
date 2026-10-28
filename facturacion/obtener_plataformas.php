@@ -1,14 +1,21 @@
 <?php
 require_once __DIR__ . '/../includes/db.php';
-header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
+
+require_once __DIR__ . '/../session_config.php'; session_start();
+
+if (!isset($_SESSION['usuario_id'])) {
+    http_response_code(401);
+    die(json_encode(["error" => "No autorizado"]));
+}
 
 // Conexión a la base de datos
 try {
     $conn = conexionPDO();
 } catch (PDOException $e) {
+    error_log("Error de conexión en obtener_plataformas.php: " . $e->getMessage());
     http_response_code(500);
-    die(json_encode(["error" => "Conexión fallida: " . $e->getMessage()]));
+    die(json_encode(["error" => "Error de conexión a la base de datos"]));
 }
 
 try {

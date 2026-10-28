@@ -6,7 +6,15 @@ ini_set('display_errors', 0);
 
 // Headers para JSON
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+
+require_once __DIR__ . '/../session_config.php'; session_start();
+
+// Solo admin o superadmin ven las ventas (igual que ventas.php)
+if (!isset($_SESSION['usuario_id']) || !in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin'], true)) {
+    http_response_code(401);
+    echo json_encode([]);
+    exit;
+}
 
 // Conexión a base de datos (usar la misma que en ventas.php)
 

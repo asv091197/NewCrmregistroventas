@@ -24,6 +24,12 @@ function sendSuccess($data) {
     exit;
 }
 
+require_once __DIR__ . '/../session_config.php'; session_start();
+
+if (!isset($_SESSION['usuario_id'])) {
+    sendError("No autorizado", 401);
+}
+
 try {
     // Obtener parámetros
     $sala_id = isset($_GET['sala_id']) ? intval($_GET['sala_id']) : null;

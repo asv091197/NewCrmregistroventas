@@ -16,6 +16,11 @@ set_exception_handler(function($exception) {
 
 require_once __DIR__ . '/../../session_config.php'; session_start();
 
+if (!isset($_SESSION['usuario_id'])) {
+    header("Location: ../login.php");
+    exit;
+}
+
 // Función para limpiar símbolos de los campos de texto
 function limpiarTexto($texto) {
     if ($texto === null || $texto === '') {
@@ -39,10 +44,10 @@ try {
 // Determinar el rango de fechas del mes en curso para usuarios no admin
 $fechaInicioMes = '';
 $fechaFinMes = '';
-$esAdmin = true; // Por defecto asumimos que es admin
+$esAdmin = true;
 
 // Superadmin tiene los mismos permisos que admin
-if (isset($_SESSION['rol']) && $_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'superadmin') {
+if (!in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin'], true)) {
     $esAdmin = false;
     $fechaInicioMes = date('Y-m-01'); // Primer día del mes
     $fechaFinMes = date('Y-m-t'); // Último día del mes

@@ -15,6 +15,15 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
 
+require_once __DIR__ . '/../session_config.php'; session_start();
+
+// Solo admin o superadmin pueden editar ventas (igual que ventas.php)
+if (!isset($_SESSION['usuario_id']) || !in_array($_SESSION['rol'] ?? '', ['admin', 'superadmin'], true)) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'No autorizado. Inicie sesión de nuevo.']);
+    exit;
+}
+
 // Función para enviar respuesta JSON
 function sendResponse($success, $message, $redirect = '') {
     $response = ['success' => $success, 'message' => $message];
@@ -185,9 +194,8 @@ try {
     $tipo_vendedor = $_POST['tipoVendedor'] ?? 'normal';
     
     // Capturar sala_id desde el formulario (si existe) o desde la sesión
-    require_once __DIR__ . '/../session_config.php'; session_start();
     $sala_id = $_POST['sala_id'] ?? ($_SESSION['sala_id'] ?? null);
-    $usuario_id = $_SESSION['usuario_id'] ?? 1;
+    $usuario_id = $_SESSION['usuario_id'];
     
     // Captura de campos manuales
     $liner_nombre_manual = isset($_POST['liner_nombre_manual']) && trim($_POST['liner_nombre_manual']) !== '' ? trim($_POST['liner_nombre_manual']) : null;
