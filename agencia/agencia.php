@@ -1,6 +1,4 @@
 <?php
-ini_set('session.cookie_lifetime', 0); // Hasta que se cierre el navegador
-ini_set('session.gc_maxlifetime', 86400 * 30); // 30 días de vida máxima
 ini_set('session.gc_probability', 1);
 ini_set('session.gc_divisor', 1000); // Solo 0.1% de probabilidad de limpieza
 ini_set('session.cookie_secure', 0);
