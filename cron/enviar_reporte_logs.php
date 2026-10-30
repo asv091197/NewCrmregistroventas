@@ -19,7 +19,7 @@ date_default_timezone_set('America/Mexico_City');
 set_time_limit(0);
 ini_set('memory_limit', '512M');
 
-$destinatarios = ['a.sanchez@grupoideasmx.com'];
+$destinatarios = ['a.sanchez@grupoideasmx.com', 'gerencia@grupoideasmx.com'];
 
 $opciones = getopt('', ['para:']);
 if (!empty($opciones['para'])) {
