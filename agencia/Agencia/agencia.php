@@ -142,7 +142,7 @@ try {
     $sqlClientes = "
     SELECT c.id, c.nombre, c.apepat, c.apemat, c.asunto, 
            LEFT(c.descripcion, 100) as descripcion_corta,
-           c.fecha_registro, c.usuario_closer, c.sala_id, c.usuario_id,
+           c.fecha_registro, c.usuario_closer, c.sala_id, c.usuario_id, c.pagado,
            u.nombre as usuario_nombre, 
            u.apemat as usuario_apemat,
            s.nombre as sala_nombre,
@@ -168,6 +168,48 @@ try {
 } catch (PDOException $e) {
     error_log("Error en consulta: " . $e->getMessage());
     die("Error al cargar los clientes. Por favor, intente más tarde.");
+}
+
+// Venta bruta del día (visible para todos), con las mismas restricciones de sala que los clientes
+$ventaBrutaDia = 0;
+$condicionesVenta = ["DATE(v.fecha) = ?"];
+$paramsVenta = [date('Y-m-d')];
+
+if (!$esAdmin && $salaSesion) {
+    $condicionesVenta[] = "v.sala_id = ?";
+    $paramsVenta[] = $salaSesion;
+}
+
+if ($limitadoASalaSesion) {
+    $condicionesVenta[] = "v.sala_id = ?";
+    $paramsVenta[] = $salaSesion;
+}
+
+if ($limitadoASalasPermitidas && !empty($salas_permitidas)) {
+    $condicionesVenta[] = "v.sala_id IN (" . implode(',', array_fill(0, count($salas_permitidas), '?')) . ")";
+    $paramsVenta = array_merge($paramsVenta, array_map('intval', array_values($salas_permitidas)));
+}
+
+if ($esAdmin && $acceso_todas_salas === 1 && !empty($salaFiltro)) {
+    $condicionesVenta[] = "v.sala_id = ?";
+    $paramsVenta[] = $salaFiltro;
+}
+
+if ($limitadoASalasPermitidas && !empty($salaFiltro)) {
+    if (in_array($salaFiltro, $salas_permitidas)) {
+        $condicionesVenta[] = "v.sala_id = ?";
+        $paramsVenta[] = $salaFiltro;
+    } else {
+        $condicionesVenta[] = "1 = 0";
+    }
+}
+
+try {
+    $stmtVentaDia = $pdo->prepare("SELECT COALESCE(SUM(v.precio), 0) FROM ventas_facturacion v WHERE " . implode(' AND ', $condicionesVenta));
+    $stmtVentaDia->execute($paramsVenta);
+    $ventaBrutaDia = (float)$stmtVentaDia->fetchColumn();
+} catch (PDOException $e) {
+    error_log("agencia venta bruta: " . $e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -357,7 +399,7 @@ try {
         <ul class="navbar-nav me-3">
           <?php if ($esAdmin): ?>
           <li class="nav-item">
-            <a class="nav-link text-dark" href="../opAdmin.php" style="text-decoration: none;">
+            <a class="nav-link text-dark" href="../opcionesAdmin.php" style="text-decoration: none;">
              Dashboard
             </a>
           </li>
@@ -399,6 +441,23 @@ try {
 
   <div style="height: 70px;"></div>
   <div class="container-lg mt-5">
+    <div class="row mb-4 justify-content-end">
+      <div class="col-xl-3 col-md-6">
+        <div class="card shadow-sm rounded-4 border-0 h-100">
+          <div class="card-body d-flex justify-content-between">
+            <div>
+              <h6 class="card-title text-muted mb-2">Venta Bruta Total</h6>
+              <h3 class="fw-bold text-warning mb-0">$<?= number_format($ventaBrutaDia, 2) ?></h3>
+              <small class="text-muted">Acumulado del día</small>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-currency-dollar text-warning fs-2"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card shadow-sm rounded-4">
       <div class="card-header bg-dark text-white fw-semibold fs-5 d-flex justify-content-between align-items-center">
         <span>Clientes Registrados</span>
@@ -566,6 +625,9 @@ try {
                 <th>Closer Asignado</th>
                 <th>Sala</th>
                 <th>Fecha Registro</th>
+                <?php if ($esAdmin): ?>
+                <th>Pagado</th>
+                <?php endif; ?>
               </tr>
             </thead>
             <tbody id="tabla-clientes">
@@ -595,10 +657,15 @@ try {
                     echo "<td class='{$closerClass}'>" . htmlspecialchars($closerApemat ?: 'No asignado') . "</td>";
                     echo "<td class='text-center'>" . htmlspecialchars($salaNombre) . "</td>";
                     echo "<td class='text-center'>{$fechaRegistro}</td>";
+                    if ($esAdmin) {
+                        echo "<td class='text-center'>" . ($cliente['pagado']
+                            ? "<span class='badge bg-success'>Sí</span>"
+                            : "<span class='badge bg-secondary'>No</span>") . "</td>";
+                    }
                     echo "</tr>";
                 }
               } else {
-                echo "<tr><td colspan='7' class='text-center'>No hay clientes registrados" . 
+                echo "<tr><td colspan='" . ($esAdmin ? 8 : 7) . "' class='text-center'>No hay clientes registrados" .
                      ((!empty($fechaInicio) || !empty($fechaFin) || !empty($salaFiltro)) ? " con los filtros aplicados" : "") . 
                      "</td></tr>";
               }
@@ -806,6 +873,7 @@ try {
   const salas_permitidas = JSON.parse(document.body.getAttribute('data-salas-permitidas') || '[]');
 
   const totalClientesInicial = <?= (int)$totalClientes ?>;
+  const totalColumnas = esAdmin ? 8 : 7;   // Admin y superadmin ven además la columna Pagado
   let usuariosCargados = [];
   let closersCargados = [];
   let clienteActual = null;          // Cliente abierto en el modal
@@ -925,7 +993,7 @@ try {
 
         mensaje.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm" role="status"></span> Buscando clientes...</div>';
         tablaContainer.classList.add('loading');
-        tablaClientes.innerHTML = '<tr><td colspan="7" class="text-center">Buscando...</td></tr>';
+        tablaClientes.innerHTML = `<tr><td colspan="${totalColumnas}" class="text-center">Buscando...</td></tr>`;
 
         const params = new URLSearchParams();
         params.append('buscar', termino);
@@ -995,7 +1063,7 @@ try {
             // Solo mostrar error si sigue siendo la búsqueda actual
             if (miSecuencia === secuenciaBusqueda) {
                 mensaje.innerHTML = '<div class="text-danger">✗ Error al realizar la búsqueda</div>';
-                tablaClientes.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar los resultados</td></tr>';
+                tablaClientes.innerHTML = `<tr><td colspan="${totalColumnas}" class="text-center text-danger">Error al cargar los resultados</td></tr>`;
             }
         })
         .finally(() => {
