@@ -625,9 +625,7 @@ try {
                 <th>Closer Asignado</th>
                 <th>Sala</th>
                 <th>Fecha Registro</th>
-                <?php if ($esAdmin): ?>
                 <th>Pagado</th>
-                <?php endif; ?>
               </tr>
             </thead>
             <tbody id="tabla-clientes">
@@ -657,15 +655,13 @@ try {
                     echo "<td class='{$closerClass}'>" . htmlspecialchars($closerApemat ?: 'No asignado') . "</td>";
                     echo "<td class='text-center'>" . htmlspecialchars($salaNombre) . "</td>";
                     echo "<td class='text-center'>{$fechaRegistro}</td>";
-                    if ($esAdmin) {
-                        echo "<td class='text-center'>" . ($cliente['pagado']
-                            ? "<span class='badge bg-success'>Sí</span>"
-                            : "<span class='badge bg-secondary'>No</span>") . "</td>";
-                    }
+                    echo "<td class='text-center'>" . ($cliente['pagado']
+                        ? "<span class='badge bg-success'>Sí</span>"
+                        : "<span class='badge bg-secondary'>No</span>") . "</td>";
                     echo "</tr>";
                 }
               } else {
-                echo "<tr><td colspan='" . ($esAdmin ? 8 : 7) . "' class='text-center'>No hay clientes registrados" .
+                echo "<tr><td colspan='8' class='text-center'>No hay clientes registrados" .
                      ((!empty($fechaInicio) || !empty($fechaFin) || !empty($salaFiltro)) ? " con los filtros aplicados" : "") . 
                      "</td></tr>";
               }
@@ -873,7 +869,7 @@ try {
   const salas_permitidas = JSON.parse(document.body.getAttribute('data-salas-permitidas') || '[]');
 
   const totalClientesInicial = <?= (int)$totalClientes ?>;
-  const totalColumnas = esAdmin ? 8 : 7;   // Admin y superadmin ven además la columna Pagado
+  const totalColumnas = 8;   // Todos los roles ven la columna Pagado
   let usuariosCargados = [];
   let closersCargados = [];
   let clienteActual = null;          // Cliente abierto en el modal

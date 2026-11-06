@@ -30,7 +30,7 @@ $filtroSala = $salaId !== null;
 if (empty($buscar) && empty($fechaInicio) && empty($fechaFin) && !$filtroSala && empty($salaFiltro)) {
     echo '<div id="resultado-contador" data-total="0"></div>';
     echo '<div id="resultado-limite" data-limite="' . LIMITE_RESULTADOS . '" data-truncado="0"></div>';
-    echo '<tr><td colspan="' . ($esAdmin ? 8 : 7) . '" class="text-center">Ingrese un término de búsqueda o use los filtros</td></tr>';
+    echo '<tr><td colspan="8" class="text-center">Ingrese un término de búsqueda o use los filtros</td></tr>';
     exit;
 }
 
@@ -134,14 +134,12 @@ if (count($clientes) > 0) {
         echo '<td class="' . $closerClass . '">' . htmlspecialchars($cliente['nombre_completo_closer']) . '</td>';
         echo '<td class="text-center">' . htmlspecialchars($salaNombre) . '</td>';
         echo '<td class="text-center">' . htmlspecialchars($fechaRegistro) . '</td>';
-        if ($esAdmin) {
-            echo '<td class="text-center">' . (!empty($cliente['pagado'])
-                ? '<span class="badge bg-success">Sí</span>'
-                : '<span class="badge bg-secondary">No</span>') . '</td>';
-        }
+        echo '<td class="text-center">' . (!empty($cliente['pagado'])
+            ? '<span class="badge bg-success">Sí</span>'
+            : '<span class="badge bg-secondary">No</span>') . '</td>';
         echo '</tr>';
     }
 } else {
     $criterio = !empty($buscar) ? 'los criterios de búsqueda' : 'los filtros especificados';
-    echo '<tr><td colspan="' . ($esAdmin ? 8 : 7) . '" class="text-center">No se encontraron clientes con ' . $criterio . '</td></tr>';
+    echo '<tr><td colspan="8" class="text-center">No se encontraron clientes con ' . $criterio . '</td></tr>';
 }
