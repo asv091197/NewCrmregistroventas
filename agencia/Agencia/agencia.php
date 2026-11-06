@@ -753,6 +753,14 @@ try {
                 <option value="">-- Selecciona un usuario --</option>
               </select>
             </div>
+
+            <div class="mb-2">
+              <label class="form-label small">¿Pagado?</label>
+              <select id="editar_pagado" name="pagado" class="form-select form-select-sm">
+                <option value="0">No</option>
+                <option value="1">Sí</option>
+              </select>
+            </div>
             <?php endif; ?>
 
             <div class="col-12 mt-2">
@@ -1174,6 +1182,9 @@ try {
         getElement('editar_numero2').value = cliente.numero2 || '';
         getElement('editar_asunto').value = cliente.asunto || '';
         getElement('editar_descripcion').value = cliente.descripcion || '';
+
+        const selectPagado = document.getElementById('editar_pagado');
+        if (selectPagado) selectPagado.value = cliente.pagado == 1 ? '1' : '0';
 
         // Siempre reasignar (también a vacío) para no arrastrar la sala del cliente abierto antes
         getElement('editar_sala_id').value = cliente.sala_id || '';

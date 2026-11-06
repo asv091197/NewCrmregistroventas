@@ -35,6 +35,9 @@ $usuarios_id     = !empty($_POST['usuarios_id']) ? intval($_POST['usuarios_id'])
 $usuario_closer  = !empty($_POST['usuario_closer']) ? intval($_POST['usuario_closer']) : null;
 $sala_id         = !empty($_POST['sala_id']) ? intval($_POST['sala_id']) : null; // 0 o vacío se guarda como NULL
 
+// Solo admin o superadmin pueden marcar si el cliente pagó
+$puedeEditarPagado = in_array($_SESSION['rol'], ['admin', 'superadmin'], true) && isset($_POST['pagado']);
+
 // Actualizar cliente
 try {
     $sql = "UPDATE cliente
@@ -47,11 +50,11 @@ try {
                 descripcion = :descripcion,
                 usuario_id = :usuario_id,
                 usuario_closer = :usuario_closer,
-                sala_id = :sala_id
+                sala_id = :sala_id"
+            . ($puedeEditarPagado ? ", pagado = :pagado" : "") . "
             WHERE id = :id";
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([
+    $params = [
         ':nombre'        => $nombre,
         ':apepat'        => $apepat,
         ':apemat'        => $apemat,
@@ -63,7 +66,13 @@ try {
         ':usuario_closer'=> $usuario_closer,
         ':sala_id'       => $sala_id,
         ':id'            => $id
-    ]);
+    ];
+    if ($puedeEditarPagado) {
+        $params[':pagado'] = $_POST['pagado'] === '1' ? 1 : 0;
+    }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
 
     echo "Cliente actualizado correctamente";
 } catch (PDOException $e) {

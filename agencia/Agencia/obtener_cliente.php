@@ -37,7 +37,8 @@ try {
                 c.descripcion,
                 c.usuario_id,
                 c.usuario_closer,
-                c.sala_id
+                c.sala_id,
+                c.pagado
             FROM cliente c
             WHERE c.id = ?";
 
