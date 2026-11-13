@@ -167,7 +167,7 @@ try {
     }
 
     // Validación de campos obligatorios - AGREGADO tipoCliente
-    $requeridos = ['id', 'fecha', 'precio', 'cliente', 'apepat', 'celular', 'correo', 'producto', 'metodo_pago', 'tipoCliente'];
+    $requeridos = ['id', 'fecha', 'precio', 'cliente', 'apepat', 'celular', 'producto', 'metodo_pago', 'tipoCliente'];
     $campos_faltantes = [];
     
     foreach ($requeridos as $campo) {
@@ -187,7 +187,7 @@ try {
     $apepat = $_POST['apepat'];
     $apemat = $_POST['apemat'] ?? '';
     $celular = $_POST['celular'];
-    $correo = $_POST['correo'];
+    $correo = isset($_POST['correo']) ? trim($_POST['correo']) : ''; // Opcional
     $producto = $_POST['producto'];
     $metodo_pago = $_POST['metodo_pago'];
     $tipo_venta = $_POST['tipoCliente']; // NUEVO CAMPO

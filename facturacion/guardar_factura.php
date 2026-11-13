@@ -131,7 +131,7 @@ try {
     }
 
     // VALIDAR CAMPOS OBLIGATORIOS
-    $requeridos = ['fecha', 'precio', 'cliente', 'apepat', 'celular', 'correo', 'producto', 'metodoPago', 'tipoVenta', 'tipoCliente'];
+    $requeridos = ['fecha', 'precio', 'cliente', 'apepat', 'celular', 'producto', 'metodoPago', 'tipoVenta', 'tipoCliente'];
     $campos_faltantes = [];
     
     foreach ($requeridos as $campo) {
@@ -197,7 +197,7 @@ try {
     $apepat = trim($_POST['apepat']);
     $apemat = isset($_POST['apemat']) ? trim($_POST['apemat']) : null;
     $celular = trim($_POST['celular']);
-    $correo = trim($_POST['correo']);
+    $correo = isset($_POST['correo']) ? trim($_POST['correo']) : ''; // Opcional
     $producto = trim($_POST['producto']);
     $metodo_pago = $_POST['metodoPago'];
     $plataforma_id = isset($_POST['plataforma']) && $_POST['plataforma'] !== '' ? intval($_POST['plataforma']) : null;

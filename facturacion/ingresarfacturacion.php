@@ -460,8 +460,8 @@ try {
                                 placeholder="55xxxxxxxx" required>
                         </div>
                         <div class="col-md-6">
-                            <label for="correo" class="form-label required-field">Correo del Cliente</label>
-                            <input type="email" class="form-control" id="correo" name="correo" required>
+                            <label for="correo" class="form-label">Correo del Cliente</label>
+                            <input type="email" class="form-control" id="correo" name="correo">
                         </div>
                     </div>
 

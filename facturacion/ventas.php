@@ -1086,8 +1086,8 @@ try {
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="modal-correo" class="form-label required-field">Correo</label>
-                  <input type="email" class="form-control" id="modal-correo" name="correo" required>
+                  <label for="modal-correo" class="form-label">Correo</label>
+                  <input type="email" class="form-control" id="modal-correo" name="correo">
                 </div>
               </div>
               <div class="col-md-6">
