@@ -1,0 +1,21 @@
+.salas-container {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.salas-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.admin-badge {
+    font-size: 0.7rem;
+    vertical-align: middle;
+}
+
+.permission-info {
+    font-size: 0.9rem;
+    color: #6c757d;
+}

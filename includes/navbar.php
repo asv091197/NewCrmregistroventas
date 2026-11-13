@@ -82,16 +82,7 @@ if (!function_exists('renderNavbarCrm')) {
         $claseModulo = $enAgencia ? 'bg-primary' : 'bg-success';
         ?>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-        <style>
-            .navbar-crm .navbar-brand { font-weight: 600; }
-            .navbar-crm .badge-modulo { font-size: 0.65rem; vertical-align: middle; }
-            .navbar-crm .nav-link { color: #212529; }
-            .navbar-crm .nav-link.active { color: #0d6efd; font-weight: 600; }
-            @media (max-width: 991.98px) {
-                .navbar-crm .navbar-collapse { background-color: #fff; padding: 0 0.5rem 0.5rem; }
-                .navbar-crm .navbar-brand { font-size: 1rem; }
-            }
-        </style>
+        <link href="<?= $url('CSS/navbar.css') ?>?v=<?= (int)@filemtime(__DIR__ . '/../CSS/navbar.css') ?>" rel="stylesheet">
         <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom navbar-crm">
             <div class="container-fluid">
                 <a class="navbar-brand" href="<?= $url($inicio) ?>">

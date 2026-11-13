@@ -1,0 +1,198 @@
+.card-hover:hover {
+    transform: translateY(-5px);
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.stat-card {
+    border-left: 4px solid #007bff;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.stat-card-mensual {
+    border-left: 4px solid #28a745;
+    background: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
+}
+
+.stat-card-ganancia {
+    border-left: 4px solid #ffc107;
+    background: linear-gradient(135deg, #fffbf0 0%, #ffffff 100%);
+}
+
+.podium-item {
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: none;
+}
+
+.podium-1 {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+}
+
+.podium-2 {
+    background: linear-gradient(135deg, #C0C0C0 0%, #A9A9A9 100%);
+}
+
+.podium-3 {
+    background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
+}
+
+.chart-container {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    color: white;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.date-selector {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.btn-excel {
+    background: linear-gradient(135deg, #21a366 0%, #107c41 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+}
+
+.btn-excel:hover {
+    background: linear-gradient(135deg, #107c41 0%, #0d6b37 100%);
+    color: white;
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: 600;
+    border-bottom: 3px solid #007bff;
+}
+
+.tab-pane {
+    padding-top: 1.5rem;
+}
+
+.loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+}
+
+.loading-spinner {
+    width: 3rem;
+    height: 3rem;
+}
+
+.money-icon {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.sala-badge {
+    background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+    color: white;
+    font-weight: bold;
+}
+
+.small-chart-container {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+/* ===================== RESPONSIVO (MÓVIL) ===================== */
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        background-color: #fff;
+        padding: 0 0.5rem 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-dashboard {
+        padding: 0.75rem !important;
+        margin-top: 64px !important;
+    }
+
+    .main-dashboard > .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .navbar-brand {
+        font-size: 1rem;
+    }
+
+    .welcome-section {
+        padding: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .welcome-section .display-6 {
+        font-size: 1.4rem;
+    }
+
+    .welcome-section .lead {
+        font-size: 1rem;
+    }
+
+    /* Pestañas a lo ancho */
+    .nav-tabs .nav-item {
+        flex: 1;
+    }
+
+    .nav-tabs .nav-link {
+        width: 100%;
+        font-size: 0.9rem;
+        padding: 0.5rem;
+    }
+
+    /* Botones Buscar / Descargar a todo lo ancho */
+    .filtros-dashboard .btn,
+    .filtros-dashboard .dropdown {
+        width: 100%;
+    }
+
+    .filtros-dashboard .mt-4 {
+        margin-top: 0 !important;
+    }
+
+    /* Aviso de fecha/sala en varios renglones */
+    .aviso-dashboard > div > span.ms-3 {
+        display: block;
+        margin-left: 0 !important;
+        margin-top: 0.35rem;
+    }
+
+    .card-header .card-title {
+        font-size: 1rem;
+    }
+
+    .card-hover:hover {
+        transform: none;
+    }
+
+    /* Gráficas más bajas */
+    div[style*="height: 400px"] {
+        height: 300px !important;
+    }
+
+    div[style*="height: 300px"] {
+        height: 250px !important;
+    }
+
+    .form-control,
+    .form-select {
+        font-size: 16px;
+    }
+}

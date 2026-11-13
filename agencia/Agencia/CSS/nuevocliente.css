@@ -1,0 +1,54 @@
+.closer-section, .sala-admin-section {
+  display: none;
+  transition: all 0.3s ease;
+}
+.closer-section.show, .sala-admin-section.show {
+  display: block;
+}
+.debug-info {
+  font-size: 0.8rem;
+  color: #666;
+  background: #f8f9fa;
+  padding: 5px;
+  border-radius: 3px;
+  margin-top: 5px;
+}
+
+/* ===================== RESPONSIVO (MÓVIL) ===================== */
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    background-color: #fff;
+    padding: 0 0.5rem 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .espaciador-navbar {
+    height: 56px !important;
+  }
+
+  .contenedor-cliente {
+    padding-top: 0.75rem !important;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  /* Nombre, apellidos y números uno debajo de otro */
+  #clienteForm .col-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  /* Campos y botones más cómodos de tocar; 16px evita el zoom de iOS */
+  #clienteForm .form-control,
+  #clienteForm .form-select {
+    font-size: 16px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  #clienteForm .btn-sm {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+  }
+}

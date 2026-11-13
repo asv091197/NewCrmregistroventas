@@ -1,0 +1,159 @@
+.badge-spei {
+    background-color: #198754;
+}
+
+.badge-tdc {
+    background-color: #0d6efd;
+}
+
+.table-inactive {
+    opacity: 0.6;
+    background-color: #f8f9fa;
+}
+
+.status-badge {
+    font-size: 0.75em;
+}
+
+.required-field::after {
+    content: " *";
+    color: red;
+}
+
+.pagination {
+    margin-bottom: 0;
+}
+
+.search-container {
+    position: relative;
+    max-width: 400px;
+}
+
+.search-clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #6c757d;
+    z-index: 3;
+}
+
+.search-clear:hover {
+    color: #dc3545;
+}
+
+.search-loading {
+    position: absolute;
+    right: 35px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-switch .form-check-input {
+    width: 3em;
+    height: 1.5em;
+    margin-right: 8px;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-switch .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.table-actions {
+    white-space: nowrap;
+    width: 160px;
+}
+
+.permiso-column {
+    width: 150px;
+}
+
+/* ===================== RESPONSIVO (MÓVIL) ===================== */
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        background-color: #fff;
+        padding: 0 0.5rem 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .espaciador-navbar {
+        height: 56px !important;
+    }
+
+    .espaciador-extra {
+        display: none;
+    }
+
+    .contenedor-plataformas {
+        margin-top: 0.75rem !important;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .card-header h4 {
+        font-size: 1.1rem;
+    }
+
+    .card-body {
+        padding: 0.75rem;
+    }
+
+    .search-container {
+        max-width: 100%;
+    }
+
+    .results-info {
+        font-size: 0.85rem;
+    }
+
+    /* Tabla: desplazamiento horizontal y más compacta */
+    .table {
+        font-size: 0.8rem;
+    }
+
+    .table td,
+    .table th {
+        padding: 0.4rem;
+        white-space: nowrap;
+    }
+
+    .table-actions {
+        width: auto;
+    }
+
+    .pagination {
+        flex-wrap: wrap;
+        gap: 2px;
+    }
+
+    .pagination .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    /* Inputs de 16px para que iOS no haga zoom al escribir */
+    .form-control,
+    .form-select {
+        font-size: 16px;
+    }
+
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .modal-footer .btn {
+        flex: 1;
+    }
+}

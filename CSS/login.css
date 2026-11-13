@@ -1,0 +1,454 @@
+:root {
+    --sky-blue-primary: #1E90FF; /* Dodger Blue - más vibrante */
+    --sky-blue-light: #B0E0E6; /* Powder Blue */
+    --sky-blue-medium: #00BFFF; /* Deep Sky Blue */
+    --sky-blue-dark: #0066CC; /* Azul más oscuro */
+    --sky-blue-accent: #4DABF7; /* Azul brillante */
+}
+
+body {
+    background: linear-gradient(rgba(135, 206, 235, 0.1), rgba(135, 206, 235, 0.2)),
+             url('../images/agencia.avif')
+            no-repeat center center fixed;
+    background-size: cover;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
+}
+
+.login-container {
+    animation: fadeIn 0.8s ease-in-out;
+    width: 100%;
+    max-width: 400px; /* Más pequeño para PC */
+}
+
+.login-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--sky-blue-primary);
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+/* Efecto de iluminación en el borde */
+.login-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg,
+        var(--sky-blue-primary),
+        var(--sky-blue-accent),
+        var(--sky-blue-primary));
+    z-index: 1;
+}
+
+/* Efecto hover para PC */
+@media (min-width: 992px) {
+    .login-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+}
+
+.login-header {
+    background: linear-gradient(135deg, var(--sky-blue-primary) 0%, var(--sky-blue-dark) 100%);
+    color: white;
+    padding: 25px 20px; /* Padding más pequeño */
+    text-align: center;
+    border-bottom: 4px solid var(--sky-blue-accent);
+    position: relative;
+}
+
+.login-header i {
+    font-size: 2.8rem; /* Icono más pequeño */
+    margin-bottom: 15px;
+    background: rgba(255, 255, 255, 0.3);
+    width: 70px; /* Más pequeño */
+    height: 70px; /* Más pequeño */
+    line-height: 70px; /* Más pequeño */
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.login-body {
+    padding: 30px 25px; /* Padding más compacto */
+    background: white;
+}
+
+.form-control {
+    border-radius: 10px;
+    padding: 12px 16px; /* Más compacto */
+    border: 2px solid #d1e3ff;
+    transition: all 0.3s;
+    font-size: 0.95rem; /* Fuente más pequeña */
+    background-color: #f8fbff;
+    height: auto;
+}
+
+.form-control:focus {
+    border-color: var(--sky-blue-medium);
+    box-shadow: 0 0 0 0.25rem rgba(0, 191, 255, 0.2);
+    background-color: white;
+}
+
+.input-group-text {
+    background-color: var(--sky-blue-light);
+    border-radius: 10px 0 0 10px;
+    border: 2px solid #d1e3ff;
+    border-right: none;
+    color: var(--sky-blue-dark);
+    padding: 0 18px;
+    font-size: 1rem; /* Icono más pequeño */
+    font-weight: bold;
+}
+
+.btn-login {
+    background: linear-gradient(135deg, var(--sky-blue-primary) 0%, var(--sky-blue-dark) 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 14px; /* Más compacto */
+    font-weight: 600;
+    transition: all 0.3s;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    font-size: 1rem; /* Fuente más pequeña */
+    letter-spacing: 0.3px;
+    box-shadow: 0 5px 15px rgba(30, 144, 255, 0.3);
+    height: auto;
+    margin-top: 5px;
+}
+
+.btn-login:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(30, 144, 255, 0.4);
+    background: linear-gradient(135deg, var(--sky-blue-medium) 0%, #0052cc 100%);
+}
+
+.btn-login:active:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(30, 144, 255, 0.3);
+}
+
+.btn-login:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-login.loading {
+    color: transparent;
+}
+
+.btn-login.loading::after {
+    content: '';
+    position: absolute;
+    width: 20px; /* Spinner más pequeño */
+    height: 20px; /* Spinner más pequeño */
+    top: 50%;
+    left: 50%;
+    margin-left: -10px;
+    margin-top: -10px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 0.8s linear infinite;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #1a365d;
+    margin-bottom: 8px; /* Margen más pequeño */
+    font-size: 0.95rem; /* Fuente más pequeña */
+}
+
+.form-label i {
+    color: var(--sky-blue-dark);
+    width: 24px; /* Ancho más pequeño */
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.system-title {
+    font-size: 1.8rem; /* Título más pequeño */
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.3px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+    margin-bottom: 8px;
+}
+
+.system-subtitle {
+    font-size: 0.9rem; /* Subtítulo más pequeño */
+    opacity: 0.95;
+    margin-top: 5px;
+    font-weight: 400;
+    letter-spacing: 0.2px;
+    background: rgba(255, 255, 255, 0.2);
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 15px;
+}
+
+.password-toggle {
+    cursor: pointer;
+    background: var(--sky-blue-light);
+    border: 2px solid #d1e3ff;
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+    color: var(--sky-blue-dark);
+    padding: 0 18px;
+    transition: all 0.3s;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.password-toggle:hover {
+    background: var(--sky-blue-primary);
+    color: white;
+    border-color: var(--sky-blue-primary);
+}
+
+.footer-links {
+    text-align: center;
+    margin-top: 20px; /* Margen más pequeño */
+    font-size: 0.85rem; /* Fuente más pequeña */
+    color: #4a5568;
+    padding-top: 18px; /* Padding más pequeño */
+    border-top: 1px solid #e2e8f0;
+}
+
+.footer-links a {
+    color: var(--sky-blue-dark);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s;
+}
+
+.footer-links a:hover {
+    color: var(--sky-blue-primary);
+    text-decoration: underline;
+}
+
+.footer-links i {
+    margin-right: 6px;
+    font-size: 0.8rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.shake {
+    animation: shake 0.4s ease-in-out;
+}
+
+/* Alertas más compactas */
+.alert {
+    border-radius: 10px;
+    border: 2px solid transparent;
+    padding: 12px 18px; /* Más compacto */
+    margin-top: 15px;
+    font-weight: 500;
+    font-size: 0.9rem; /* Fuente más pequeña */
+}
+
+.alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.2);
+    color: #c53030;
+}
+
+.alert-success {
+    background-color: rgba(25, 135, 84, 0.1);
+    border-color: rgba(25, 135, 84, 0.2);
+    color: #0f9d58;
+}
+
+/* Input group con sombra más sutil */
+.input-group {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    transition: box-shadow 0.3s;
+    margin-bottom: 3px;
+}
+
+.input-group:focus-within {
+    box-shadow: 0 3px 15px rgba(0, 191, 255, 0.2);
+}
+
+/* Responsive para PC grande - mantener pequeño */
+@media (min-width: 1400px) {
+    .login-container {
+        max-width: 380px; /* Incluso más pequeño en pantallas grandes */
+    }
+}
+
+/* Responsive para tablets */
+@media (max-width: 768px) {
+    .login-container {
+        max-width: 350px;
+    }
+
+    .login-body {
+        padding: 25px 20px;
+    }
+
+    .login-header {
+        padding: 20px 15px;
+    }
+
+    .system-title {
+        font-size: 1.6rem;
+    }
+
+    .login-header i {
+        font-size: 2.5rem;
+        width: 60px;
+        height: 60px;
+        line-height: 60px;
+    }
+}
+
+/* Responsive para móviles */
+@media (max-width: 576px) {
+    .login-container {
+        max-width: 320px;
+    }
+
+    .login-body {
+        padding: 20px 18px;
+    }
+
+    .login-header {
+        padding: 18px 15px;
+    }
+
+    .system-title {
+        font-size: 1.5rem;
+    }
+
+    .login-header i {
+        font-size: 2.2rem;
+        width: 55px;
+        height: 55px;
+        line-height: 55px;
+    }
+
+    .form-control {
+        padding: 11px 14px;
+        font-size: 0.9rem;
+    }
+
+    .btn-login {
+        padding: 12px;
+        font-size: 0.95rem;
+    }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 400px) {
+    .login-container {
+        max-width: 95%;
+    }
+
+    .login-body {
+        padding: 18px 15px;
+    }
+
+    .login-header {
+        padding: 15px 12px;
+    }
+
+    .system-title {
+        font-size: 1.4rem;
+    }
+
+    .system-subtitle {
+        font-size: 0.8rem;
+    }
+}
+
+/* Fallback para cuando la imagen no carga */
+.no-bg-image {
+    background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%) !important;
+}
+
+/* Estilo para el enlace de copyright */
+.copyright {
+    font-size: 0.8rem;
+    color: #718096;
+    margin-top: 15px;
+}
+
+.copyright i {
+    color: var(--sky-blue-primary);
+    font-size: 0.75rem;
+}
+
+/* Efecto de brillo en el botón - más sutil */
+.btn-login::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.15),
+        transparent
+    );
+    transition: left 0.7s;
+}
+
+.btn-login:hover::before {
+    left: 100%;
+}
+
+/* Animación para el icono del header - más sutil */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+.login-header i {
+    animation: pulse 3s infinite;
+}
+
+/* Mejor separación entre elementos del formulario - más compacta */
+.mb-4 {
+    margin-bottom: 1.5rem !important;
+}
+
+/* Espaciado mejorado */
+.d-grid {
+    gap: 0.8rem !important;
+}
+
+/* Clases de Bootstrap override para más compacidad */
+.mb-3 {
+    margin-bottom: 1rem !important;
+}

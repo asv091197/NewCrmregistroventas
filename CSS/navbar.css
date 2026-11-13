@@ -1,0 +1,10 @@
+/* Estilos de la navbar unificada (includes/navbar.php) */
+.navbar-crm .navbar-brand { font-weight: 600; }
+.navbar-crm .badge-modulo { font-size: 0.65rem; vertical-align: middle; }
+.navbar-crm .nav-link { color: #212529; }
+.navbar-crm .nav-link.active { color: #0d6efd; font-weight: 600; }
+
+@media (max-width: 991.98px) {
+    .navbar-crm .navbar-collapse { background-color: #fff; padding: 0 0.5rem 0.5rem; }
+    .navbar-crm .navbar-brand { font-size: 1rem; }
+}

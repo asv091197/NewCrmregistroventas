@@ -1,0 +1,275 @@
+.required-field::after {
+    content: " *";
+    color: red;
+}
+
+.alert {
+    display: none;
+}
+
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.select2-container--bootstrap-5 .select2-selection {
+    min-height: 38px;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown {
+    z-index: 1060;
+}
+
+.select-with-btn {
+    display: flex;
+    align-items: stretch;
+}
+
+.select-with-btn .select2-container {
+    flex: 1;
+}
+
+.select-with-btn .btn-add-platform {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 1px solid #ced4da;
+    width: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.select-with-btn .form-select {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
+}
+
+.select-with-btn .select2-selection {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-right: none !important;
+}
+
+.select-with-btn .form-select:focus+.btn-add-platform {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.select-with-btn:hover .btn-add-platform {
+    border-color: #86b7fe;
+}
+
+.manual-input-container {
+    display: none;
+    margin-top: 5px;
+}
+
+.toggle-input-type {
+    cursor: pointer;
+    color: #0d6efd;
+    font-size: 0.875em;
+    margin-top: 5px;
+    display: inline-block;
+}
+
+.toggle-input-type:hover {
+    text-decoration: underline;
+}
+
+.sala-info {
+    background-color: #e7f1ff;
+    border-left: 4px solid #0d6efd;
+    padding: 10px 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.sala-info i {
+    color: #0d6efd;
+    margin-right: 8px;
+}
+
+.sala-selector {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.sala-selector i {
+    color: #ffc107;
+    margin-right: 8px;
+}
+
+.admin-badge {
+    background-color: #dc3545;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    margin-left: 8px;
+}
+
+.admin-badge-restricted {
+    background-color: #fd7e14;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    margin-left: 8px;
+}
+
+.acceso-total-info {
+    background-color: #d1e7dd;
+    border-left: 4px solid #198754;
+    padding: 10px 15px;
+    margin-top: 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.acceso-total-info i {
+    color: #198754;
+    margin-right: 8px;
+}
+
+.acceso-restringido-info {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 10px 15px;
+    margin-top: 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.acceso-restringido-info i {
+    color: #ffc107;
+    margin-right: 8px;
+}
+
+.debug-info {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 8px;
+    margin-top: 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-family: monospace;
+}
+
+/* Estilos para el interruptor de permiso */
+.permiso-plataforma-container {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 10px;
+}
+
+.permiso-plataforma-container .form-switch {
+    margin-bottom: 5px;
+}
+
+.permiso-plataforma-container .text-muted {
+    font-size: 0.85em;
+}
+
+.select2-results__option .permiso-badge {
+    font-size: 0.75em;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 8px;
+}
+
+.permiso-activo {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.permiso-inactivo {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+/* ===================== RESPONSIVO (MÓVIL) ===================== */
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        background-color: #fff;
+        padding: 0 0.5rem 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .espaciador-navbar {
+        height: 56px !important;
+    }
+
+    .espaciador-extra {
+        display: none;
+    }
+
+    .contenedor-formulario {
+        margin-top: 0.75rem !important;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .card-header h4 {
+        font-size: 1.15rem;
+    }
+
+    .card-body {
+        padding: 1rem 0.75rem !important;
+    }
+
+    /* Columnas apiladas: separación entre campos */
+    .row.mb-3 > [class*="col-md-"],
+    .row.mb-4 > [class*="col-md-"] {
+        margin-bottom: 0.75rem;
+    }
+
+    .row.mb-3 > [class*="col-md-"]:last-child,
+    .row.mb-4 > [class*="col-md-"]:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Selects de Tipo de Venta y Estatus a todo lo ancho */
+    .form-select[style*="max-width"] {
+        max-width: 100% !important;
+    }
+
+    /* Radios (Vendedor / Método de pago) uno debajo de otro */
+    .form-check-inline {
+        display: block;
+        margin-right: 0;
+        margin-top: 0.35rem;
+    }
+
+    /* Evita que select2 se salga de la pantalla */
+    .select2-container {
+        width: 100% !important;
+    }
+
+    .select-with-btn .select2-container {
+        width: auto !important;
+        min-width: 0;
+    }
+
+    /* Inputs de 16px para que iOS no haga zoom al escribir */
+    .form-control,
+    .form-select,
+    .select2-container--bootstrap-5 .select2-selection {
+        font-size: 16px;
+    }
+
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .modal-footer .btn {
+        flex: 1;
+    }
+}

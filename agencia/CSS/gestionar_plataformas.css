@@ -1,0 +1,80 @@
+.badge-spei {
+    background-color: #198754;
+}
+
+.badge-tdc {
+    background-color: #0d6efd;
+}
+
+.table-inactive {
+    opacity: 0.6;
+    background-color: #f8f9fa;
+}
+
+.status-badge {
+    font-size: 0.75em;
+}
+
+.required-field::after {
+    content: " *";
+    color: red;
+}
+
+.pagination {
+    margin-bottom: 0;
+}
+
+.search-container {
+    position: relative;
+    max-width: 400px;
+}
+
+.search-clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #6c757d;
+    z-index: 3;
+}
+
+.search-clear:hover {
+    color: #dc3545;
+}
+
+.search-loading {
+    position: absolute;
+    right: 35px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-switch .form-check-input {
+    width: 3em;
+    height: 1.5em;
+    margin-right: 8px;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-switch .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.table-actions {
+    white-space: nowrap;
+    width: 160px;
+}
+
+.permiso-column {
+    width: 150px;
+}

@@ -1,0 +1,192 @@
+.platform-checkbox-container {
+    background-color: #f8f9fa;
+}
+
+.platform-checkbox-container .form-check {
+    margin-bottom: 5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.platform-checkbox-container .form-check:hover {
+    background-color: #e9ecef;
+}
+
+.platform-checkbox-container .form-check-label {
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.platform-checkbox-container .form-check-input {
+    cursor: pointer;
+}
+
+/* Estilo para el mensaje de restricción */
+.alert-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.badge.bg-warning {
+    font-size: 0.75rem;
+}
+
+/* Destacar visualmente el modo restringido */
+.card-header .bg-warning {
+    animation: pulse 2s infinite;
+}
+
+/* Estilos para inputs de fecha en modo restringido */
+input[type="date"]:read-only {
+    background-color: #e9ecef !important;
+    cursor: not-allowed;
+}
+
+/* Estilos para las etiquetas de fecha mín/máx */
+.text-muted small {
+    font-size: 0.75rem;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Estilos para selects buscables */
+.select-buscable-container {
+    position: relative;
+}
+
+.select-search-input {
+    margin-bottom: 5px;
+    border-radius: 0.375rem;
+}
+
+.select-buscable {
+    height: auto;
+    min-height: 120px;
+    border-radius: 0.375rem;
+}
+
+.select-buscable option {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+.select-buscable option:hover {
+    background-color: #f8f9fa;
+}
+
+.select-buscable option:checked {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.select-buscable:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Mejoras visuales para los selects en el modal */
+.modal .select-buscable-container {
+    margin-bottom: 1rem;
+}
+
+.modal .select-search-input:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.required-field::after {
+    content: " *";
+    color: red;
+}
+
+/* ESTILOS CORREGIDOS PARA modal-linerClosersDiv */
+#modal-linerClosersDiv {
+    transition: all 0.3s ease;
+    display: flex !important;
+    flex-wrap: nowrap;
+    gap: 15px;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+#modal-fullStackDiv {
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+#modal-linerClosersDiv .col-md-4 {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+    transition: all 0.3s ease;
+}
+
+#modal-linerClosersDiv .select-buscable-container {
+    margin-bottom: 0;
+}
+
+#modal-linerClosersDiv .form-label {
+    white-space: nowrap;
+    margin-bottom: 5px;
+    font-size: 0.875rem;
+}
+
+/* Ajustes para los selects dentro de modal-linerClosersDiv */
+#modal-linerClosersDiv .select-buscable {
+    min-height: 120px;
+    height: 120px;
+}
+
+/* Ajustes para el Full Stack */
+#modal-fullStackDiv .col-12 {
+    width: 100%;
+}
+
+#modal-fullStackDiv .select-buscable {
+    min-height: 120px;
+    height: 120px;
+}
+
+/* Asegurar que los divs principales tengan display flex/none correctamente */
+#modal-linerClosersDiv[style*="display: none"] {
+    display: none !important;
+}
+
+#modal-fullStackDiv[style*="display: none"] {
+    display: none !important;
+}
+
+/* Asegurar que los campos internos sean siempre visibles cuando su contenedor lo sea */
+#modal-linerClosersDiv:not([style*="display: none"]) .col-md-4 {
+    display: block !important;
+}
+
+#modal-fullStackDiv:not([style*="display: none"]) .col-12 {
+    display: block !important;
+}
+
+/* Asegurar que los elementos se mantengan en línea en pantallas pequeñas */
+@media (max-width: 768px) {
+    #modal-linerClosersDiv {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    #modal-linerClosersDiv .col-md-4 {
+        flex: 0 0 calc(50% - 10px);
+    }
+
+    #modal-linerClosersDiv .select-buscable,
+    #modal-fullStackDiv .select-buscable {
+        min-height: 100px;
+        height: 100px;
+    }
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+}

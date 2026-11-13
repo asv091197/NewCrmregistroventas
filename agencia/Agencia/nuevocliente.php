@@ -151,62 +151,7 @@ $old = fn($campo) => htmlspecialchars($_POST[$campo] ?? '');
   <title>Registro Clientes</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-  <style>
-    .closer-section, .sala-admin-section {
-      display: none;
-      transition: all 0.3s ease;
-    }
-    .closer-section.show, .sala-admin-section.show {
-      display: block;
-    }
-    .debug-info {
-      font-size: 0.8rem;
-      color: #666;
-      background: #f8f9fa;
-      padding: 5px;
-      border-radius: 3px;
-      margin-top: 5px;
-    }
-
-    /* ===================== RESPONSIVO (MÓVIL) ===================== */
-    @media (max-width: 991.98px) {
-      .navbar-collapse {
-        background-color: #fff;
-        padding: 0 0.5rem 0.5rem;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .espaciador-navbar {
-        height: 56px !important;
-      }
-
-      .contenedor-cliente {
-        padding-top: 0.75rem !important;
-        padding-left: 8px;
-        padding-right: 8px;
-      }
-
-      /* Nombre, apellidos y números uno debajo de otro */
-      #clienteForm .col-6 {
-        flex: 0 0 100%;
-        max-width: 100%;
-      }
-
-      /* Campos y botones más cómodos de tocar; 16px evita el zoom de iOS */
-      #clienteForm .form-control,
-      #clienteForm .form-select {
-        font-size: 16px;
-        padding: 0.5rem 0.75rem;
-      }
-
-      #clienteForm .btn-sm {
-        width: 100%;
-        padding: 0.5rem;
-        font-size: 1rem;
-      }
-    }
-  </style>
+  <link href="CSS/nuevocliente.css?v=<?= filemtime(__DIR__ . '/CSS/nuevocliente.css') ?>" rel="stylesheet">
 </head>
 
 <body>
@@ -319,45 +264,6 @@ $old = fn($campo) => htmlspecialchars($_POST[$campo] ?? '');
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Enlaza un botón con su sección plegable; la abre si su select ya tiene un valor
-      function plegable(idBoton, idSeccion, idSelect, textoMostrar, textoOcultar) {
-        const boton = document.getElementById(idBoton);
-        const seccion = document.getElementById(idSeccion);
-        const select = document.getElementById(idSelect);
-        if (!boton || !seccion) return;
-
-        const actualizarTexto = () => {
-          boton.innerHTML = seccion.classList.contains('show') ? textoOcultar : textoMostrar;
-        };
-        if (select && select.value !== '') seccion.classList.add('show');
-        actualizarTexto();
-        boton.addEventListener('click', () => {
-          seccion.classList.toggle('show');
-          actualizarTexto();
-        });
-      }
-
-      plegable('btnAgregarCloser', 'closerSection', 'selectCloser',
-        '<i class="bi bi-plus-circle"></i> Agregar Closer', '<i class="bi bi-dash-circle"></i> Ocultar Closer');
-      plegable('btnSeleccionarSala', 'salaAdminSection', 'salaSelectAdmin',
-        '<i class="bi bi-building"></i> Asignar Sala', '<i class="bi bi-building-slash"></i> Ocultar Sala');
-
-      // Al cambiar la sala, recargar el formulario para actualizar los closers
-      const salaSelectAdmin = document.getElementById('salaSelectAdmin');
-      if (salaSelectAdmin) {
-        salaSelectAdmin.addEventListener('change', function() {
-          const clienteForm = document.getElementById('clienteForm');
-          const updateInput = document.createElement('input');
-          updateInput.type = 'hidden';
-          updateInput.name = 'actualizar_closers';
-          updateInput.value = '1';
-          clienteForm.appendChild(updateInput);
-          clienteForm.submit();
-        });
-      }
-    });
-  </script>
+  <script src="JS/nuevocliente-pagina.js?v=<?= filemtime(__DIR__ . '/JS/nuevocliente-pagina.js') ?>"></script>
 </body>
 </html>
