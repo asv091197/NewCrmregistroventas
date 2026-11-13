@@ -123,6 +123,7 @@ if ($conn) {
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestionar Plataformas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -207,6 +208,85 @@ if ($conn) {
         .permiso-column {
             width: 150px;
         }
+
+        /* ===================== RESPONSIVO (MÓVIL) ===================== */
+        @media (max-width: 991.98px) {
+            .navbar-collapse {
+                background-color: #fff;
+                padding: 0 0.5rem 0.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .espaciador-navbar {
+                height: 56px !important;
+            }
+
+            .espaciador-extra {
+                display: none;
+            }
+
+            .contenedor-plataformas {
+                margin-top: 0.75rem !important;
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+
+            .card-header h4 {
+                font-size: 1.1rem;
+            }
+
+            .card-body {
+                padding: 0.75rem;
+            }
+
+            .search-container {
+                max-width: 100%;
+            }
+
+            .results-info {
+                font-size: 0.85rem;
+            }
+
+            /* Tabla: desplazamiento horizontal y más compacta */
+            .table {
+                font-size: 0.8rem;
+            }
+
+            .table td,
+            .table th {
+                padding: 0.4rem;
+                white-space: nowrap;
+            }
+
+            .table-actions {
+                width: auto;
+            }
+
+            .pagination {
+                flex-wrap: wrap;
+                gap: 2px;
+            }
+
+            .pagination .page-link {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.85rem;
+            }
+
+            /* Inputs de 16px para que iOS no haga zoom al escribir */
+            .form-control,
+            .form-select {
+                font-size: 16px;
+            }
+
+            .modal-dialog {
+                margin: 0.5rem;
+            }
+
+            .modal-footer .btn {
+                flex: 1;
+            }
+        }
     </style>
 </head>
 
@@ -214,9 +294,13 @@ if ($conn) {
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#"></a>
-            <div class="d-flex align-items-center ms-auto">
-                <ul class="navbar-nav me-3">
+            <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarPlataformas"
+                aria-controls="navbarPlataformas" aria-expanded="false" aria-label="Abrir menú">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarPlataformas">
+            <div class="d-lg-flex align-items-lg-center ms-auto py-2 py-lg-0">
+                <ul class="navbar-nav me-lg-3">
                     <?php if ($rol === 'superadmin'): ?>
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="../agencia/opcionesAdmin.php" style="text-decoration: none;">
@@ -240,20 +324,21 @@ if ($conn) {
                         </a>
                     </li>
                 </ul>
-                <span class="navbar-text text-muted me-3"><?= htmlspecialchars($_SESSION['nombre'] ?? '') ?></span>
-                <a href="logout.php" class="btn btn-sm btn-outline-danger">
+                <span class="navbar-text text-muted me-3 d-block d-lg-inline"><?= htmlspecialchars($_SESSION['nombre'] ?? '') ?></span>
+                <a href="logout.php" class="btn btn-sm btn-outline-danger mt-2 mt-lg-0">
                     <i class="bi bi-box-arrow-right"></i> Salir
                 </a>
+            </div>
             </div>
         </div>
     </nav>
 
-    <div style="height: 70px;"></div>
+    <div class="espaciador-navbar" style="height: 70px;"></div>
 
-    <div class="container mt-4">
-        <div style="height: 50px;"></div>
+    <div class="container mt-4 contenedor-plataformas">
+        <div class="espaciador-extra" style="height: 50px;"></div>
         <div class="card shadow">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div class="card-header bg-primary text-white d-flex flex-wrap gap-2 justify-content-between align-items-center">
                 <h4 class="mb-0"><i class="bi bi-credit-card"></i> Gestión de Plataformas</h4>
                 <?php if ($es_admin): ?>
                 <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevaPlataforma">
@@ -285,9 +370,9 @@ if ($conn) {
                             </span>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-6 mt-3 mt-md-0">
                         <div class="row">
-                            <div class="col-md-8 text-end">
+                            <div class="col-md-8 text-md-end mb-2 mb-md-0">
                                 <div class="results-info" id="resultsInfo">
                                     Mostrando <?= count($plataformas) ?> de <?= $total_registros ?> plataformas
                                     <?php if ($busqueda): ?> - Resultados para: "<strong><?= htmlspecialchars($busqueda) ?></strong>"<?php endif; ?>

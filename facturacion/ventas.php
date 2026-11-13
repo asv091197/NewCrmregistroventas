@@ -322,11 +322,12 @@ try {
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ventas</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="CSS/ventas.css" rel="stylesheet">
+  <link href="CSS/ventas.css?v=<?= filemtime(__DIR__ . '/CSS/ventas.css') ?>" rel="stylesheet">
   <style>
     .platform-checkbox-container {
       background-color: #f8f9fa;
@@ -621,8 +622,13 @@ try {
 <body class="bg-light">
   <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
     <div class="container-fluid">
-      <div class="d-flex align-items-center ms-auto">
-        <ul class="navbar-nav me-3">
+      <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarVentas"
+        aria-controls="navbarVentas" aria-expanded="false" aria-label="Abrir menú">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarVentas">
+      <div class="d-lg-flex align-items-lg-center ms-auto py-2 py-lg-0">
+        <ul class="navbar-nav me-lg-3">
            <?php if ($_SESSION['rol'] === 'superadmin'): ?>
           <li class="nav-item">
             <a class="nav-link text-dark" href="../agencia/opcionesAdmin.php" style="text-decoration: none;">
@@ -659,12 +665,13 @@ try {
 
                     <?php endif; ?>
         </ul>
-        <span class="navbar-text text-muted me-3">
+        <span class="navbar-text text-muted me-3 d-block d-lg-inline">
           <?= htmlspecialchars($_SESSION['nombre'] ?? '') ?>
         </span>
-        <a href="logout.php" class="btn btn-sm btn-outline-danger">
+        <a href="logout.php" class="btn btn-sm btn-outline-danger mt-2 mt-lg-0">
           <i class="bi bi-box-arrow-right"></i> Salir
         </a>
+      </div>
       </div>
     </div>
   </nav>
@@ -681,9 +688,9 @@ try {
     <?php endif; ?>
 
     <div class="card shadow-sm rounded-4">
-      <div class="card-header bg-dark text-white fw-semibold fs-5 d-flex justify-content-between align-items-center">
+      <div class="card-header bg-dark text-white fw-semibold fs-5 d-flex flex-wrap gap-2 justify-content-between align-items-center">
         <span>Ventas Registradas</span>
-        <div>
+        <div class="d-flex flex-wrap gap-1">
           <?php if (!$tieneAccesoTodasSalas): ?>
             <?php if (!$esAdmin): ?>
               <span class="badge bg-warning text-dark me-2">
@@ -712,7 +719,7 @@ try {
         </div>
       </div>
       <div class="card-body">
-        <div class="mb-3 text-end">
+        <div class="mb-3 text-end acciones-ventas">
           <a href="ingresarfacturacion.php" class="btn btn-primary">
             <i class="bi bi-plus-circle-fill"></i> Agregar Venta
           </a>

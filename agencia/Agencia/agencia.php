@@ -222,6 +222,7 @@ try {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Clientes</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
@@ -389,6 +390,101 @@ try {
       background-color: #e9ecef;
       cursor: not-allowed;
     }
+
+    /* ===================== RESPONSIVO (MÓVIL) ===================== */
+    @media (max-width: 991.98px) {
+      .navbar-collapse {
+        background-color: #fff;
+        padding: 0 0.5rem 0.5rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .espaciador-navbar {
+        height: 56px !important;
+      }
+
+      .contenedor-agentes {
+        margin-top: 0.75rem !important;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      .card-header.fs-5 {
+        font-size: 1rem !important;
+      }
+
+      .card-body {
+        padding: 0.75rem;
+      }
+
+      /* Botones Agregar Cliente / Exportar apilados a lo ancho */
+      .acciones-clientes {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: initial !important;
+      }
+
+      .acciones-clientes .btn {
+        width: 100%;
+        margin-left: 0 !important;
+      }
+
+      .filter-section {
+        padding: 12px;
+      }
+
+      /* Tabla: desplazamiento horizontal y más compacta */
+      .table-responsive {
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .table {
+        font-size: 0.8rem;
+      }
+
+      .table td,
+      .table th {
+        padding: 0.4rem;
+        white-space: nowrap;
+      }
+
+      /* La descripción no estira la tabla de más */
+      .table td[title] {
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .pagination {
+        flex-wrap: wrap;
+        gap: 2px;
+      }
+
+      .pagination .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.85rem;
+      }
+
+      /* Inputs de 16px para que iOS no haga zoom al escribir */
+      .form-control,
+      .form-select {
+        font-size: 16px;
+      }
+
+      .modal-dialog {
+        margin: 0.5rem;
+      }
+
+      .modal-body {
+        padding: 0.75rem;
+      }
+
+      .modal-footer .btn {
+        flex: 1;
+      }
+    }
   </style>
 </head>
 
@@ -401,8 +497,13 @@ try {
   
   <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
     <div class="container-fluid">
-      <div class="d-flex align-items-center ms-auto">
-        <ul class="navbar-nav me-3">
+      <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarAgentes"
+        aria-controls="navbarAgentes" aria-expanded="false" aria-label="Abrir menú">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarAgentes">
+      <div class="d-lg-flex align-items-lg-center ms-auto py-2 py-lg-0">
+        <ul class="navbar-nav me-lg-3">
           <?php if ($esAdmin): ?>
           <li class="nav-item">
             <a class="nav-link text-dark" href="../opcionesAdmin.php" style="text-decoration: none;">
@@ -424,8 +525,8 @@ try {
           </li>
         </ul>
 
-        <span class="navbar-text text-muted me-3">
-        <?php 
+        <span class="navbar-text text-muted me-3 d-block d-lg-inline">
+        <?php
     if (isset($_SESSION['apemat']) && !empty($_SESSION['apemat'])) {
         echo htmlspecialchars($_SESSION['apemat']);
     } elseif (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
@@ -438,15 +539,16 @@ try {
     ?>
         </span>
 
-        <a href="../logout.php" class="btn btn-sm btn-outline-danger">
+        <a href="../logout.php" class="btn btn-sm btn-outline-danger mt-2 mt-lg-0">
           <i class="bi bi-box-arrow-right"></i> Salir
         </a>
+      </div>
       </div>
     </div>
   </nav>
 
-  <div style="height: 70px;"></div>
-  <div class="container-lg mt-5">
+  <div class="espaciador-navbar" style="height: 70px;"></div>
+  <div class="container-lg mt-5 contenedor-agentes">
     <div class="row mb-4 justify-content-end">
       <div class="col-xl-3 col-md-6">
         <div class="card shadow-sm rounded-4 border-0 h-100">
@@ -465,12 +567,12 @@ try {
     </div>
 
     <div class="card shadow-sm rounded-4">
-      <div class="card-header bg-dark text-white fw-semibold fs-5 d-flex justify-content-between align-items-center">
+      <div class="card-header bg-dark text-white fw-semibold fs-5 d-flex flex-wrap gap-2 justify-content-between align-items-center">
         <span>Clientes Registrados</span>
         <span class="badge bg-light text-dark badge-search" id="contador-clientes">Total: <?= $totalClientes ?></span>
       </div>
       <div class="card-body">
-        <div class="mb-3 text-end">
+        <div class="mb-3 text-end acciones-clientes">
           <a href="nuevocliente.php" class="btn btn-primary">
             <i class="bi bi-person-plus-fill"></i> Agregar Cliente
           </a>

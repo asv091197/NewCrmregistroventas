@@ -673,6 +673,92 @@ function formatoDinero($cantidad)
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 
         }
+        /* ===================== RESPONSIVO (MÓVIL) ===================== */
+        @media (max-width: 991.98px) {
+            .navbar-collapse {
+                background-color: #fff;
+                padding: 0 0.5rem 0.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-dashboard {
+                padding: 0.75rem !important;
+                margin-top: 64px !important;
+            }
+
+            .main-dashboard > .container-fluid {
+                padding-left: 0;
+                padding-right: 0;
+            }
+
+            .navbar-brand {
+                font-size: 1rem;
+            }
+
+            .welcome-section {
+                padding: 1.25rem;
+                margin-bottom: 1.25rem;
+            }
+
+            .welcome-section .display-6 {
+                font-size: 1.4rem;
+            }
+
+            .welcome-section .lead {
+                font-size: 1rem;
+            }
+
+            /* Pestañas a lo ancho */
+            .nav-tabs .nav-item {
+                flex: 1;
+            }
+
+            .nav-tabs .nav-link {
+                width: 100%;
+                font-size: 0.9rem;
+                padding: 0.5rem;
+            }
+
+            /* Botones Buscar / Descargar a todo lo ancho */
+            .filtros-dashboard .btn,
+            .filtros-dashboard .dropdown {
+                width: 100%;
+            }
+
+            .filtros-dashboard .mt-4 {
+                margin-top: 0 !important;
+            }
+
+            /* Aviso de fecha/sala en varios renglones */
+            .aviso-dashboard > div > span.ms-3 {
+                display: block;
+                margin-left: 0 !important;
+                margin-top: 0.35rem;
+            }
+
+            .card-header .card-title {
+                font-size: 1rem;
+            }
+
+            .card-hover:hover {
+                transform: none;
+            }
+
+            /* Gráficas más bajas */
+            div[style*="height: 400px"] {
+                height: 300px !important;
+            }
+
+            div[style*="height: 300px"] {
+                height: 250px !important;
+            }
+
+            .form-control,
+            .form-select {
+                font-size: 16px;
+            }
+        }
 
     </style>
 
@@ -692,9 +778,14 @@ function formatoDinero($cantidad)
 
             </a>
 
-            <div class="d-flex align-items-center ms-auto">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarAdmin"
+                aria-controls="navbarAdmin" aria-expanded="false" aria-label="Abrir menú">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarAdmin">
+            <div class="d-lg-flex align-items-lg-center ms-auto py-2 py-lg-0">
 
-                <ul class="navbar-nav me-3">
+                <ul class="navbar-nav me-lg-3">
 
                     <li class="nav-item">
 
@@ -752,17 +843,19 @@ function formatoDinero($cantidad)
 
                 </ul>
 
-                <span class="navbar-text text-muted me-3 d-none d-md-block">
+                <span class="navbar-text text-muted me-3 d-none d-lg-inline">
 
                     <?= htmlspecialchars($nombre_mostrar) ?>
 
                 </span>
 
-                <a href="logout.php" class="btn btn-sm btn-outline-danger">
+                <a href="logout.php" class="btn btn-sm btn-outline-danger mt-2 mt-lg-0">
 
                     <i class="bi bi-box-arrow-right me-1"></i>Salir
 
                 </a>
+
+            </div>
 
             </div>
 
@@ -772,7 +865,7 @@ function formatoDinero($cantidad)
 
 
 
-    <main style="padding: 2em; margin-top: 80px;">
+    <main class="main-dashboard" style="padding: 2em; margin-top: 80px;">
 
         <div class="container-fluid">
 
@@ -846,7 +939,7 @@ function formatoDinero($cantidad)
 
                                 <div class="card-body">
 
-                                    <form id="formDiario" class="row g-3 align-items-center">
+                                    <form id="formDiario" class="row g-3 align-items-center filtros-dashboard">
 
                                         <div class="col-md-4">
 
@@ -946,7 +1039,7 @@ function formatoDinero($cantidad)
 
                                         </div>
 
-                                        <div class="col-md-2 text-end">
+                                        <div class="col-md-2 text-md-end">
 
                                             <div class="dropdown mt-4">
 
@@ -1022,7 +1115,7 @@ function formatoDinero($cantidad)
 
                             <div class="col-12">
 
-                                <div class="alert alert-info d-flex justify-content-between align-items-center">
+                                <div class="alert alert-info d-flex flex-wrap gap-2 justify-content-between align-items-center aviso-dashboard">
 
                                     <div>
 
@@ -1410,7 +1503,7 @@ function formatoDinero($cantidad)
 
                                 <div class="card-body">
 
-                                    <form id="formMensual" class="row g-3 align-items-center">
+                                    <form id="formMensual" class="row g-3 align-items-center filtros-dashboard">
 
                                         <div class="col-md-4">
 
@@ -1510,7 +1603,7 @@ function formatoDinero($cantidad)
 
                                         </div>
 
-                                        <div class="col-md-2 text-end">
+                                        <div class="col-md-2 text-md-end">
 
                                             <div class="dropdown mt-4">
 
@@ -1586,7 +1679,7 @@ function formatoDinero($cantidad)
 
                             <div class="col-12">
 
-                                <div class="alert alert-success d-flex justify-content-between align-items-center">
+                                <div class="alert alert-success d-flex flex-wrap gap-2 justify-content-between align-items-center aviso-dashboard">
 
                                     <div>
 

@@ -232,6 +232,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Usuarios</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
@@ -420,14 +421,98 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
       border-color: #f5c6cb;
       color: #721c24;
     }
+
+    /* ===================== RESPONSIVO (MÓVIL) ===================== */
+    @media (max-width: 991.98px) {
+      .navbar-collapse {
+        background-color: #fff;
+        padding: 0 0.5rem 0.5rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .espaciador-navbar {
+        height: 56px !important;
+      }
+
+      .contenedor-usuarios {
+        margin-top: 0.75rem !important;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      .card-header.fs-5 {
+        font-size: 1rem !important;
+      }
+
+      .card-body {
+        padding: 0.75rem;
+      }
+
+      .acciones-usuarios .btn {
+        width: 100%;
+      }
+
+      .filter-section {
+        padding: 12px;
+      }
+
+      /* Tabla: desplazamiento horizontal y más compacta */
+      .table-responsive {
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .table {
+        font-size: 0.8rem;
+      }
+
+      .table td,
+      .table th {
+        padding: 0.4rem;
+        white-space: nowrap;
+      }
+
+      .pagination {
+        flex-wrap: wrap;
+        gap: 2px;
+      }
+
+      .pagination .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.85rem;
+      }
+
+      /* Inputs de 16px para que iOS no haga zoom al escribir */
+      .form-control,
+      .form-select {
+        font-size: 16px;
+      }
+
+      .modal-dialog {
+        margin: 0.5rem;
+      }
+
+      .modal-body {
+        padding: 0.75rem;
+      }
+
+      .modal-footer .btn {
+        flex: 1;
+      }
+    }
   </style>
 </head>
 
 <body class="bg-light" data-rol="<?= htmlspecialchars($rolSesion) ?>" data-admin-acceso="<?= (int)$admin_acceso_todas ?>">
   <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
     <div class="container-fluid">
-      <div class="d-flex align-items-center ms-auto">
-        <ul class="navbar-nav me-3">
+      <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarUsuarios"
+        aria-controls="navbarUsuarios" aria-expanded="false" aria-label="Abrir menú">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarUsuarios">
+      <div class="d-lg-flex align-items-lg-center ms-auto py-2 py-lg-0">
+        <ul class="navbar-nav me-lg-3">
           <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin'): ?>
             <li class="nav-item">
               <a class="nav-link text-dark" href="../opcionesAdmin.php" style="text-decoration: none;">
@@ -447,7 +532,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
           </li>
         </ul>
 
-        <span class="navbar-text text-muted me-3">
+        <span class="navbar-text text-muted me-3 d-block d-lg-inline">
           <?php
           if (isset($_SESSION['apemat']) && !empty($_SESSION['apemat'])) {
             echo htmlspecialchars($_SESSION['apemat']);
@@ -461,17 +546,18 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
           ?>
         </span>
 
-        <a href="../logout.php" class="btn btn-sm btn-outline-danger">
+        <a href="../logout.php" class="btn btn-sm btn-outline-danger mt-2 mt-lg-0">
           <i class="bi bi-box-arrow-right"></i> Salir
         </a>
+      </div>
       </div>
     </div>
   </nav>
 
-  <div style="height: 70px;"></div>
-  <div class="container-lg mt-5">
+  <div class="espaciador-navbar" style="height: 70px;"></div>
+  <div class="container-lg mt-5 contenedor-usuarios">
     <div class="card shadow-sm rounded-4">
-      <div class="card-header bg-dark text-white fw-semibold fs-5 d-flex justify-content-between align-items-center">
+      <div class="card-header bg-dark text-white fw-semibold fs-5 d-flex flex-wrap gap-2 justify-content-between align-items-center">
         <span>
           Usuarios Registrados
           <?php if ($admin_acceso_todas == 1): ?>
@@ -489,7 +575,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
         </span>
       </div>
       <div class="card-body">
-        <div class="mb-3 text-end">
+        <div class="mb-3 text-end acciones-usuarios">
           <a href="nuevousuario.php" class="btn btn-primary">
             <i class="bi bi-person-plus-fill"></i> Agregar Usuario
           </a>

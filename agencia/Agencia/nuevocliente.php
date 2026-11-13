@@ -147,6 +147,7 @@ $old = fn($campo) => htmlspecialchars($_POST[$campo] ?? '');
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Registro Clientes</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
@@ -166,14 +167,58 @@ $old = fn($campo) => htmlspecialchars($_POST[$campo] ?? '');
       border-radius: 3px;
       margin-top: 5px;
     }
+
+    /* ===================== RESPONSIVO (MÓVIL) ===================== */
+    @media (max-width: 991.98px) {
+      .navbar-collapse {
+        background-color: #fff;
+        padding: 0 0.5rem 0.5rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .espaciador-navbar {
+        height: 56px !important;
+      }
+
+      .contenedor-cliente {
+        padding-top: 0.75rem !important;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      /* Nombre, apellidos y números uno debajo de otro */
+      #clienteForm .col-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+      }
+
+      /* Campos y botones más cómodos de tocar; 16px evita el zoom de iOS */
+      #clienteForm .form-control,
+      #clienteForm .form-select {
+        font-size: 16px;
+        padding: 0.5rem 0.75rem;
+      }
+
+      #clienteForm .btn-sm {
+        width: 100%;
+        padding: 0.5rem;
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 
 <body>
   <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
     <div class="container-fluid">
-      <div class="d-flex align-items-center ms-auto">
-        <ul class="navbar-nav me-3">
+      <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCliente"
+        aria-controls="navbarCliente" aria-expanded="false" aria-label="Abrir menú">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarCliente">
+      <div class="d-lg-flex align-items-lg-center ms-auto py-2 py-lg-0">
+        <ul class="navbar-nav me-lg-3">
           <?php if ($esAdmin): ?>
           <li class="nav-item">
             <a class="nav-link text-dark" href="../opcionesAdmin.php" style="text-decoration: none;">
@@ -193,18 +238,19 @@ $old = fn($campo) => htmlspecialchars($_POST[$campo] ?? '');
           </li>
         </ul>
 
-        <span class="navbar-text text-muted me-3">
+        <span class="navbar-text text-muted me-3 d-block d-lg-inline">
           <?= htmlspecialchars($_SESSION['apemat'] ?? '') ?>
         </span>
 
-        <a href="../logout.php" class="btn btn-sm btn-outline-danger">
+        <a href="../logout.php" class="btn btn-sm btn-outline-danger mt-2 mt-lg-0">
           <i class="bi bi-box-arrow-right"></i> Salir
         </a>
       </div>
+      </div>
     </div>
   </nav>
-  <div style="height: 70px;"></div>
-  <div class="container py-4">
+  <div class="espaciador-navbar" style="height: 70px;"></div>
+  <div class="container py-4 contenedor-cliente">
     <div class="row justify-content-center">
       <div class="col-md-6">
         <div class="card shadow-sm">
@@ -310,6 +356,7 @@ $old = fn($campo) => htmlspecialchars($_POST[$campo] ?? '');
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Enlaza un botón con su sección plegable; la abre si su select ya tiene un valor

@@ -230,3 +230,103 @@ body {
 .form-text.text-muted {
     font-size: 0.7rem;
 }
+
+/* ===================== RESPONSIVO (MÓVIL) ===================== */
+@media (max-width: 991.98px) {
+    /* Menú colapsado: fondo blanco y separación */
+    .navbar-collapse {
+        background-color: #fff;
+        padding: 0 0.5rem 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding-top: 56px;
+    }
+
+    .container-wider {
+        max-width: 100%;
+        padding-right: 8px;
+        padding-left: 8px;
+    }
+
+    .card-header.fs-5 {
+        font-size: 1rem !important;
+    }
+
+    .card-body {
+        padding: 0.75rem;
+    }
+
+    /* Botones Agregar / Exportar apilados a lo ancho */
+    .acciones-ventas {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: initial !important;
+    }
+
+    .acciones-ventas .btn {
+        width: 100%;
+        margin-left: 0 !important;
+    }
+
+    .filter-section {
+        padding: 12px;
+    }
+
+    .platform-checkbox-container .form-check-label {
+        font-size: 0.95rem;
+    }
+
+    /* La tabla se desplaza horizontalmente dentro de su contenedor */
+    .table-responsive {
+        margin-left: 0;
+        margin-right: 0;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table {
+        font-size: 0.8rem;
+    }
+
+    .table td, .table th {
+        padding: 0.4rem;
+    }
+
+    /* Paginación más compacta y que no se salga de la pantalla */
+    .pagination {
+        flex-wrap: wrap;
+        gap: 2px;
+    }
+
+    .pagination .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    /* Modal a pantalla casi completa */
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .modal-body {
+        padding: 0.75rem;
+    }
+
+    .modal-body .form-select[style*="max-width"] {
+        max-width: 100% !important;
+    }
+
+    .modal-footer .btn {
+        flex: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Liner / Closers del modal en una sola columna */
+    #modal-linerClosersDiv .col-md-4 {
+        flex: 0 0 100% !important;
+    }
+}

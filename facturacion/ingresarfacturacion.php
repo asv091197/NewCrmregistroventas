@@ -133,6 +133,7 @@ try {
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Formulario de Venta</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
@@ -334,14 +335,99 @@ try {
             background-color: #f8d7da;
             color: #842029;
         }
+
+        /* ===================== RESPONSIVO (MÓVIL) ===================== */
+        @media (max-width: 991.98px) {
+            .navbar-collapse {
+                background-color: #fff;
+                padding: 0 0.5rem 0.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .espaciador-navbar {
+                height: 56px !important;
+            }
+
+            .espaciador-extra {
+                display: none;
+            }
+
+            .contenedor-formulario {
+                margin-top: 0.75rem !important;
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+
+            .card-header h4 {
+                font-size: 1.15rem;
+            }
+
+            .card-body {
+                padding: 1rem 0.75rem !important;
+            }
+
+            /* Columnas apiladas: separación entre campos */
+            .row.mb-3 > [class*="col-md-"],
+            .row.mb-4 > [class*="col-md-"] {
+                margin-bottom: 0.75rem;
+            }
+
+            .row.mb-3 > [class*="col-md-"]:last-child,
+            .row.mb-4 > [class*="col-md-"]:last-child {
+                margin-bottom: 0;
+            }
+
+            /* Selects de Tipo de Venta y Estatus a todo lo ancho */
+            .form-select[style*="max-width"] {
+                max-width: 100% !important;
+            }
+
+            /* Radios (Vendedor / Método de pago) uno debajo de otro */
+            .form-check-inline {
+                display: block;
+                margin-right: 0;
+                margin-top: 0.35rem;
+            }
+
+            /* Evita que select2 se salga de la pantalla */
+            .select2-container {
+                width: 100% !important;
+            }
+
+            .select-with-btn .select2-container {
+                width: auto !important;
+                min-width: 0;
+            }
+
+            /* Inputs de 16px para que iOS no haga zoom al escribir */
+            .form-control,
+            .form-select,
+            .select2-container--bootstrap-5 .select2-selection {
+                font-size: 16px;
+            }
+
+            .modal-dialog {
+                margin: 0.5rem;
+            }
+
+            .modal-footer .btn {
+                flex: 1;
+            }
+        }
     </style>
 </head>
 
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
         <div class="container-fluid">
-            <div class="d-flex align-items-center ms-auto">
-                <ul class="navbar-nav me-3">
+            <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarFacturacion"
+                aria-controls="navbarFacturacion" aria-expanded="false" aria-label="Abrir menú">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarFacturacion">
+            <div class="d-lg-flex align-items-lg-center ms-auto py-2 py-lg-0">
+                <ul class="navbar-nav me-lg-3">
                     <?php if ($rol === 'superadmin'): ?>
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="../agencia/opcionesAdmin.php" style="text-decoration: none;">
@@ -365,18 +451,19 @@ try {
                         </a>
                     </li>
                 </ul>
-                <span class="navbar-text text-muted me-3">
+                <span class="navbar-text text-muted me-3 d-block d-lg-inline">
                     <?= htmlspecialchars($nombreUsuario) ?>
                 </span>
-                <a href="logout.php" class="btn btn-sm btn-outline-danger">
+                <a href="logout.php" class="btn btn-sm btn-outline-danger mt-2 mt-lg-0">
                     <i class="fas fa-sign-out-alt"></i> Salir
                 </a>
             </div>
+            </div>
         </div>
     </nav>
-    <div style="height: 70px;"></div>
-    <div class="container mt-4">
-        <div style="height: 20px;"></div>
+    <div class="espaciador-navbar" style="height: 70px;"></div>
+    <div class="container mt-4 contenedor-formulario">
+        <div class="espaciador-extra" style="height: 20px;"></div>
         <div class="card shadow mx-auto" style="max-width: 850px;">
             <div class="card-header bg-primary text-white py-3">
                 <h4 class="mb-0">Formulario de Venta</h4>
@@ -662,6 +749,6 @@ try {
         // Variable global para saber si es admin con permiso de plataforma
         const esAdminConPermisoPlataforma = <?= ($es_admin && $tiene_permiso_plataforma) ? 'true' : 'false' ?>;
     </script>
-    <script src="JS/facturacion.js"></script>
+    <script src="JS/facturacion.js?v=<?= filemtime(__DIR__ . '/JS/facturacion.js') ?>"></script>
 </body>
 </html>
