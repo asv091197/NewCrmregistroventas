@@ -1110,6 +1110,14 @@ try {
                 </select>
               </div>
               <div class="mt-3">
+                <label for="modal-estatus" class="form-label">Estatus</label>
+                <select class="form-select" id="modal-estatus" name="estatus" style="max-width: 200px;">
+                  <option value="">Sin estatus</option>
+                  <option value="procesable">Procesable</option>
+                  <option value="pendiente">Pendiente</option>
+                </select>
+              </div>
+              <div class="mt-3">
                 <label class="form-label required-field">Vendedor</label>
                 <br>
                 <div class="form-check form-check-inline">

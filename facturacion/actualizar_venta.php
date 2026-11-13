@@ -63,7 +63,7 @@ function compararYRegistrarCambios($conn, $venta_actual, $nuevos_datos, $venta_i
         'fecha', 'precio', 'cliente', 'apepat', 'apemat', 'celular', 'correo', 
         'producto', 'liner_id', 'closer1_id', 'closer2_id', 'full_stack_id', 
         'plataforma_id', 'precio_neto', 'ganancia_liner', 'ganancia_closer1', 
-        'ganancia_closer2', 'ganancia_fullstack', 'tipo_venta', 'sala_id',
+        'ganancia_closer2', 'ganancia_fullstack', 'tipo_venta', 'estatus', 'sala_id',
         'liner_nombre_manual', 'closer1_nombre_manual', 'closer2_nombre_manual', 'full_stack_nombre_manual'
     ];
     
@@ -192,7 +192,12 @@ try {
     $metodo_pago = $_POST['metodo_pago'];
     $tipo_venta = $_POST['tipoCliente']; // NUEVO CAMPO
     $tipo_vendedor = $_POST['tipoVendedor'] ?? 'normal';
-    
+    // Estatus opcional: vacío se guarda como NULL
+    $estatus = isset($_POST['estatus']) && trim($_POST['estatus']) !== '' ? trim($_POST['estatus']) : null;
+    if ($estatus !== null && !in_array($estatus, ['procesable', 'pendiente'], true)) {
+        sendResponse(false, "Estatus no válido");
+    }
+
     // Capturar sala_id desde el formulario (si existe) o desde la sesión
     $sala_id = $_POST['sala_id'] ?? ($_SESSION['sala_id'] ?? null);
     $usuario_id = $_SESSION['usuario_id'];
@@ -379,6 +384,7 @@ try {
         'ganancia_closer2' => $ganancia_closer2,
         'ganancia_fullstack' => $ganancia_fullstack,
         'tipo_venta' => $tipo_venta,
+        'estatus' => $estatus,
         'sala_id' => $sala_id,
         'liner_nombre_manual' => $liner_nombre_manual,
         'closer1_nombre_manual' => $closer1_nombre_manual,
@@ -407,6 +413,7 @@ try {
             ganancia_closer2 = ?,
             ganancia_fullstack = ?,
             tipo_venta = ?,
+            estatus = ?,
             sala_id = ?,
             liner_nombre_manual = ?,
             closer1_nombre_manual = ?,
@@ -439,6 +446,7 @@ try {
         $ganancia_closer2,
         $ganancia_fullstack,
         $tipo_venta,
+        $estatus,
         $sala_id,
         $liner_nombre_manual,
         $closer1_nombre_manual,

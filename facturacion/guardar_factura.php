@@ -150,6 +150,12 @@ try {
         sendResponse(false, "Tipo de cliente no válido");
     }
 
+    // VALIDAR ESTATUS (opcional: vacío se guarda como NULL)
+    $estatus = isset($_POST['estatus']) && trim($_POST['estatus']) !== '' ? trim($_POST['estatus']) : null;
+    if ($estatus !== null && !in_array($estatus, ['procesable', 'pendiente'], true)) {
+        sendResponse(false, "Estatus no válido");
+    }
+
     // VALIDAR TIPO DE VENTA - CORREGIDO PARA INCLUIR CAMPOS MANUALES
     $tipo_venta = $_POST['tipoVenta'];
     
@@ -318,7 +324,31 @@ try {
             plataforma_id, precio_neto,
             ganancia_liner, ganancia_closer1, ganancia_closer2,
             full_stack_id, full_stack_nombre_manual, ganancia_fullstack,
-            usuario_creacion_id, tipo_venta, sala_id
+            usuario_creacion_id, tipo_venta, sala_id, estatus
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        $stmt = $conn->prepare($sql);
+        
+        $parametros = [
+            $fecha, $precio, $cliente, $apepat, $apemat, $celular, $correo, $producto,
+            $liner_id, $liner_nombre_manual, 
+            $closer1_id, $closer1_nombre_manual, 
+            $closer2_id, $closer2_nombre_manual, 
+            $plataforma_id, $precio_neto,
+            $ganancia_liner, $ganancia_closer1, $ganancia_closer2,
+            $full_stack_id, $full_stack_nombre_manual, $ganancia_fullstack,
+            $usuario_creacion_id, $tipo_cliente, $sala_id, $estatus
+        ];
+    } else {
+        $sql = "INSERT INTO ventas_facturacion (
+            fecha, precio, cliente, apepat, apemat, celular, correo, producto,
+            liner_id, liner_nombre_manual, 
+            closer1_id, closer1_nombre_manual, 
+            closer2_id, closer2_nombre_manual, 
+            plataforma_id, precio_neto,
+            ganancia_liner, ganancia_closer1, ganancia_closer2,
+            full_stack_id, full_stack_nombre_manual, ganancia_fullstack,
+            tipo_venta, sala_id, estatus
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $conn->prepare($sql);
@@ -331,31 +361,7 @@ try {
             $plataforma_id, $precio_neto,
             $ganancia_liner, $ganancia_closer1, $ganancia_closer2,
             $full_stack_id, $full_stack_nombre_manual, $ganancia_fullstack,
-            $usuario_creacion_id, $tipo_cliente, $sala_id
-        ];
-    } else {
-        $sql = "INSERT INTO ventas_facturacion (
-            fecha, precio, cliente, apepat, apemat, celular, correo, producto,
-            liner_id, liner_nombre_manual, 
-            closer1_id, closer1_nombre_manual, 
-            closer2_id, closer2_nombre_manual, 
-            plataforma_id, precio_neto,
-            ganancia_liner, ganancia_closer1, ganancia_closer2,
-            full_stack_id, full_stack_nombre_manual, ganancia_fullstack,
-            tipo_venta, sala_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        $stmt = $conn->prepare($sql);
-        
-        $parametros = [
-            $fecha, $precio, $cliente, $apepat, $apemat, $celular, $correo, $producto,
-            $liner_id, $liner_nombre_manual, 
-            $closer1_id, $closer1_nombre_manual, 
-            $closer2_id, $closer2_nombre_manual, 
-            $plataforma_id, $precio_neto,
-            $ganancia_liner, $ganancia_closer1, $ganancia_closer2,
-            $full_stack_id, $full_stack_nombre_manual, $ganancia_fullstack,
-            $tipo_cliente, $sala_id
+            $tipo_cliente, $sala_id, $estatus
         ];
     }
 
@@ -371,6 +377,7 @@ try {
         'producto' => $producto,
         'precio' => $precio,
         'tipo_venta' => $tipo_cliente,
+        'estatus' => $estatus,
         'plataforma_id' => $plataforma_id,
         'sala_id' => $sala_id
     ]);

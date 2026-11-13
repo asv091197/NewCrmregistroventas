@@ -1567,6 +1567,11 @@ function mostrarModalVenta(venta) {
     if (tipoClienteSelect) {
         tipoClienteSelect.value = venta.tipo_venta || '';
     }
+
+    const estatusSelect = document.getElementById('modal-estatus');
+    if (estatusSelect) {
+        estatusSelect.value = venta.estatus || '';
+    }
     
     if (!['admin', 'superadmin'].includes(rolUsuarioGlobal) && venta.sala_id !== salaUsuarioIdGlobal) {
         alert('Esta venta pertenece a otra sala. Solo puedes ver información.');
