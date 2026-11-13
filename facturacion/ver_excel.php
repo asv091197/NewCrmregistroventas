@@ -71,6 +71,9 @@ $sql = "SELECT v.*,
 $conditions = [];
 $params = [];
 
+// Solo mostrar ventas con estatus "procesable"
+$conditions[] = "LOWER(TRIM(v.estatus)) = 'procesable'";
+
 if (!empty($fechaInicio)) {
     $conditions[] = "v.fecha >= ?";
     $params[] = $fechaInicio . ' 00:00:00';

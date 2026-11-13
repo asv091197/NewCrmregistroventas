@@ -93,6 +93,9 @@ $conditions = [];
 $params = [];
 $whereClause = '';
 
+// Solo exportar ventas con estatus "procesable"
+$conditions[] = "LOWER(TRIM(v.estatus)) = 'procesable'";
+
 if (!empty($fechaInicio)) {
     $conditions[] = "v.fecha >= ?";
     $params[] = $fechaInicio . ' 00:00:00';
@@ -229,7 +232,33 @@ try {
 
 // Validar que hay datos
 if (empty($ventas)) {
-    die('No hay datos para generar el reporte con los filtros aplicados.');
+    // Detalle: cuántas ventas hay con los mismos filtros, agrupadas por estatus (sin el filtro de estatus)
+    $detalle = '';
+    try {
+        $condSinEstatus = array_slice($conditions, 1);
+        $sqlDiag = "SELECT COALESCE(NULLIF(TRIM(v.estatus), ''), 'sin estatus') AS est, COUNT(*) AS total
+            FROM ventas_facturacion v
+            LEFT JOIN usuarios liner ON v.liner_id = liner.id
+            LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
+            LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
+            LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
+            LEFT JOIN plataforma p ON v.plataforma_id = p.id"
+            . (!empty($condSinEstatus) ? " WHERE " . implode(" AND ", $condSinEstatus) : '')
+            . " GROUP BY est";
+        $stmtDiag = $pdo->prepare($sqlDiag);
+        $stmtDiag->execute($params);
+        $partes = [];
+        foreach ($stmtDiag->fetchAll(PDO::FETCH_ASSOC) as $fila) {
+            $partes[] = htmlspecialchars($fila['est']) . ': ' . (int)$fila['total'];
+        }
+        $detalle = empty($partes)
+            ? '<br>No hay ventas de ningún estatus con estos filtros.'
+            : '<br>Ventas encontradas con estos filtros por estatus: ' . implode(', ', $partes);
+    } catch (PDOException $e) {
+        error_log("Error en diagnóstico de exportación: " . $e->getMessage());
+    }
+    header('Content-Type: text/html; charset=utf-8');
+    die('No hay ventas con estatus <strong>Procesable</strong> para generar el reporte con los filtros aplicados.' . $detalle);
 }
 
 // Obtener los nombres de las plataformas filtradas
