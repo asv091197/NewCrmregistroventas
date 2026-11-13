@@ -16,6 +16,7 @@ $buscar = $_GET['buscar'] ?? '';
 $fechaInicio = $_GET['fecha_inicio'] ?? '';
 $fechaFin = $_GET['fecha_fin'] ?? '';
 $salaFiltro = isset($_GET['sala_id']) ? (int)$_GET['sala_id'] : '';
+$pagadoFiltro = isset($_GET['pagado']) && in_array($_GET['pagado'], ['0', '1'], true) ? $_GET['pagado'] : '';
 
 // ============================================================
 // LÍMITE DURO: evita respuestas gigantes que tarden mucho
@@ -27,7 +28,7 @@ $salaId = (!$esAdmin && !empty($_SESSION['sala_id'])) ? $_SESSION['sala_id'] : n
 $filtroSala = $salaId !== null;
 
 // Sin término de búsqueda ni filtros: no consultar
-if (empty($buscar) && empty($fechaInicio) && empty($fechaFin) && !$filtroSala && empty($salaFiltro)) {
+if (empty($buscar) && empty($fechaInicio) && empty($fechaFin) && !$filtroSala && empty($salaFiltro) && $pagadoFiltro === '') {
     echo '<div id="resultado-contador" data-total="0"></div>';
     echo '<div id="resultado-limite" data-limite="' . LIMITE_RESULTADOS . '" data-truncado="0"></div>';
     echo '<tr><td colspan="8" class="text-center">Ingrese un término de búsqueda o use los filtros</td></tr>';
@@ -76,6 +77,10 @@ if (!empty($fechaInicio)) {
 if (!empty($fechaFin)) {
     $whereConditions[] = "c.fecha_registro <= :fecha_fin";
     $params[':fecha_fin'] = $fechaFin . ' 23:59:59';
+}
+
+if ($pagadoFiltro !== '') {
+    $whereConditions[] = $pagadoFiltro === '1' ? "c.pagado = 1" : "(c.pagado = 0 OR c.pagado IS NULL)";
 }
 
 $whereClause = 'WHERE ' . implode(' AND ', $whereConditions);

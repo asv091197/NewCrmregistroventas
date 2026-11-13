@@ -58,6 +58,8 @@ if ($rol === 'superadmin') {
 $fechaInicio = $_GET['fecha_inicio'] ?? '';
 $fechaFin = $_GET['fecha_fin'] ?? '';
 $salaFiltro = isset($_GET['sala_id']) ? (int)$_GET['sala_id'] : '';
+// Filtro de pagado: '' = todos, '1' = sí, '0' = no
+$pagadoFiltro = isset($_GET['pagado']) && in_array($_GET['pagado'], ['0', '1'], true) ? $_GET['pagado'] : '';
 
 // Para admin con acceso limitado y sala asignada
 if ($acceso_todas_salas === 0 && isset($_SESSION['sala_id']) && !empty($_SESSION['sala_id'])) {
@@ -111,6 +113,11 @@ if (!empty($fechaInicio)) {
 if (!empty($fechaFin)) {
     $whereConditions[] = "c.fecha_registro <= :fecha_fin";
     $params[':fecha_fin'] = $fechaFin . ' 23:59:59';
+}
+
+// Filtro de pagado
+if ($pagadoFiltro !== '') {
+    $whereConditions[] = $pagadoFiltro === '1' ? "c.pagado = 1" : "(c.pagado = 0 OR c.pagado IS NULL)";
 }
 
 // Construir WHERE clause
@@ -307,6 +314,9 @@ if (!empty($salaFiltro)) {
     $stmtSala->execute([':sala_id' => $salaFiltro]);
     $sala = $stmtSala->fetch(PDO::FETCH_ASSOC);
     $infoFiltros .= " | Sala: " . ($sala['nombre'] ?? 'Desconocida');
+}
+if ($pagadoFiltro !== '') {
+    $infoFiltros .= " | Pagado: " . ($pagadoFiltro === '1' ? 'Sí' : 'No');
 }
 
 if ($acceso_todas_salas === 0) {

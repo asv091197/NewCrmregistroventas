@@ -38,6 +38,8 @@ if ($rol === 'admin') {
 // Obtener parámetros de filtrado
 $fechaInicio = $_GET['fecha_inicio'] ?? '';
 $fechaFin = $_GET['fecha_fin'] ?? '';
+// Filtro de pagado: '' = todos, '1' = sí, '0' = no
+$pagadoFiltro = isset($_GET['pagado']) && in_array($_GET['pagado'], ['0', '1'], true) ? $_GET['pagado'] : '';
 
 // Admin limitado a la sala de su sesión
 $limitadoASalaSesion = $esAdmin && $acceso_todas_salas === 0 && $salaSesion;
@@ -116,6 +118,10 @@ if (!empty($fechaInicio)) {
 if (!empty($fechaFin)) {
     $whereConditions[] = "c.fecha_registro <= :fecha_fin";
     $params[':fecha_fin'] = $fechaFin . ' 23:59:59';
+}
+
+if ($pagadoFiltro !== '') {
+    $whereConditions[] = $pagadoFiltro === '1' ? "c.pagado = 1" : "(c.pagado = 0 OR c.pagado IS NULL)";
 }
 
 $whereClause = '';
@@ -529,18 +535,27 @@ try {
                 <?php endif; ?>
               </div>
               
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
-                <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" 
+                <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio"
                        value="<?= htmlspecialchars($fechaInicio) ?>">
               </div>
-              
-              <div class="col-md-3">
+
+              <div class="col-md-2">
                 <label for="fecha_fin" class="form-label">Fecha Fin</label>
-                <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" 
+                <input type="date" class="form-control" id="fecha_fin" name="fecha_fin"
                        value="<?= htmlspecialchars($fechaFin) ?>">
               </div>
-              
+
+              <div class="col-md-2">
+                <label for="pagado" class="form-label">Pagado</label>
+                <select class="form-select" id="pagado" name="pagado">
+                  <option value="">Todos</option>
+                  <option value="1" <?= $pagadoFiltro === '1' ? 'selected' : '' ?>>Sí</option>
+                  <option value="0" <?= $pagadoFiltro === '0' ? 'selected' : '' ?>>No</option>
+                </select>
+              </div>
+
               <div class="col-md-3 d-flex align-items-end">
                 <div class="btn-group w-100">
                   <button type="submit" class="btn btn-primary">
@@ -555,7 +570,7 @@ try {
               </div>
             </form>
             
-            <?php if (!empty($salaFiltro) || !empty($fechaInicio) || !empty($fechaFin)): ?>
+            <?php if (!empty($salaFiltro) || !empty($fechaInicio) || !empty($fechaFin) || $pagadoFiltro !== ''): ?>
             <div class="mt-3">
               <small class="text-muted">
                 Filtros activos: 
@@ -573,6 +588,7 @@ try {
                 ?>
                 <?php if (!empty($fechaInicio)) echo "Desde: " . htmlspecialchars($fechaInicio) . " "; ?>
                 <?php if (!empty($fechaFin)) echo "Hasta: " . htmlspecialchars($fechaFin); ?>
+                <?php if ($pagadoFiltro !== '') echo " | Pagado: " . ($pagadoFiltro === '1' ? 'Sí' : 'No'); ?>
               </small>
             </div>
             <?php endif; ?>
@@ -607,7 +623,7 @@ try {
         </div>
         
         <div id="mensaje" class="text-center mb-3">
-          <?php if (!empty($fechaInicio) || !empty($fechaFin) || !empty($salaFiltro)): ?>
+          <?php if (!empty($fechaInicio) || !empty($fechaFin) || !empty($salaFiltro) || $pagadoFiltro !== ''): ?>
             <div class="text-info">Mostrando clientes filtrados</div>
           <?php else: ?>
             <div class="text-muted">Escribe al menos un carácter para buscar o usa los filtros</div>
@@ -662,7 +678,7 @@ try {
                 }
               } else {
                 echo "<tr><td colspan='8' class='text-center'>No hay clientes registrados" .
-                     ((!empty($fechaInicio) || !empty($fechaFin) || !empty($salaFiltro)) ? " con los filtros aplicados" : "") . 
+                     ((!empty($fechaInicio) || !empty($fechaFin) || !empty($salaFiltro) || $pagadoFiltro !== '') ? " con los filtros aplicados" : "") .
                      "</td></tr>";
               }
               ?>
@@ -1001,6 +1017,9 @@ try {
         if (salaId) params.append('sala_id', salaId);
         if (fechaInicio) params.append('fecha_inicio', fechaInicio);
         if (fechaFin) params.append('fecha_fin', fechaFin);
+
+        const pagado = document.getElementById('pagado')?.value || '';
+        if (pagado !== '') params.append('pagado', pagado);
 
         if (esAdmin) {
           params.append('acceso_todas_salas', acceso_todas_salas);
