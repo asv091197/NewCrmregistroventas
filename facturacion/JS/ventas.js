@@ -1742,6 +1742,13 @@ function setupPermisoSwitchModalEvents() {
 
 // Actualizar venta
 function actualizarVenta() {
+    const estatusSelect = document.getElementById('modal-estatus');
+    if (estatusSelect && !estatusSelect.value) {
+        alert('Selecciona el estatus de la venta (Procesable o Pendiente)');
+        estatusSelect.focus();
+        return;
+    }
+
     const tipoFullStack = document.getElementById('modal-tipoFullStack').checked;
 
     if (tipoFullStack) {

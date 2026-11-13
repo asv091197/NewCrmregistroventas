@@ -332,7 +332,14 @@ function validarFormulario() {
         if (tipoCliente) tipoCliente.focus();
         return false;
     }
-    
+
+    const estatus = document.getElementById("estatus");
+    if (estatus && !estatus.value) {
+        showAlert("Por favor, seleccione el estatus (Procesable o Pendiente).", "warning");
+        estatus.focus();
+        return false;
+    }
+
     if (!tipoVenta) {
         showAlert("Por favor, seleccione el tipo de vendedor.", "warning");
         return false;

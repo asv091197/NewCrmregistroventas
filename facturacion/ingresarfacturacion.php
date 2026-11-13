@@ -251,9 +251,9 @@ try {
                             </select>
                         </div>
                         <div class="mt-3">
-                            <label for="estatus" class="form-label">Estatus</label>
-                            <select class="form-select" id="estatus" name="estatus" style="max-width: 200px;">
-                                <option value="" selected>Sin estatus</option>
+                            <label for="estatus" class="form-label required-field">Estatus</label>
+                            <select class="form-select" id="estatus" name="estatus" required style="max-width: 200px;">
+                                <option value="" selected disabled>Selecciona el estatus</option>
                                 <option value="procesable">Procesable</option>
                                 <option value="pendiente">Pendiente</option>
                             </select>
