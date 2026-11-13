@@ -371,8 +371,8 @@ $configOver = [
             ['min' => 350001, 'max' => null, 'porcentaje' => 5.50]
         ]
     ],
-    'LUIS' => [
-        'nombre' => 'LUIS',
+    'LUIS ACOSTA' => [
+        'nombre' => 'LUIS ACOSTA',
         'salas' => [1, 2], // Ambas salas
         'metas' => [
            ['min' => 0, 'max' => null, 'porcentaje' => 1.25]
