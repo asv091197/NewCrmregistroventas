@@ -210,6 +210,30 @@ $venta_bruta_diaria = 0;
 
 $venta_bruta_mensual = 0;
 
+$venta_mayor_dia = null;
+
+$venta_mayor_mes = null;
+
+
+
+// Venta procesable de mayor precio que cumpla la condición de fecha (y sala)
+function ventaMasGrande(PDO $conn, string $condicion_fecha, string $condicion_sala, array $params)
+{
+    $stmt = $conn->prepare("
+        SELECT v.precio,
+               TRIM(CONCAT(COALESCE(v.cliente, ''), ' ', COALESCE(v.apepat, ''))) AS cliente,
+               v.producto,
+               v.fecha
+        FROM ventas_facturacion v
+        WHERE {$condicion_fecha} {$condicion_sala}
+          AND LOWER(TRIM(v.estatus)) = 'procesable'
+        ORDER BY v.precio DESC, v.fecha DESC
+        LIMIT 1
+    ");
+    $stmt->execute($params);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+}
+
 
 
 try {
@@ -230,6 +254,10 @@ try {
     $stmt_ventas_dia->execute(array_merge([$fecha_seleccionada], $params_sala));
 
     $venta_bruta_diaria = (float)$stmt_ventas_dia->fetchColumn();
+
+    // Venta más grande del día y del mes
+    $venta_mayor_dia = ventaMasGrande($conn, "DATE(v.fecha) = ?", $condicion_sala_ventas, array_merge([$fecha_seleccionada], $params_sala));
+    $venta_mayor_mes = ventaMasGrande($conn, "YEAR(v.fecha) = ? AND MONTH(v.fecha) = ?", $condicion_sala_ventas, array_merge([$anio, $mes], $params_sala));
 
 
 
@@ -277,6 +305,10 @@ try {
     $venta_bruta_diaria = 0;
 
     $venta_bruta_mensual = 0;
+
+    $venta_mayor_dia = null;
+
+    $venta_mayor_mes = null;
 
     $ventas_por_dia_array = array();
 
@@ -673,6 +705,19 @@ function formatoDinero($cantidad)
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 
         }
+        .stat-card-top {
+            border-left: 4px solid #6f42c1;
+            background: linear-gradient(135deg, #f6f0ff 0%, #ffffff 100%);
+        }
+
+        .stat-card-top .detalle-venta {
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         /* ===================== RESPONSIVO (MÓVIL) ===================== */
         @media (max-width: 991.98px) {
             .navbar-collapse {
@@ -1269,7 +1314,7 @@ function formatoDinero($cantidad)
 
                             <!-- Tarjeta 4: Top Performance -->
 
-                            <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="col-xl-2 col-md-4 mb-4">
 
                                 <div class="card stat-card card-hover border-0 h-100">
 
@@ -1305,7 +1350,7 @@ function formatoDinero($cantidad)
 
                             <!-- Tarjeta 5: Ganancia Volumen -->
 
-                            <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="col-xl-2 col-md-4 mb-4">
 
                                 <div class="card stat-card-ganancia card-hover border-0 h-100">
 
@@ -1335,6 +1380,30 @@ function formatoDinero($cantidad)
 
                                 </div>
 
+                            </div>
+                            <!-- Tarjeta 6: Venta mas grande -->
+                            <div class="col-xl-2 col-md-4 mb-4">
+                                <div class="card stat-card-top card-hover border-0 h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div class="overflow-hidden">
+                                                <h6 class="card-title text-muted mb-2">Venta M&aacute;s Grande</h6>
+                                                <?php if (!empty($venta_mayor_dia)): ?>
+                                                    <h3 class="fw-bold" style="color: #6f42c1;"><?= formatoDinero($venta_mayor_dia['precio']) ?></h3>
+                                                    <small class="text-muted detalle-venta" title="<?= htmlspecialchars($venta_mayor_dia['cliente'] . ' - ' . $venta_mayor_dia['producto']) ?>">
+                                                        <?= htmlspecialchars($venta_mayor_dia['cliente'] ?: 'Sin nombre') ?> &middot; <?=htmlspecialchars($venta_mayor_dia['producto'] ?? '') ?>
+                                                    </small>
+                                                <?php else: ?>
+                                                    <h3 class="fw-bold text-muted">$0.00</h3>
+                                                    <small class="text-muted">Sin ventas en el d&iacute;a</small>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="align-self-center">
+                                                <i class="bi bi-gem fs-2" style="color: #6f42c1;"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                         </div>
@@ -1833,7 +1902,7 @@ function formatoDinero($cantidad)
 
                             <!-- Tarjeta 4: Top Performance Mes -->
 
-                            <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="col-xl-2 col-md-4 mb-4">
 
                                 <div class="card stat-card-mensual card-hover border-0 h-100">
 
@@ -1869,7 +1938,7 @@ function formatoDinero($cantidad)
 
                             <!-- Tarjeta 5: Ganancia Volumen -->
 
-                            <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="col-xl-2 col-md-4 mb-4">
 
                                 <div class="card stat-card-ganancia card-hover border-0 h-100">
 
@@ -1899,6 +1968,30 @@ function formatoDinero($cantidad)
 
                                 </div>
 
+                            </div>
+                            <!-- Tarjeta 6: Venta mas grande -->
+                            <div class="col-xl-2 col-md-4 mb-4">
+                                <div class="card stat-card-top card-hover border-0 h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div class="overflow-hidden">
+                                                <h6 class="card-title text-muted mb-2">Venta M&aacute;s Grande</h6>
+                                                <?php if (!empty($venta_mayor_mes)): ?>
+                                                    <h3 class="fw-bold" style="color: #6f42c1;"><?= formatoDinero($venta_mayor_mes['precio']) ?></h3>
+                                                    <small class="text-muted detalle-venta" title="<?= htmlspecialchars($venta_mayor_mes['cliente'] . ' - ' . $venta_mayor_mes['producto']) ?>">
+                                                        <?= htmlspecialchars($venta_mayor_mes['cliente'] ?: 'Sin nombre') ?> &middot; <?=htmlspecialchars($venta_mayor_mes['producto'] ?? '') ?>
+                                                    </small>
+                                                <?php else: ?>
+                                                    <h3 class="fw-bold text-muted">$0.00</h3>
+                                                    <small class="text-muted">Sin ventas en el mes</small>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="align-self-center">
+                                                <i class="bi bi-gem fs-2" style="color: #6f42c1;"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                         </div>
