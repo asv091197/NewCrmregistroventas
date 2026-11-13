@@ -1220,7 +1220,7 @@ try {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="JS/ventas.js"></script>
+  <script src="JS/ventas.js?v=<?= filemtime(__DIR__ . '/JS/ventas.js') ?>"></script>
   <script>
     // Pasar datos PHP a JavaScript (json_encode seguro dentro de <script>)
     <?php $jsonJs = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE; ?>

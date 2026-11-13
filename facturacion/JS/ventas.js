@@ -1570,8 +1570,8 @@ function mostrarModalVenta(venta) {
 
     const estatusSelect = document.getElementById('modal-estatus');
     if (estatusSelect) {
-        estatusSelect.value = venta.estatus || '';
-    }
+        const estatusGuardado = (venta.estatus || '').toString().trim().toLowerCase();
+        estatusSelect.value = ['procesable', 'pendiente'].includes(estatusGuardado) ? estatusGuardado : '';    }
     
     if (!['admin', 'superadmin'].includes(rolUsuarioGlobal) && venta.sala_id !== salaUsuarioIdGlobal) {
         alert('Esta venta pertenece a otra sala. Solo puedes ver información.');
