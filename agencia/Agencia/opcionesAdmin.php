@@ -484,49 +484,7 @@ function formatoDinero($cantidad)
 </head>
 
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <i class="bi bi-graph-up"></i> CRM Registro Ventas
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarAdmin"
-                aria-controls="navbarAdmin" aria-expanded="false" aria-label="Abrir menú">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarAdmin">
-            <div class="d-lg-flex align-items-lg-center ms-auto py-2 py-lg-0">
-                <ul class="navbar-nav me-lg-3">
-                    <li class="nav-item">
-                        <a class="nav-link text-dark fw-medium" href="Usuarios/usuarios.php">
-                            <i class="bi bi-people me-1"></i>Usuarios
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark fw-medium" href="Agencia/agencia.php">
-                            <i class="bi bi-person-badge me-1"></i>Agentes
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" href="../facturacion/ventas.php" style="text-decoration: none;">
-                            🕵️ Ventas
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" href="../facturacion/gestionar_plataformas.php" style="text-decoration: none;">
-                            💳 Plataformas
-                        </a>
-                    </li>
-                </ul>
-                <span class="navbar-text text-muted me-3 d-none d-lg-inline">
-                    <?= htmlspecialchars($nombre_usuario_sesion) ?>
-                </span>
-                <a href="logout.php" class="btn btn-sm btn-outline-danger mt-2 mt-lg-0">
-                    <i class="bi bi-box-arrow-right me-1"></i>Salir
-                </a>
-            </div>
-            </div>
-        </div>
-    </nav>
+    <?php require __DIR__ . '/../../includes/navbar.php'; ?>
 
     <main class="main-dashboard" style="padding: 2em; margin-top: 80px;">
         <div class="container-fluid">

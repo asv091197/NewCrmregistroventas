@@ -132,6 +132,7 @@ $hexes = ['success' => '#22c55e', 'primary' => '#6366f1', 'danger' => '#ef4444',
         }
         body {
             padding: 24px;
+            padding-top: 84px; /* espacio para la navbar fija */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             min-height: 100vh;
             /* Fondo con un degradado muy sutil para dar profundidad */
@@ -339,7 +340,7 @@ $hexes = ['success' => '#22c55e', 'primary' => '#6366f1', 'danger' => '#ef4444',
 
         /* ===== Responsive ===== */
         @media (max-width: 767.98px) {
-            body { padding: 12px; }
+            body { padding: 12px; padding-top: 70px; }
             .panel-body { padding: 14px; }
             .page-title h1 { font-size: 1.1rem; }
             .page-title .icon-box { width: 40px; height: 40px; font-size: 1.15rem; }
@@ -351,6 +352,7 @@ $hexes = ['success' => '#22c55e', 'primary' => '#6366f1', 'danger' => '#ef4444',
     </style>
 </head>
 <body>
+<?php require __DIR__ . '/../includes/navbar.php'; ?>
 <div class="app-shell">
 
     <!-- ===== Header ===== -->
@@ -368,7 +370,7 @@ $hexes = ['success' => '#22c55e', 'primary' => '#6366f1', 'danger' => '#ef4444',
                 <i class="bi bi-arrow-left"></i> Volver a la lista
             </a>
         <?php else: ?>
-            <a href="Logs" class="btn-ghost">
+            <a href="../opcionesAdmin.php" class="btn-ghost">
                 <i class="bi bi-arrow-left"></i> Volver al Dashboard
             </a>
         <?php endif; ?>
@@ -722,6 +724,7 @@ $hexes = ['success' => '#22c55e', 'primary' => '#6366f1', 'danger' => '#ef4444',
 <?php endif; ?>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // Validación del rango de fechas
 const fechaInicio = document.getElementById('fecha_inicio');

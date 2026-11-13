@@ -210,45 +210,7 @@ $old = fn($campo) => htmlspecialchars($_POST[$campo] ?? '');
 </head>
 
 <body>
-  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
-    <div class="container-fluid">
-      <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCliente"
-        aria-controls="navbarCliente" aria-expanded="false" aria-label="Abrir menú">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarCliente">
-      <div class="d-lg-flex align-items-lg-center ms-auto py-2 py-lg-0">
-        <ul class="navbar-nav me-lg-3">
-          <?php if ($esAdmin): ?>
-          <li class="nav-item">
-            <a class="nav-link text-dark" href="../opcionesAdmin.php" style="text-decoration: none;">
-               Dashboard
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-dark" href="../Usuarios/usuarios.php" style="text-decoration: none;">
-              👤 Usuarios
-            </a>
-          </li>
-          <?php endif; ?>
-          <li class="nav-item">
-            <a class="nav-link text-dark" href="agencia.php" style="text-decoration: none;">
-              🕵️ Agentes
-            </a>
-          </li>
-        </ul>
-
-        <span class="navbar-text text-muted me-3 d-block d-lg-inline">
-          <?= htmlspecialchars($_SESSION['apemat'] ?? '') ?>
-        </span>
-
-        <a href="../logout.php" class="btn btn-sm btn-outline-danger mt-2 mt-lg-0">
-          <i class="bi bi-box-arrow-right"></i> Salir
-        </a>
-      </div>
-      </div>
-    </div>
-  </nav>
+  <?php require __DIR__ . '/../../includes/navbar.php'; ?>
   <div class="espaciador-navbar" style="height: 70px;"></div>
   <div class="container py-4 contenedor-cliente">
     <div class="row justify-content-center">

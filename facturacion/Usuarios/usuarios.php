@@ -424,46 +424,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
 </head>
 
 <body class="bg-light" data-rol="<?= htmlspecialchars($rolSesion) ?>" data-admin-acceso="<?= (int)$admin_acceso_todas ?>">
-  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
-    <div class="container-fluid">
-      <div class="d-flex align-items-center ms-auto">
-        <ul class="navbar-nav me-3">
-           <?php if ($rolSesion === 'superadmin'): ?>
-          <li class="nav-item">
-            <a class="nav-link text-dark" href="../../agencia/opcionesAdmin.php" style="text-decoration: none;">
-             Dashboard Agentes
-            </a>
-          </li>
-          <?php endif; ?> 
-            <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin'): ?>
-            <li class="nav-item">
-              <a class="nav-link text-dark" href="usuarios.php" style="text-decoration: none;">
-                👤 Usuarios
-              </a>
-            </li>
-            <li class="nav-item">
-            <a class="nav-link text-dark" href="../gestionar_plataformas.php" style="text-decoration: none;">
-              💳 Plataformas
-            </a>
-          </li>
-          <?php endif; ?>
-          <li class="nav-item">
-            <a class="nav-link text-dark" href="../ventas.php" style="text-decoration: none;">
-              🕵️ Ventas
-            </a>
-          </li>
-        </ul>
-
-        <span class="navbar-text text-muted me-3">
-          <?= htmlspecialchars($_SESSION['nombre'] ?? '') ?>
-        </span>
-
-        <a href="../logout.php" class="btn btn-sm btn-outline-danger">
-          <i class="bi bi-box-arrow-right"></i> Salir
-        </a>
-      </div>
-    </div>
-  </nav>
+  <?php require __DIR__ . '/../../includes/navbar.php'; ?>
 
   <div style="height: 70px;"></div>
   <div class="container-lg mt-5">

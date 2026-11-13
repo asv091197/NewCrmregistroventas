@@ -504,55 +504,7 @@ $filtros_activos = ($filtro_aplicado && (!empty($fechaInicio) || !empty($fechaFi
 </head>
 
 <body class="bg-light" data-rol="<?= htmlspecialchars($rolSesion) ?>" data-admin-acceso="<?= (int)$admin_acceso_todas ?>">
-  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
-    <div class="container-fluid">
-      <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarUsuarios"
-        aria-controls="navbarUsuarios" aria-expanded="false" aria-label="Abrir menú">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarUsuarios">
-      <div class="d-lg-flex align-items-lg-center ms-auto py-2 py-lg-0">
-        <ul class="navbar-nav me-lg-3">
-          <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin'): ?>
-            <li class="nav-item">
-              <a class="nav-link text-dark" href="../opcionesAdmin.php" style="text-decoration: none;">
-                Dashboard
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link text-dark" href="usuarios.php" style="text-decoration: none;">
-                👤 Usuarios
-              </a>
-            </li>
-          <?php endif; ?>
-          <li class="nav-item">
-            <a class="nav-link text-dark" href="../Agencia/agencia.php" style="text-decoration: none;">
-              🕵️ Agentes
-            </a>
-          </li>
-        </ul>
-
-        <span class="navbar-text text-muted me-3 d-block d-lg-inline">
-          <?php
-          if (isset($_SESSION['apemat']) && !empty($_SESSION['apemat'])) {
-            echo htmlspecialchars($_SESSION['apemat']);
-          } elseif (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
-            echo htmlspecialchars($_SESSION['nombre']);
-          } elseif (isset($_SESSION['usuario']) && !empty($_SESSION['usuario'])) {
-            echo htmlspecialchars($_SESSION['usuario']);
-          } else {
-            echo 'Usuario';
-          }
-          ?>
-        </span>
-
-        <a href="../logout.php" class="btn btn-sm btn-outline-danger mt-2 mt-lg-0">
-          <i class="bi bi-box-arrow-right"></i> Salir
-        </a>
-      </div>
-      </div>
-    </div>
-  </nav>
+  <?php require __DIR__ . '/../../includes/navbar.php'; ?>
 
   <div class="espaciador-navbar" style="height: 70px;"></div>
   <div class="container-lg mt-5 contenedor-usuarios">

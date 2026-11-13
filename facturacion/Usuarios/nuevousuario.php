@@ -149,46 +149,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
-        <div class="container-fluid">
-            <div class="d-flex align-items-center ms-auto">
-                <ul class="navbar-nav me-3">
-                    <?php if ($rolSesion === 'superadmin'): ?>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="../../agencia/opcionesAdmin.php" style="text-decoration: none;">
-                                Dashboard Agentes
-                            </a>
-                        </li>
-                    <?php endif; ?>
-                    <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'superadmin'): ?>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="usuarios.php" style="text-decoration: none;">
-                                👤 Usuarios
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="../gestionar_plataformas.php" style="text-decoration: none;">
-                                💳 Plataformas
-                            </a>
-                        </li>
-                    <?php endif; ?>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" href="../ventas.php" style="text-decoration: none;">
-                            🕵️ Ventas
-                        </a>
-                    </li>
-                </ul>
-
-                <span class="navbar-text text-muted me-3">
-                    <?= htmlspecialchars($_SESSION['nombre'] ?? '') ?>
-                </span>
-
-                <a href="../logout.php" class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-box-arrow-right"></i> Salir
-                </a>
-            </div>
-        </div>
-    </nav>
+    <?php require __DIR__ . '/../../includes/navbar.php'; ?>
 
     <div style="height: 70px;"></div>
     <div class="container mt-5">
@@ -407,6 +368,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             // La validación en tiempo real de nombre/apellidos ya está en el atributo oninput de cada campo
         });
     </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

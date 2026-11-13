@@ -419,48 +419,7 @@ try {
 </head>
 
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top border-bottom">
-        <div class="container-fluid">
-            <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarFacturacion"
-                aria-controls="navbarFacturacion" aria-expanded="false" aria-label="Abrir menú">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarFacturacion">
-            <div class="d-lg-flex align-items-lg-center ms-auto py-2 py-lg-0">
-                <ul class="navbar-nav me-lg-3">
-                    <?php if ($rol === 'superadmin'): ?>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="../agencia/opcionesAdmin.php" style="text-decoration: none;">
-                                Dashboard Agentes
-                            </a>
-                        </li>
-                    <?php endif; ?>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" href="./Usuarios/usuarios.php" style="text-decoration: none;">
-                            👤 Usuarios
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" href="./ventas.php" style="text-decoration: none;">
-                            🕵️ Ventas
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" href="./gestionar_plataformas.php" style="text-decoration: none;">
-                            💳 Plataformas
-                        </a>
-                    </li>
-                </ul>
-                <span class="navbar-text text-muted me-3 d-block d-lg-inline">
-                    <?= htmlspecialchars($nombreUsuario) ?>
-                </span>
-                <a href="logout.php" class="btn btn-sm btn-outline-danger mt-2 mt-lg-0">
-                    <i class="fas fa-sign-out-alt"></i> Salir
-                </a>
-            </div>
-            </div>
-        </div>
-    </nav>
+    <?php require __DIR__ . '/../includes/navbar.php'; ?>
     <div class="espaciador-navbar" style="height: 70px;"></div>
     <div class="container mt-4 contenedor-formulario">
         <div class="espaciador-extra" style="height: 20px;"></div>
