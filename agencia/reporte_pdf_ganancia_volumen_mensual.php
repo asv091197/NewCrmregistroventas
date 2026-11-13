@@ -184,6 +184,9 @@ $sql = "SELECT v.*,
 $conditions = [];
 $params = [];
 
+// Solo ventas con estatus "procesable"
+$conditions[] = "LOWER(TRIM(v.estatus)) = 'procesable'";
+
 // FILTRO PRINCIPAL: MES (del reporte mensual original)
 if (!empty($mes_seleccionado)) {
     $conditions[] = "YEAR(v.fecha) = ? AND MONTH(v.fecha) = ?";

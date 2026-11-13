@@ -149,7 +149,8 @@ $sql = "SELECT v.*,
     LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
     LEFT JOIN plataforma p ON v.plataforma_id = p.id
     LEFT JOIN salas s ON v.sala_id = s.id
-    WHERE YEAR(v.fecha) = ?";
+    WHERE YEAR(v.fecha) = ?
+    AND LOWER(TRIM(v.estatus)) = 'procesable'";
 
 $params = [$año_seleccionado];
 

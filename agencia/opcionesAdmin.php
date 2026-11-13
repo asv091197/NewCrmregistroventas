@@ -223,6 +223,7 @@ try {
         FROM ventas_facturacion v
 
         WHERE DATE(v.fecha) = ? {$condicion_sala_ventas}
+          AND LOWER(TRIM(v.estatus)) = 'procesable'
 
     ");
 
@@ -247,6 +248,7 @@ try {
         FROM ventas_facturacion v
 
         WHERE YEAR(v.fecha) = ? AND MONTH(v.fecha) = ? {$condicion_sala_ventas}
+          AND LOWER(TRIM(v.estatus)) = 'procesable'
 
         GROUP BY DAY(v.fecha) ORDER BY dia
 

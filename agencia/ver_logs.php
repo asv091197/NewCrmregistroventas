@@ -10,7 +10,7 @@ if (!isset($_SESSION['usuario_id'])) {
 }
 // Solo el superadmin puede ver los logs
 if (($_SESSION['rol'] ?? '') !== 'superadmin') {
-    header("Location: opAdmin.php");
+    header("Location: Logs.php");
     exit;
 }
 
@@ -368,7 +368,7 @@ $hexes = ['success' => '#22c55e', 'primary' => '#6366f1', 'danger' => '#ef4444',
                 <i class="bi bi-arrow-left"></i> Volver a la lista
             </a>
         <?php else: ?>
-            <a href="opAdmin.php" class="btn-ghost">
+            <a href="Logs" class="btn-ghost">
                 <i class="bi bi-arrow-left"></i> Volver al Dashboard
             </a>
         <?php endif; ?>

@@ -11,7 +11,7 @@ if (!isset($_SESSION['usuario_id'])) {
 }
 // Solo el superadmin puede exportar los logs
 if (($_SESSION['rol'] ?? '') !== 'superadmin') {
-    header("Location: opAdmin.php");
+    header("Location: Logs.php");
     exit;
 }
 

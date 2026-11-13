@@ -177,6 +177,9 @@ $sql = "SELECT v.*,
 $conditions = [];
 $params = [];
 
+// Solo ventas con estatus "procesable"
+$conditions[] = "LOWER(TRIM(v.estatus)) = 'procesable'";
+
 // Filtro por fecha (combinando ambos enfoques)
 if (!empty($fecha_seleccionada) && empty($fechaInicio) && empty($fechaFin)) {
     // Usar fecha única del primer script
