@@ -950,6 +950,7 @@ try {
                 <th>Front</th>
                 <th>Plataforma</th>
                 <th>Tipo venta</th>
+                <th>Estatus</th>
                 <th>Usuario</th>
                 <th>Sala</th>
               </tr>
@@ -974,12 +975,20 @@ try {
                   echo "<td>" . htmlspecialchars($venta['full_stack_nombre'] ?? 'No asignado') . "</td>";
                   echo "<td>" . htmlspecialchars($venta['plataforma_nombre_completo'] ?? 'N/A') . "</td>";
                   echo "<td>" . htmlspecialchars($venta['tipo_venta'] ?? 'N/A') . "</td>";
+                  $estatusVenta = strtolower(trim($venta['estatus'] ?? ''));
+                  if ($estatusVenta === 'procesable') {
+                    echo "<td class='text-center'><span class='badge bg-success'>Procesable</span></td>";
+                  } elseif ($estatusVenta === 'pendiente') {
+                    echo "<td class='text-center'><span class='badge bg-warning text-dark'>Pendiente</span></td>";
+                  } else {
+                    echo "<td class='text-center'><span class='badge bg-secondary'>Sin estatus</span></td>";
+                  }
                   echo "<td>" . htmlspecialchars($venta['usuario_creacion_nombre'] ?? 'N/A') . "</td>";
                   echo "<td>" . htmlspecialchars($venta['sala_nombre'] ?? 'N/A') . "</td>";
                   echo "</tr>";
                 }
               } else {
-                echo "<tr><td colspan='13' class='text-center'>No hay ventas registradas</td></tr>";
+                echo "<tr><td colspan='14' class='text-center'>No hay ventas registradas</td></tr>";
               }
               ?>
             </tbody>

@@ -51,11 +51,6 @@ function inicializarAplicacion(
     salasPermitidasParam = [],
     tienePermisoPlataformaParam = false
 ) {
-    console.log('=== INICIALIZANDO VENTAS.JS ===');
-    console.log('Rol usuario:', rolUsuarioParam);
-    console.log('Es admin:', esUsuarioAdmin);
-    console.log('Tiene acceso todas salas:', tieneAccesoTodasSalasParam);
-    console.log('Tiene permiso plataforma:', tienePermisoPlataformaParam);
 
     todasLasVentas = procesarDatosVentas(ventasData);
     ventasFiltradas = [...todasLasVentas];
@@ -130,17 +125,14 @@ function inicializarAplicacion(
 
 // Función para cargar usuarios - MODIFICADA: siempre cargar TODOS los usuarios para el modal
 function cargarUsuariosPorSala(salaId = null, esAdminAccesoTodasSalas = false, esParaModal = false) {
-    console.log('🔗 Cargando usuarios para sala:', salaId, 'Admin acceso total:', esAdminAccesoTodasSalas, 'Es para modal:', esParaModal);
     
     let url = 'obtener_usuarios.php';
     
     // MODIFICACIÓN: Si es para el modal, SIEMPRE cargar TODOS los usuarios
     if (esParaModal) {
         url += '?todos=1';
-        console.log('✅ Cargando TODOS los usuarios para el modal');
     } else if (esAdminAccesoTodasSalas) {
         url += '?todos=1';
-        console.log('✅ Admin con acceso total: solicitando TODOS los usuarios');
     } else if (salaId) {
         url += `?sala_id=${salaId}`;
     }
@@ -153,7 +145,6 @@ function cargarUsuariosPorSala(salaId = null, esAdminAccesoTodasSalas = false, e
             return response.json();
         })
         .then(data => {
-            console.log('✅ Usuarios recibidos:', data.length, 'usuarios');
             
             if (Array.isArray(data)) {
                 usuarios = data;
@@ -170,10 +161,8 @@ function cargarUsuariosPorSala(salaId = null, esAdminAccesoTodasSalas = false, e
                 usuarios = [];
             }
             
-            console.log(`👥 Usuarios disponibles: ${usuarios.length}`);
             
             if (usuarios.length > 0) {
-                console.log('Primeros 5 usuarios:', usuarios.slice(0, 5));
             }
             
             return usuarios;
@@ -187,22 +176,15 @@ function cargarUsuariosPorSala(salaId = null, esAdminAccesoTodasSalas = false, e
 
 // Función para cargar datos iniciales - MODIFICADA
 function cargarDatosIniciales() {
-    console.log('📥 Cargando datos iniciales...');
-    console.log('Rol usuario:', rolUsuarioGlobal);
-    console.log('Es admin:', esAdmin);
-    console.log('Tiene acceso todas salas:', tieneAccesoTodasSalas);
-    console.log('Admin con permiso plataforma:', esAdminConPermisoPlataforma);
 
     // Cargar plataformas primero
     cargarPlataformas()
         .then(() => {
-            console.log('✅ Plataformas cargadas:', plataformasData.length);
             
             // MODIFICACIÓN: Cargar TODOS los usuarios para el modal desde el inicio
             return cargarUsuariosPorSala(null, false, true); // Último parámetro true = para modal
         })
         .then(() => {
-            console.log('✅ Usuarios cargados para modal:', usuarios.length);
             poblarSelectUsuariosConBusqueda();
             poblarSelectFullStack();
         })
@@ -301,6 +283,14 @@ function mostrarMensajeRestriccion() {
     }
 }
 
+// Badge para mostrar el estatus de la venta en la tabla
+function badgeEstatus(estatus) {
+    const valor = (estatus || '').toString().trim().toLowerCase();
+    if (valor === 'procesable') return '<span class="badge bg-success">Procesable</span>';
+    if (valor === 'pendiente') return '<span class="badge bg-warning text-dark">Pendiente</span>';
+    return '<span class="badge bg-secondary">Sin estatus</span>';
+}
+
 // Procesar datos de ventas para el formato esperado
 function procesarDatosVentas(ventasData) {
     return ventasData.map(venta => {
@@ -338,10 +328,6 @@ function filtrarPorPlataforma(plataformaIds) {
     const salaValue = salaSelect ? salaSelect.value : '';
     const salaValueNormalized = (salaValue === '' || salaValue === '0') ? '0' : salaValue;
 
-    console.log('=== FILTRAR POR PLATAFORMA ===');
-    console.log('Plataformas:', plataformaIds);
-    console.log('Sala seleccionada:', salaValueNormalized);
-    console.log('Tiene acceso todas salas:', tieneAccesoTodasSalas);
 
     if (!plataformaIds || plataformaIds.length === 0) {
         let ventasTemp = [...todasLasVentas];
@@ -431,13 +417,14 @@ function actualizarTabla(ventas) {
                     <td>${venta.fullstack}</td>
                     <td>${resaltarTexto(venta.plataforma, busquedaActual)}</td>
                     <td>${resaltarTexto(venta.tipo_venta, busquedaActual)}</td>
+                    <td class="text-center">${badgeEstatus(venta.datosCompletos.estatus)}</td>
                     <td>${resaltarTexto(venta.usuario, busquedaActual)}</td>
                     <td>${venta.sala}</td>
                 </tr>
             `;
         });
     } else {
-        html = '<tr><td colspan="13" class="text-center">No hay ventas para mostrar</td></tr>';
+        html = '<tr><td colspan="14" class="text-center">No hay ventas para mostrar</td></tr>';
     }
 
     tablaVentas.innerHTML = html;
@@ -544,14 +531,6 @@ function buscarVentas(query) {
     tipoVentaActual = tipoVentaValue;
     salaIdActual = parseInt(salaValueNormalized) || 0;
 
-    console.log('=== BUSCAR VENTAS ===');
-    console.log('Busqueda:', busquedaActual);
-    console.log('Es admin:', esAdmin);
-    console.log('Tiene acceso todas salas:', tieneAccesoTodasSalas);
-    console.log('Sala seleccionada (raw):', salaValue);
-    console.log('Sala seleccionada (normalized):', salaValueNormalized);
-    console.log('Tipo venta:', tipoVentaValue);
-    console.log('Plataformas seleccionadas:', plataformaIds);
 
     if (busquedaActual.length < 1 && plataformaIds.length === 0 && !tipoVentaValue && salaValueNormalized === '0') {
         let ventasTemp = [...todasLasVentas];
@@ -643,7 +622,6 @@ function buscarVentas(query) {
             }
         } else if (esAdmin && salaValueNormalized === '0') {
             if (tieneAccesoTodasSalas) {
-                console.log('Admin con acceso a todas salas - mostrando todas las ventas');
             } else {
                 if (salasPermitidas.length > 0) {
                     ventasFiltradasTemp = ventasFiltradasTemp.filter(venta => {
@@ -655,16 +633,12 @@ function buscarVentas(query) {
             }
         }
     } else {
-        console.log('Búsqueda activa detectada:', busquedaActual);
-        console.log('Sala seleccionada para filtro:', salaValueNormalized);
 
         if (salaValueNormalized !== '0') {
-            console.log('Filtrando por sala seleccionada:', salaValueNormalized);
             ventasFiltradasTemp = ventasFiltradasTemp.filter(venta => {
                 return venta.datosCompletos.sala_id == salaValueNormalized;
             });
         } else {
-            console.log('No hay filtro de sala - mostrando todos los resultados de búsqueda');
 
             if (!esAdmin && salaUsuarioIdGlobal) {
                 ventasFiltradasTemp = ventasFiltradasTemp.filter(venta => {
@@ -683,7 +657,6 @@ function buscarVentas(query) {
     ventasFiltradas = ventasFiltradasTemp;
     mostrarPagina(1);
 
-    console.log('Resultados encontrados:', ventasFiltradas.length);
 
     if (mensaje) {
         if (ventasFiltradas.length > 0) {
@@ -796,7 +769,6 @@ function configurarBusqueda() {
 
 // Cargar plataformas desde el servidor
 function cargarPlataformas() {
-    console.log('🔗 Cargando plataformas...');
     return fetch('obtener_plataformas.php')
         .then(response => {
             if (!response.ok) {
@@ -805,7 +777,6 @@ function cargarPlataformas() {
             return response.json();
         })
         .then(data => {
-            console.log('✅ Plataformas recibidas:', data);
 
             if (Array.isArray(data)) {
                 plataformasData = data;
@@ -813,7 +784,6 @@ function cargarPlataformas() {
                 plataformasData = [];
             }
 
-            console.log(`💳 Plataformas cargadas: ${plataformasData.length}`);
             return plataformasData;
         })
         .catch(error => {
@@ -871,7 +841,6 @@ function poblarSelectUsuariosConBusqueda() {
         }
     });
 
-    console.log('✅ Selects de usuarios poblados');
 }
 
 // Poblar select de Full Stack
@@ -906,7 +875,6 @@ function poblarSelectFullStack() {
         fullStackSelect.appendChild(noUsersOption);
     }
 
-    console.log('✅ Select de Full Stack poblado');
 }
 
 // Configurar event listeners
@@ -922,7 +890,6 @@ function configurarEventListeners() {
     if (salaSelect) {
         salaSelect.addEventListener('change', function() {
             const salaId = this.value;
-            console.log('Sala cambiada en modal:', salaId);
             
             const hiddenSalaField = document.getElementById('modal-sala-hidden');
             if (hiddenSalaField) {
@@ -930,7 +897,6 @@ function configurarEventListeners() {
             }
             
             // MODIFICACIÓN: Ya tenemos todos los usuarios cargados, no es necesario recargar
-            console.log('✅ Usando usuarios ya cargados (todos) para el modal');
             
             // Solo actualizar los selects buscables
             setTimeout(() => {
@@ -1049,7 +1015,6 @@ function manejarCambioTipoVentaMejorada() {
     const closer2Select = document.getElementById('modal-closer2');
     const fullStackSelect = document.getElementById('modal-fullstack');
 
-    console.log('Cambio tipo venta:', { tipoNormal, tipoFullStack });
 
     if (tipoNormal) {
         mostrarTodosCamposVentaNormal();
@@ -1145,8 +1110,6 @@ function mostrarOcultarInterruptorPermiso(plataformaId) {
     const toggleSwitch = document.getElementById('modal-togglePermisoPlataforma');
     const permisoContainer = document.getElementById('modal-plataformaPermisoContainer');
     
-    console.log('Mostrar/ocultar interruptor para plataforma:', plataformaId);
-    console.log('esAdminConPermisoPlataforma:', esAdminConPermisoPlataforma);
     
     if (plataformaId && esAdminConPermisoPlataforma) {
         const plataforma = plataformasData.find(p => p.id == plataformaId);
@@ -1156,13 +1119,11 @@ function mostrarOcultarInterruptorPermiso(plataformaId) {
             toggleSwitch.checked = plataforma.permiso_plataforma == 1;
             if (permisoContainer) {
                 permisoContainer.style.display = 'block';
-                console.log('✅ Mostrando interruptor para admin con permiso');
             }
         } else {
             // Si la plataforma no está en los datos, ocultar el interruptor
             if (permisoContainer) {
                 permisoContainer.style.display = 'none';
-                console.log('❌ Plataforma no encontrada en datos, ocultando interruptor');
             }
         }
     } else {
@@ -1170,9 +1131,7 @@ function mostrarOcultarInterruptorPermiso(plataformaId) {
         if (permisoContainer) {
             permisoContainer.style.display = 'none';
             if (!esAdminConPermisoPlataforma) {
-                console.log('❌ No es admin con permiso, ocultando interruptor');
             } else {
-                console.log('❌ No hay plataforma seleccionada, ocultando interruptor');
             }
         }
     }
@@ -1475,8 +1434,6 @@ function agregarMensajeModalTodosUsuarios() {
 
 // Función mejorada para mostrar modal de venta - MODIFICADA
 function mostrarModalVenta(venta) {
-    console.log('Mostrando modal para venta:', venta);
-    console.log('✅ Cargando TODOS los usuarios para el modal');
     
     const fecha = new Date(venta.fecha);
     const fechaFormateada = fecha.toISOString().split('T')[0];
@@ -1512,21 +1469,18 @@ function mostrarModalVenta(venta) {
     const hiddenSalaField = document.getElementById('modal-sala-hidden');
     if (hiddenSalaField && venta.sala_id) {
         hiddenSalaField.value = venta.sala_id;
-        console.log('Sala ID establecida en campo oculto:', venta.sala_id);
     }
     
     if (['admin', 'superadmin'].includes(rolUsuarioGlobal)) {
         const salaSelect = document.getElementById('modal-sala');
         if (salaSelect && venta.sala_id) {
             salaSelect.value = venta.sala_id;
-            console.log('Sala seleccionada en select (admin):', venta.sala_id);
         }
     } else {
         const salaNombreSpan = document.getElementById('sala-actual-nombre');
         if (salaNombreSpan) {
             if (venta.sala_nombre && venta.sala_nombre !== 'N/A') {
                 salaNombreSpan.textContent = venta.sala_nombre;
-                console.log('Nombre de sala mostrado (desde datos):', venta.sala_nombre);
             } else {
                 salaNombreSpan.textContent = 'Sala ' + (venta.sala_id || 'No asignada');
             }
@@ -1623,11 +1577,6 @@ function mostrarModalVenta(venta) {
             document.getElementById('modal-tipoNormal').checked = true;
         }
         
-        console.log('Tipo de vendedor detectado:', {
-            tieneVentaNormal,
-            tieneFullStack,
-            tipoVendedorSeleccionado
-        });
         
         if (tipoVendedorSeleccionado === 'normal') {
             document.getElementById('modal-tipoNormal').checked = true;

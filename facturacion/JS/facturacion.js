@@ -279,7 +279,6 @@ function parseJSONResponse(response) {
     return response.text().then(text => {
         const cleanedText = text.trim();
         
-        console.log('Respuesta del servidor (primeros 500 chars):', cleanedText.substring(0, 500));
         
         if (!cleanedText) {
             throw new Error('El servidor devolvió una respuesta vacía (Error 500)');
@@ -299,7 +298,6 @@ function parseJSONResponse(response) {
         
         try {
             const parsed = JSON.parse(cleanedText);
-            console.log('JSON parseado exitosamente:', parsed);
             return parsed;
         } catch (e) {
             console.error('Error parsing JSON:', e);
@@ -405,54 +403,41 @@ function setupFormSubmit() {
     
     ventaForm.addEventListener("submit", function(e) {
         e.preventDefault();
-        console.log('=== ENVÍO DE FORMULARIO INICIADO ===');
         
         // 1. VERIFICAR Y SINCRONIZAR SALA_ID
         const salaIdInput = document.getElementById('sala_id');
         const salaSelector = document.getElementById('salaSelector');
         
-        console.log('🔍 Antes de sincronizar:');
-        console.log('  - sala_id:', salaIdInput ? `${salaIdInput.value} (${salaIdInput.name})` : 'NO ENCONTRADO');
-        console.log('  - salaSelector:', salaSelector ? `${salaSelector.value} (visible: ${salaSelector.style.display !== 'none'})` : 'NO ENCONTRADO');
         
         // Si hay selector visible (admin), sincronizar con campo hidden
         if (salaSelector && salaSelector.style.display !== 'none' && salaIdInput) {
-            console.log('🎯 Es ADMIN - Sincronizando selector con campo hidden');
             
             // ACTUALIZAR EL CAMPO HIDDEN CON EL VALOR DEL SELECTOR
             salaIdInput.value = salaSelector.value;
             salaIdInput.setAttribute('value', salaSelector.value);
             
-            console.log('✅ Después de sincronizar:');
-            console.log('  - Nuevo valor de sala_id:', salaIdInput.value);
             
             // Disparar evento para que FormData capture el cambio
             const event = new Event('input', { bubbles: true });
             salaIdInput.dispatchEvent(event);
         } else {
-            console.log('👤 Es USUARIO - Usando valor fijo de sesión:', salaIdInput ? salaIdInput.value : 'NO');
         }
         
         // 2. DEBUG: Mostrar todos los campos del formulario
-        console.log('📋 TODOS LOS CAMPOS DEL FORMULARIO:');
         const formElements = this.elements;
         for (let i = 0; i < formElements.length; i++) {
             const element = formElements[i];
             if (element.name && element.type !== 'button' && element.type !== 'submit') {
-                console.log(`  ${element.name}: "${element.value}" (${element.type})`);
             }
         }
         
         // 3. Crear FormData y mostrar contenido
         const formData = new FormData(this);
-        console.log('📦 CONTENIDO DE FormData:');
         for (let [key, value] of formData.entries()) {
-            console.log(`  ${key}: "${value}"`);
         }
         
         // 4. Validar formulario
         if (!validarFormulario()) {
-            console.log('❌ Validación falló');
             return;
         }
         
@@ -509,7 +494,6 @@ function setupFormSubmit() {
             return;
         }
         
-        console.log("🚀 Enviando datos al servidor...");
         
         // 10. Enviar datos
         fetch("guardar_factura.php", {
@@ -517,7 +501,6 @@ function setupFormSubmit() {
             body: formData
         })
         .then(response => {
-            console.log("📥 Respuesta recibida, status:", response.status);
             
             if (!response.ok) {
                 throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
@@ -525,7 +508,6 @@ function setupFormSubmit() {
             return parseJSONResponse(response);
         })
         .then(data => {
-            console.log("✅ Respuesta parseada:", data);
             
             if (data && data.success) {
                 showAlert(data.message, "success");
@@ -565,12 +547,6 @@ function loadUsers() {
     
     // DEBUG: Verificar atributos
     if (salaSelector) {
-        console.log('🔍 ATRIBUTOS DEL SELECTOR:');
-        console.log('  - data-acceso-todas-salas:', salaSelector.getAttribute('data-acceso-todas-salas'));
-        console.log('  - data-es-admin:', salaSelector.getAttribute('data-es-admin'));
-        console.log('  - value:', salaSelector.value);
-        console.log('  - display:', salaSelector.style.display);
-        console.log('  - es admin?', salaSelector.getAttribute('data-es-admin') === '1' ? 'SI' : 'NO');
     }
     
     const esAdminAccesoTotal = salaSelector ? 
@@ -584,27 +560,22 @@ function loadUsers() {
     if (salaSelector && salaSelector.style.display !== 'none') {
         // Si es admin con acceso a todas las salas, NO enviar sala_id
         if (esAdminAccesoTotal) {
-            console.log('👑 ADMIN CON ACCESO TOTAL: Cargando TODOS los usuarios (sin filtrar por sala)');
             // Agregamos parámetro todos=1 para forzar todos los usuarios
             url += "?todos=1";
         } else {
             // Es admin con acceso restringido: enviar sala_id
             salaId = salaSelector.value;
             url += "?sala_id=" + encodeURIComponent(salaId);
-            console.log('👑 ADMIN RESTRINGIDO: Cargando usuarios para sala:', salaId);
         }
     } else if (salaIdInput) {
         // Es usuario normal: usar valor del campo hidden
         salaId = salaIdInput.value;
         url += "?sala_id=" + encodeURIComponent(salaId);
-        console.log('👤 USUARIO: Cargando usuarios para sala:', salaId);
     }
     
-    console.log('🔗 URL para cargar usuarios:', url);
     
     return fetch(url)
         .then(response => {
-            console.log('📥 Response status:', response.status);
             
             if (!response.ok) {
                 throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
@@ -612,7 +583,6 @@ function loadUsers() {
             return parseJSONResponse(response);
         })
         .then(data => {
-            console.log('✅ Datos recibidos de usuarios:', data);
             
             if (data && data.error) {
                 throw new Error(data.message || 'Error desconocido del servidor');
@@ -620,7 +590,6 @@ function loadUsers() {
             
             usuariosData = Array.isArray(data) ? data : [];
             
-            console.log(`👥 Usuarios procesados: ${usuariosData.length} usuarios`);
             
             actualizarSelectsUsuarios(usuariosData);
             
@@ -709,7 +678,6 @@ function actualizarSelectsUsuarios(usuarios) {
 
 // Función para cargar plataformas desde el servidor
 function loadPlatforms() {
-    console.log('🔗 Cargando plataformas...');
     
     return fetch("obtener_plataformas.php")
         .then(response => {
@@ -719,11 +687,9 @@ function loadPlatforms() {
             return parseJSONResponse(response);
         })
         .then(data => {
-            console.log('✅ Plataformas recibidas:', data);
             
             plataformasData = Array.isArray(data) ? data : [];
             
-            console.log(`💳 Plataformas procesadas: ${plataformasData.length} plataformas`);
             
             // Configurar eventos para los radio buttons de método de pago
             const radios = document.querySelectorAll('input[name="metodoPago"]');
@@ -734,7 +700,6 @@ function loadPlatforms() {
             }
             
             togglePlataforma();
-            console.log(`✅ Plataformas cargadas: ${plataformasData.length} plataformas`);
             return plataformasData;
         })
         .catch(error => {
@@ -841,7 +806,6 @@ function setDefaultDate() {
 
 // Inicializar la aplicación cuando el DOM esté listo
 document.addEventListener("DOMContentLoaded", function () {
-    console.log('=== INICIALIZANDO APLICACIÓN ===');
     
     // Establecer fecha por defecto
     setDefaultDate();
@@ -852,16 +816,10 @@ document.addEventListener("DOMContentLoaded", function () {
     
     if (salaSelector && salaSelector.style.display !== 'none') {
         // Es admin: configurar eventos del selector
-        console.log('👑 MODO ADMIN detectado');
-        console.log('  - Selector value inicial:', salaSelector.value);
-        console.log('  - sala_id value inicial:', salaIdInput ? salaIdInput.value : 'NO');
-        console.log('  - Acceso a todas salas:', salaSelector.getAttribute('data-acceso-todas-salas'));
-        console.log('  - Es admin:', salaSelector.getAttribute('data-es-admin'));
         
         // Sincronizar inicialmente
         if (salaIdInput && salaSelector.value) {
             salaIdInput.value = salaSelector.value;
-            console.log('🔄 Sincronizado inicialmente:', salaIdInput.value);
         }
         
         // Actualizar cuando cambie el selector - FORZAR RECARGA
@@ -869,32 +827,23 @@ document.addEventListener("DOMContentLoaded", function () {
             const nuevoValor = this.value;
             const esAdminAccesoTotal = this.getAttribute('data-acceso-todas-salas') === '1';
             
-            console.log('🔄 ====== SELECTOR CAMBIADO ======');
-            console.log('Nuevo valor:', nuevoValor);
-            console.log('Admin acceso total:', esAdminAccesoTotal ? 'SÍ' : 'NO');
-            console.log('Atributo data-acceso-todas-salas:', this.getAttribute('data-acceso-todas-salas'));
             
             // Actualizar campo hidden
             if (salaIdInput) {
                 salaIdInput.value = nuevoValor;
                 salaIdInput.setAttribute('value', nuevoValor);
-                console.log('✅ sala_id actualizado a:', salaIdInput.value);
             }
             
             // FORZAR recarga de usuarios cuando cambia la sala
-            console.log('🔄 Forzando recarga de usuarios...');
             
             if (esAdminAccesoTotal) {
-                console.log('📋 ADMIN CON ACCESO TOTAL: Se cargarán TODOS los usuarios');
             } else {
                 showAlert("🔄 Cargando usuarios de la sala seleccionada...", "info");
-                console.log('📋 ADMIN RESTRINGIDO: Se cargarán usuarios de sala:', nuevoValor);
             }
             
             // Llamar inmediatamente a loadUsers
             loadUsers()
                 .then(() => {
-                    console.log('✅ Usuarios cargados exitosamente después de cambiar sala');
                     toggleTipoVenta();
                 })
                 .catch((error) => {
@@ -905,24 +854,19 @@ document.addEventListener("DOMContentLoaded", function () {
         
     } else {
         // No es admin
-        console.log('👤 MODO USUARIO detectado');
-        console.log('  - sala_id value:', salaIdInput ? salaIdInput.value : 'NO');
     }
     
     // Configurar eventos del interruptor de permiso
     setupPermisoSwitchEvents();
     
     // Cargar datos iniciales
-    console.log('📥 Cargando datos iniciales...');
     
     // Forzar carga inicial en secuencia para mejor debug
     loadUsers()
         .then(() => {
-            console.log('✅ Usuarios iniciales cargados');
             return loadPlatforms();
         })
         .then(() => {
-            console.log('✅ Plataformas cargadas');
             
             // Configurar eventos de tipo de venta
             const radiosTipoVenta = document.querySelectorAll('input[name="tipoVenta"]');
@@ -937,7 +881,6 @@ document.addEventListener("DOMContentLoaded", function () {
             // Configurar envío del formulario
             setupFormSubmit();
             
-            console.log('✅ Aplicación inicializada correctamente');
         })
         .catch(error => {
             console.error("❌ Error crítico al inicializar la aplicación:", error);
