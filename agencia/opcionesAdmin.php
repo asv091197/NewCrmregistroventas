@@ -216,22 +216,50 @@ $venta_mayor_mes = null;
 
 
 
-// Venta procesable de mayor precio que cumpla la condición de fecha (y sala)
+// Venta procesable de mayor precio que cumpla la condición de fecha (y sala), con sus agentes
 function ventaMasGrande(PDO $conn, string $condicion_fecha, string $condicion_sala, array $params)
 {
     $stmt = $conn->prepare("
         SELECT v.precio,
                TRIM(CONCAT(COALESCE(v.cliente, ''), ' ', COALESCE(v.apepat, ''))) AS cliente,
                v.producto,
-               v.fecha
+               v.fecha,
+               COALESCE(NULLIF(TRIM(liner.apemat), ''), v.liner_nombre_manual) AS liner,
+               COALESCE(NULLIF(TRIM(c1.apemat), ''), v.closer1_nombre_manual) AS closer1,
+               COALESCE(NULLIF(TRIM(c2.apemat), ''), v.closer2_nombre_manual) AS closer2,
+               COALESCE(NULLIF(TRIM(fs.apemat), ''), v.full_stack_nombre_manual) AS front
         FROM ventas_facturacion v
+        LEFT JOIN usuarios liner ON v.liner_id = liner.id
+        LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
+        LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
+        LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
         WHERE {$condicion_fecha} {$condicion_sala}
           AND LOWER(TRIM(v.estatus)) = 'procesable'
         ORDER BY v.precio DESC, v.fecha DESC
         LIMIT 1
     ");
     $stmt->execute($params);
-    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    $venta = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$venta) {
+        return null;
+    }
+
+    // Texto de agentes: "Liner: X · Closer: Y, Z" o "Front: X"
+    $nombre = fn($valor) => limpiarApemat($valor ?? '');
+    $partes = [];
+    if ($nombre($venta['liner']) !== '') {
+        $partes[] = 'Liner: ' . $nombre($venta['liner']);
+    }
+    $closers = array_filter([$nombre($venta['closer1']), $nombre($venta['closer2'])]);
+    if ($closers) {
+        $partes[] = 'Closer: ' . implode(', ', $closers);
+    }
+    if ($nombre($venta['front']) !== '') {
+        $partes[] = 'Front: ' . $nombre($venta['front']);
+    }
+    $venta['agentes'] = $partes ? implode(' · ', $partes) : 'Sin agente asignado';
+
+    return $venta;
 }
 
 
@@ -972,6 +1000,9 @@ function formatoDinero($cantidad)
                                                 <h6 class="card-title text-muted mb-2">Venta M&aacute;s Grande</h6>
                                                 <?php if (!empty($venta_mayor_dia)): ?>
                                                     <h3 class="fw-bold" style="color: #6f42c1;"><?= formatoDinero($venta_mayor_dia['precio']) ?></h3>
+                                                    <small class="fw-semibold detalle-venta agente-venta" title="<?= htmlspecialchars($venta_mayor_dia['agentes']) ?>">
+                                                        <i class="bi bi-person-badge me-1"></i><?= htmlspecialchars($venta_mayor_dia['agentes']) ?>
+                                                    </small>
                                                     <small class="text-muted detalle-venta" title="<?= htmlspecialchars($venta_mayor_dia['cliente'] . ' - ' . $venta_mayor_dia['producto']) ?>">
                                                         <?= htmlspecialchars($venta_mayor_dia['cliente'] ?: 'Sin nombre') ?> &middot; <?=htmlspecialchars($venta_mayor_dia['producto'] ?? '') ?>
                                                     </small>
@@ -1560,6 +1591,9 @@ function formatoDinero($cantidad)
                                                 <h6 class="card-title text-muted mb-2">Venta M&aacute;s Grande</h6>
                                                 <?php if (!empty($venta_mayor_mes)): ?>
                                                     <h3 class="fw-bold" style="color: #6f42c1;"><?= formatoDinero($venta_mayor_mes['precio']) ?></h3>
+                                                    <small class="fw-semibold detalle-venta agente-venta" title="<?= htmlspecialchars($venta_mayor_mes['agentes']) ?>">
+                                                        <i class="bi bi-person-badge me-1"></i><?= htmlspecialchars($venta_mayor_mes['agentes']) ?>
+                                                    </small>
                                                     <small class="text-muted detalle-venta" title="<?= htmlspecialchars($venta_mayor_mes['cliente'] . ' - ' . $venta_mayor_mes['producto']) ?>">
                                                         <?= htmlspecialchars($venta_mayor_mes['cliente'] ?: 'Sin nombre') ?> &middot; <?=htmlspecialchars($venta_mayor_mes['producto'] ?? '') ?>
                                                     </small>

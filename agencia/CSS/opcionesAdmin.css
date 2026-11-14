@@ -234,6 +234,11 @@
     white-space: nowrap;
 }
 
+.stat-card-top .agente-venta {
+    color: #6f42c1;
+    margin-bottom: 2px;
+}
+
 /* ===================== RESPONSIVO (MÓVIL) ===================== */
 @media (max-width: 991.98px) {
     .navbar-collapse {

@@ -196,3 +196,22 @@
         font-size: 16px;
     }
 }
+
+/* ===== Tarjeta Venta Mas Grande ===== */
+.stat-card-top {
+    border-left: 4px solid #6f42c1;
+    background: linear-gradient(135deg, #f6f0ff 0%, #ffffff 100%);
+}
+
+.stat-card-top .detalle-venta {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stat-card-top .agente-venta {
+    color: #6f42c1;
+    margin-bottom: 2px;
+}
