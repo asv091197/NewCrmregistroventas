@@ -93,8 +93,8 @@ $conditions = [];
 $params = [];
 $whereClause = '';
 
-// Solo exportar ventas con estatus "procesable"
-$conditions[] = "LOWER(TRIM(v.estatus)) = 'procesable'";
+// Exportar ventas "procesable" y "pendiente" (los cálculos usan solo las procesables)
+$conditions[] = "LOWER(TRIM(v.estatus)) IN ('procesable', 'pendiente')";
 
 if (!empty($fechaInicio)) {
     $conditions[] = "v.fecha >= ?";
@@ -226,39 +226,58 @@ try {
         $venta['full_stack_nombre_manual'] = limpiarTexto($venta['full_stack_nombre_manual']);
     }
     unset($venta);
+
+    // Lista completa (procesables + pendientes) para el detalle;
+    // $ventas queda solo con procesables para totales, comisiones y OVER
+    $ventasLista = $ventas;
+    $ventas = array_values(array_filter($ventasLista, function ($v) {
+        return strtolower(trim($v['estatus'] ?? '')) === 'procesable';
+    }));
 } catch (PDOException $e) {
     die("Error en la consulta: " . $e->getMessage());
 }
 
-// Validar que hay datos
-if (empty($ventas)) {
-    // Detalle: cuántas ventas hay con los mismos filtros, agrupadas por estatus (sin el filtro de estatus)
-    $detalle = '';
-    try {
-        $condSinEstatus = array_slice($conditions, 1);
-        $sqlDiag = "SELECT COALESCE(NULLIF(TRIM(v.estatus), ''), 'sin estatus') AS est, COUNT(*) AS total
-            FROM ventas_facturacion v
-            LEFT JOIN usuarios liner ON v.liner_id = liner.id
-            LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
-            LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
-            LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
-            LEFT JOIN plataforma p ON v.plataforma_id = p.id"
-            . (!empty($condSinEstatus) ? " WHERE " . implode(" AND ", $condSinEstatus) : '')
-            . " GROUP BY est";
-        $stmtDiag = $pdo->prepare($sqlDiag);
-        $stmtDiag->execute($params);
-        $partes = [];
-        foreach ($stmtDiag->fetchAll(PDO::FETCH_ASSOC) as $fila) {
-            $partes[] = htmlspecialchars($fila['est']) . ': ' . (int)$fila['total'];
-        }
-        $detalle = empty($partes)
-            ? '<br>No hay ventas de ningún estatus con estos filtros.'
-            : '<br>Ventas encontradas con estos filtros por estatus: ' . implode(', ', $partes);
-    } catch (PDOException $e) {
-        error_log("Error en diagnóstico de exportación: " . $e->getMessage());
+// Resumen de ventas por estatus con los mismos filtros (sin el filtro de estatus)
+$resumenEstatus = [];
+try {
+    $condSinEstatus = array_slice($conditions, 1);
+    $sqlEstatus = "SELECT COALESCE(NULLIF(LOWER(TRIM(v.estatus)), ''), 'sin estatus') AS est,
+            COUNT(*) AS total,
+            COALESCE(SUM(v.precio), 0) AS bruto,
+            COALESCE(SUM(v.precio_neto), 0) AS neto
+        FROM ventas_facturacion v
+        LEFT JOIN usuarios liner ON v.liner_id = liner.id
+        LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
+        LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
+        LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
+        LEFT JOIN plataforma p ON v.plataforma_id = p.id"
+        . (!empty($condSinEstatus) ? " WHERE " . implode(" AND ", $condSinEstatus) : '')
+        . " GROUP BY est";
+    $stmtEstatus = $pdo->prepare($sqlEstatus);
+    $stmtEstatus->execute($params);
+    foreach ($stmtEstatus->fetchAll(PDO::FETCH_ASSOC) as $fila) {
+        $resumenEstatus[$fila['est']] = [
+            'count' => (int)$fila['total'],
+            'bruto' => (float)$fila['bruto'],
+            'neto'  => (float)$fila['neto'],
+        ];
     }
+} catch (PDOException $e) {
+    error_log("Error en resumen por estatus: " . $e->getMessage());
+}
+
+// Validar que hay datos
+if (empty($ventasLista)) {
+    // Detalle: cuántas ventas hay con los mismos filtros, agrupadas por estatus
+    $partes = [];
+    foreach ($resumenEstatus as $est => $fila) {
+        $partes[] = htmlspecialchars($est) . ': ' . $fila['count'];
+    }
+    $detalle = empty($partes)
+        ? '<br>No hay ventas de ningún estatus con estos filtros.'
+        : '<br>Ventas encontradas con estos filtros por estatus: ' . implode(', ', $partes);
     header('Content-Type: text/html; charset=utf-8');
-    die('No hay ventas con estatus <strong>Procesable</strong> para generar el reporte con los filtros aplicados.' . $detalle);
+    die('No hay ventas con estatus <strong>Procesable</strong> ni <strong>Pendiente</strong> para generar el reporte con los filtros aplicados.' . $detalle);
 }
 
 // Obtener los nombres de las plataformas filtradas
@@ -626,7 +645,66 @@ foreach ($data as $row) {
     $fill = !$fill;
 }
 
-$pdf->Ln(10);
+$pdf->Ln(6);
+
+// ============================================================================
+// TOTAL DE VENTAS DESGLOSADO POR ESTATUS (PROCESABLE / PENDIENTE)
+// ============================================================================
+
+$pdf->SetFont('helvetica', 'B', 12);
+$pdf->SetFillColor(52, 73, 94);
+$pdf->SetTextColor(255, 255, 255);
+$pdf->Cell(190, 8, 'TOTAL DE VENTAS POR ESTATUS', 0, 1, 'C', true);
+
+$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetTextColor(0, 0, 0);
+$pdf->SetFillColor(220, 220, 220);
+$pdf->Cell(70, 8, 'Estatus', 1, 0, 'C', true);
+$pdf->Cell(30, 8, 'Núm. Ventas', 1, 0, 'C', true);
+$pdf->Cell(45, 8, 'Venta Bruto', 1, 0, 'C', true);
+$pdf->Cell(45, 8, 'Venta Neto', 1, 1, 'C', true);
+
+// Procesable y Pendiente siempre se muestran; otros estatus solo si existen
+$filasEstatus = [
+    'procesable' => 'Procesable',
+    'pendiente'  => 'Pendiente',
+];
+foreach (array_keys($resumenEstatus) as $est) {
+    if (!isset($filasEstatus[$est])) {
+        $filasEstatus[$est] = ucfirst($est);
+    }
+}
+
+$totalEstatus = ['count' => 0, 'bruto' => 0, 'neto' => 0];
+$pdf->SetFont('helvetica', '', 9);
+$fill = false;
+foreach ($filasEstatus as $est => $etiqueta) {
+    $fila = $resumenEstatus[$est] ?? ['count' => 0, 'bruto' => 0, 'neto' => 0];
+    $totalEstatus['count'] += $fila['count'];
+    $totalEstatus['bruto'] += $fila['bruto'];
+    $totalEstatus['neto']  += $fila['neto'];
+
+    $pdf->SetFillColor($fill ? 240 : 255, $fill ? 240 : 255, $fill ? 240 : 255);
+    $pdf->Cell(70, 8, $etiqueta, 1, 0, 'L', $fill);
+    $pdf->Cell(30, 8, (string)$fila['count'], 1, 0, 'C', $fill);
+    $pdf->Cell(45, 8, formatoMoneda($fila['bruto']), 1, 0, 'R', $fill);
+    $pdf->Cell(45, 8, formatoMoneda($fila['neto']), 1, 1, 'R', $fill);
+    $fill = !$fill;
+}
+
+$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFillColor(39, 174, 96);
+$pdf->SetTextColor(255, 255, 255);
+$pdf->Cell(70, 8, 'TOTAL DE VENTAS', 1, 0, 'R', true);
+$pdf->Cell(30, 8, (string)$totalEstatus['count'], 1, 0, 'C', true);
+$pdf->Cell(45, 8, formatoMoneda($totalEstatus['bruto']), 1, 0, 'R', true);
+$pdf->Cell(45, 8, formatoMoneda($totalEstatus['neto']), 1, 1, 'R', true);
+
+$pdf->SetFont('helvetica', 'I', 8);
+$pdf->SetTextColor(0, 0, 0);
+$pdf->Cell(190, 6, 'Nota: las comisiones y el OVER se calculan solo con ventas Procesables. El detalle incluye las Pendientes (resaltadas).', 0, 1, 'L');
+
+$pdf->Ln(6);
 
 // ============================================================================
 // TABLA DETALLADA DE VENTAS (TODO JUNTO)
@@ -643,14 +721,14 @@ if ($salaId > 0) {
 }
 
 // Headers de la tabla
-$headers = ['Fecha', 'Cliente', 'Venta Bruto', 'Venta Neto', 'Liner', 'Closer 1', 'Closer 2', 'Front', 'Plataforma', 'Tipo', 'Sala'];
+$headers = ['Fecha', 'Cliente', 'Venta Bruto', 'Venta Neto', 'Liner', 'Closer 1', 'Closer 2', 'Front', 'Plataforma', 'Tipo', 'Sala', 'Estatus'];
 
 $pdf->SetFont('helvetica', 'B', 7);
 $pdf->SetTextColor(0, 0, 0);
 $pdf->SetFillColor(220, 220, 220);
 
 // Ajustar anchos de columnas para orientación landscape
-$widths = [18, 35, 20, 20, 25, 25, 25, 25, 35, 15, 15];
+$widths = [18, 35, 20, 20, 25, 25, 25, 25, 35, 15, 15, 18];
 
 // Dibujar headers
 for ($i = 0; $i < count($headers); $i++) {
@@ -663,7 +741,7 @@ $pdf->SetFont('helvetica', '', 6);
 $fill = false;
 $contador = 0;
 
-foreach ($ventas as $venta) {
+foreach ($ventasLista as $venta) {
     // Verificar si necesita nueva página
     if ($contador > 0 && $contador % 25 == 0) {
         $pdf->AddPage();
@@ -677,7 +755,17 @@ foreach ($ventas as $venta) {
         $pdf->SetFont('helvetica', '', 6);
     }
 
-    $pdf->SetFillColor($fill ? 240 : 255, $fill ? 240 : 255, $fill ? 240 : 255);
+    $esPendiente = strtolower(trim($venta['estatus'] ?? '')) === 'pendiente';
+    $fillFila = $fill;
+    if ($esPendiente) {
+        // Pendientes resaltadas en amarillo claro
+        $pdf->SetFillColor(255, 243, 205);
+        $fillFila = true;
+    } else {
+        $pdf->SetFillColor($fill ? 240 : 255, $fill ? 240 : 255, $fill ? 240 : 255);
+    }
+    $fillOriginal = $fill;
+    $fill = $fillFila;
 
     // Fecha
     $pdf->Cell($widths[0], 6, date('d/m/Y', strtotime($venta['fecha'])), 1, 0, 'C', $fill);
@@ -718,9 +806,12 @@ foreach ($ventas as $venta) {
 
     // Sala
     $sala = $venta['sala_nombre'] ?? 'N/A';
-    $pdf->Cell($widths[10], 6, $sala, 1, 1, 'C', $fill);
+    $pdf->Cell($widths[10], 6, $sala, 1, 0, 'C', $fill);
 
-    $fill = !$fill;
+    // Estatus
+    $pdf->Cell($widths[11], 6, $esPendiente ? 'Pendiente' : 'Procesable', 1, 1, 'C', $fill);
+
+    $fill = !$fillOriginal;
     $contador++;
 }
 
