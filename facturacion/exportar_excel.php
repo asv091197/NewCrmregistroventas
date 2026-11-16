@@ -125,8 +125,8 @@ $conditions = [];
 $params = [];
 $whereClause = '';
 
-// Solo exportar ventas con estatus "procesable"
-$conditions[] = "LOWER(TRIM(v.estatus)) = 'procesable'";
+// Exportar ventas "procesable" y "pendiente" (los cálculos usan solo las procesables)
+$conditions[] = "LOWER(TRIM(v.estatus)) IN ('procesable', 'pendiente')";
 
 if (!empty($fechaInicio)) {
     $conditions[] = "v.fecha >= ?";
@@ -259,39 +259,57 @@ try {
     }
     unset($venta); // Romper la referencia
 
+    // Lista completa (procesables + pendientes) para la hoja "Ventas por Estatus";
+    // $ventas queda solo con procesables para totales, comisiones y OVER
+    $ventasLista = $ventas;
+    $ventas = array_values(array_filter($ventasLista, function ($v) {
+        return strtolower(trim($v['estatus'] ?? '')) === 'procesable';
+    }));
 } catch (PDOException $e) {
     die("Error en la consulta: " . $e->getMessage());
 }
 
-// Validar que hay datos
-if (empty($ventas)) {
-    // Detalle: cuántas ventas hay con los mismos filtros, agrupadas por estatus (sin el filtro de estatus)
-    $detalle = '';
-    try {
-        $condSinEstatus = array_slice($conditions, 1);
-        $sqlDiag = "SELECT COALESCE(NULLIF(TRIM(v.estatus), ''), 'sin estatus') AS est, COUNT(*) AS total
-            FROM ventas_facturacion v
-            LEFT JOIN usuarios liner ON v.liner_id = liner.id
-            LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
-            LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
-            LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
-            LEFT JOIN plataforma p ON v.plataforma_id = p.id"
-            . (!empty($condSinEstatus) ? " WHERE " . implode(" AND ", $condSinEstatus) : '')
-            . " GROUP BY est";
-        $stmtDiag = $pdo->prepare($sqlDiag);
-        $stmtDiag->execute($params);
-        $partes = [];
-        foreach ($stmtDiag->fetchAll(PDO::FETCH_ASSOC) as $fila) {
-            $partes[] = htmlspecialchars($fila['est']) . ': ' . (int)$fila['total'];
-        }
-        $detalle = empty($partes)
-            ? '<br>No hay ventas de ningún estatus con estos filtros.'
-            : '<br>Ventas encontradas con estos filtros por estatus: ' . implode(', ', $partes);
-    } catch (PDOException $e) {
-        error_log("Error en diagnóstico de exportación: " . $e->getMessage());
+// Resumen de ventas por estatus con los mismos filtros (sin el filtro de estatus)
+$resumenEstatus = [];
+try {
+    $condSinEstatus = array_slice($conditions, 1);
+    $sqlEstatus = "SELECT COALESCE(NULLIF(LOWER(TRIM(v.estatus)), ''), 'sin estatus') AS est,
+            COUNT(*) AS total,
+            COALESCE(SUM(v.precio), 0) AS bruto,
+            COALESCE(SUM(v.precio_neto), 0) AS neto
+        FROM ventas_facturacion v
+        LEFT JOIN usuarios liner ON v.liner_id = liner.id
+        LEFT JOIN usuarios c1 ON v.closer1_id = c1.id
+        LEFT JOIN usuarios c2 ON v.closer2_id = c2.id
+        LEFT JOIN usuarios fs ON v.full_stack_id = fs.id
+        LEFT JOIN plataforma p ON v.plataforma_id = p.id"
+        . (!empty($condSinEstatus) ? " WHERE " . implode(" AND ", $condSinEstatus) : '')
+        . " GROUP BY est";
+    $stmtEstatus = $pdo->prepare($sqlEstatus);
+    $stmtEstatus->execute($params);
+    foreach ($stmtEstatus->fetchAll(PDO::FETCH_ASSOC) as $fila) {
+        $resumenEstatus[$fila['est']] = [
+            'count' => (int)$fila['total'],
+            'bruto' => (float)$fila['bruto'],
+            'neto'  => (float)$fila['neto'],
+        ];
     }
+} catch (PDOException $e) {
+    error_log("Error en resumen por estatus: " . $e->getMessage());
+}
+
+// Validar que hay datos
+if (empty($ventasLista)) {
+    // Detalle: cuántas ventas hay con los mismos filtros, agrupadas por estatus
+    $partes = [];
+    foreach ($resumenEstatus as $est => $fila) {
+        $partes[] = htmlspecialchars($est) . ': ' . $fila['count'];
+    }
+    $detalle = empty($partes)
+        ? '<br>No hay ventas de ningún estatus con estos filtros.'
+        : '<br>Ventas encontradas con estos filtros por estatus: ' . implode(', ', $partes);
     header('Content-Type: text/html; charset=utf-8');
-    die('No hay ventas con estatus <strong>Procesable</strong> para generar el reporte con los filtros aplicados.' . $detalle);
+    die('No hay ventas con estatus <strong>Procesable</strong> ni <strong>Pendiente</strong> para generar el reporte con los filtros aplicados.' . $detalle);
 }
 
 // Obtener los nombres de las plataformas filtradas
@@ -2024,6 +2042,120 @@ if ($tieneComisiones && !empty($usuariosComisiones)) {
     } catch (Exception $e) {
         error_log("Error al crear hoja de resumen: " . $e->getMessage());
     }
+}
+
+// ============================================================================
+// HOJA: VENTAS POR ESTATUS (TOTAL DESGLOSADO + LISTADO CON PENDIENTES)
+// ============================================================================
+
+try {
+    $estatusSheet = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'Ventas por Estatus');
+    $spreadsheet->addSheet($estatusSheet, 1); // Segunda pestaña
+
+    $estatusSheet->getPageSetup()
+        ->setOrientation(PageSetup::ORIENTATION_LANDSCAPE)
+        ->setPaperSize(PageSetup::PAPERSIZE_A4)
+        ->setFitToWidth(1)
+        ->setFitToHeight(0);
+
+    $estatusSheet->mergeCells('A1:L2');
+    $estatusSheet->setCellValue('A1', 'TOTAL DE VENTAS POR ESTATUS' . (!empty($salaNombre) ? ' - SALA: ' . strtoupper($salaNombre) : ''));
+    applySafeStyle($estatusSheet, 'A1:L2', 'title');
+
+    $estatusSheet->mergeCells('A3:L3');
+    $estatusSheet->setCellValue('A3', 'Filtro aplicado: ' . $filtroTexto . ' - Fecha de generación: ' . date('d/m/Y H:i:s'));
+    $estatusSheet->getStyle('A3:L3')->getFont()->setItalic(true)->setSize(10);
+    $estatusSheet->getStyle('A3:L3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+    // --- Tabla resumen por estatus ---
+    $estatusSheet->fromArray(['Estatus', 'Núm. Ventas', 'Venta Bruto', 'Venta Neto'], NULL, 'A5');
+    applySafeStyle($estatusSheet, 'A5:D5', 'header');
+
+    // Procesable y Pendiente siempre se muestran; otros estatus solo si existen
+    $filasEstatus = ['procesable' => 'Procesable', 'pendiente' => 'Pendiente'];
+    foreach (array_keys($resumenEstatus) as $est) {
+        if (!isset($filasEstatus[$est])) {
+            $filasEstatus[$est] = ucfirst($est);
+        }
+    }
+
+    $filaEst = 6;
+    foreach ($filasEstatus as $est => $etiqueta) {
+        $fila = $resumenEstatus[$est] ?? ['count' => 0, 'bruto' => 0, 'neto' => 0];
+        $estatusSheet->setCellValue('A' . $filaEst, $etiqueta);
+        $estatusSheet->setCellValue('B' . $filaEst, $fila['count']);
+        $estatusSheet->setCellValue('C' . $filaEst, $fila['bruto']);
+        $estatusSheet->setCellValue('D' . $filaEst, $fila['neto']);
+        if ($est === 'pendiente') {
+            $estatusSheet->getStyle('A' . $filaEst . ':D' . $filaEst)->getFill()
+                ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FFF3CD');
+        }
+        $filaEst++;
+    }
+    $estatusSheet->setCellValue('A' . $filaEst, 'TOTAL DE VENTAS');
+    $estatusSheet->setCellValue('B' . $filaEst, '=SUM(B6:B' . ($filaEst - 1) . ')');
+    $estatusSheet->setCellValue('C' . $filaEst, '=SUM(C6:C' . ($filaEst - 1) . ')');
+    $estatusSheet->setCellValue('D' . $filaEst, '=SUM(D6:D' . ($filaEst - 1) . ')');
+    applySafeStyle($estatusSheet, 'A' . $filaEst . ':D' . $filaEst, 'total');
+    $estatusSheet->getStyle('C6:D' . $filaEst)->getNumberFormat()->setFormatCode('"$"#,##0.00');
+
+    $filaEst++;
+    $estatusSheet->mergeCells('A' . $filaEst . ':L' . $filaEst);
+    $estatusSheet->setCellValue('A' . $filaEst, 'Nota: las comisiones, totales y OVER de las demás hojas se calculan solo con ventas Procesables. El listado incluye las Pendientes (resaltadas).');
+    $estatusSheet->getStyle('A' . $filaEst)->getFont()->setItalic(true)->setSize(9);
+
+    // --- Listado de ventas (procesables + pendientes) ---
+    $filaEst += 2;
+    $filaHeaderLista = $filaEst;
+    $estatusSheet->fromArray(
+        ['Fecha', 'Cliente', 'Venta Bruto', 'Venta Neto', 'Liner', 'Closer 1', 'Closer 2', 'Front', 'Plataforma', 'Tipo Venta', 'Sala', 'Estatus'],
+        NULL,
+        'A' . $filaHeaderLista
+    );
+    applySafeStyle($estatusSheet, 'A' . $filaHeaderLista . ':L' . $filaHeaderLista, 'header');
+
+    $filaEst++;
+    $filaInicioLista = $filaEst;
+    foreach ($ventasLista as $venta) {
+        $esPendiente = strtolower(trim($venta['estatus'] ?? '')) === 'pendiente';
+        $estatusSheet->setCellValue('A' . $filaEst, date('d/m/Y', strtotime($venta['fecha'])));
+        $estatusSheet->setCellValue('B' . $filaEst, $venta['cliente_nombre']);
+        $estatusSheet->setCellValue('C' . $filaEst, (float)$venta['precio']);
+        $estatusSheet->setCellValue('D' . $filaEst, (float)$venta['precio_neto']);
+        $estatusSheet->setCellValue('E' . $filaEst, $venta['liner_nombre'] ?? 'No asignado');
+        $estatusSheet->setCellValue('F' . $filaEst, $venta['closer1_nombre'] ?? 'No asignado');
+        $estatusSheet->setCellValue('G' . $filaEst, $venta['closer2_nombre'] ?? 'No asignado');
+        $estatusSheet->setCellValue('H' . $filaEst, $venta['front_nombre'] ?? 'No asignado');
+        $estatusSheet->setCellValue('I' . $filaEst, $venta['plataforma_nombre_completo'] ?? 'N/A');
+        $estatusSheet->setCellValue('J' . $filaEst, $venta['tipo_venta'] ?? 'N/A');
+        $estatusSheet->setCellValue('K' . $filaEst, $venta['sala_nombre'] ?? 'N/A');
+        $estatusSheet->setCellValue('L' . $filaEst, $esPendiente ? 'Pendiente' : 'Procesable');
+        if ($esPendiente) {
+            $estatusSheet->getStyle('A' . $filaEst . ':L' . $filaEst)->getFill()
+                ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FFF3CD');
+        }
+        $filaEst++;
+    }
+
+    if ($filaEst > $filaInicioLista) {
+        $filaFinLista = $filaEst - 1;
+        $estatusSheet->setAutoFilter('A' . $filaHeaderLista . ':L' . $filaFinLista);
+        $estatusSheet->getStyle('C' . $filaInicioLista . ':D' . $filaFinLista)->getNumberFormat()->setFormatCode('"$"#,##0.00');
+
+        // Totales que respetan el autofiltro (ej. filtrar solo Pendientes)
+        $estatusSheet->setCellValue('A' . $filaEst, 'TOTALES (según filtro):');
+        $estatusSheet->setCellValue('C' . $filaEst, '=SUBTOTAL(9,C' . $filaInicioLista . ':C' . $filaFinLista . ')');
+        $estatusSheet->setCellValue('D' . $filaEst, '=SUBTOTAL(9,D' . $filaInicioLista . ':D' . $filaFinLista . ')');
+        $estatusSheet->setCellValue('L' . $filaEst, '=SUBTOTAL(3,L' . $filaInicioLista . ':L' . $filaFinLista . ')');
+        applySafeStyle($estatusSheet, 'A' . $filaEst . ':L' . $filaEst, 'total');
+        $estatusSheet->getStyle('C' . $filaEst . ':D' . $filaEst)->getNumberFormat()->setFormatCode('"$"#,##0.00');
+    }
+
+    foreach (range('A', 'L') as $col) {
+        $estatusSheet->getColumnDimension($col)->setAutoSize(true);
+    }
+} catch (Exception $e) {
+    error_log("Error al crear hoja de ventas por estatus: " . $e->getMessage());
 }
 
 // Regresar a la primera hoja
